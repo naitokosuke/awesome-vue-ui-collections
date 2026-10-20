@@ -26,3 +26,22 @@ export const shade = (hex: string, amount: number) => mix(hex, '#000000', amount
 
 /** `"r, g, b"`, for libraries whose CSS variables hold channel triplets. */
 export const rgbChannels = (hex: string) => hexToRgb(hex).join(', ')
+
+/** WCAG relative luminance of `hex` (0 = black, 1 = white). */
+export function luminance(hex: string): number {
+  const [r, g, b] = hexToRgb(hex).map((channel) => {
+    const c = channel / 255
+    return c <= 0.03928 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4
+  }) as Rgb
+  return 0.2126 * r + 0.7152 * g + 0.0722 * b
+}
+
+/** WCAG contrast ratio between two colors (1–21). */
+export function contrast(a: string, b: string): number {
+  const [light, dark] = [luminance(a), luminance(b)].sort((x, y) => y - x) as [number, number]
+  return (light + 0.05) / (dark + 0.05)
+}
+
+/** Whichever of `light` / `dark` reads better on `hex`. */
+export const readableOn = (hex: string, light = '#ffffff', dark = '#18181b') =>
+  (contrast(hex, light) >= contrast(hex, dark) ? light : dark)

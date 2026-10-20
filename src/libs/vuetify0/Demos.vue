@@ -131,6 +131,7 @@ const open = ref(false)
 
     display: flex;
     align-items: center;
+    justify-content: center;
     width: 100%;
     padding: 16px;
     color: var(--v0-fg);

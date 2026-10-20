@@ -21,54 +21,57 @@ const open = ref(false)
 </script>
 
 <template>
-  <v-theme-provider class="demo" :theme="controls.dark ? 'dark' : 'light'" with-background>
-    <v-btn v-if="demo === 'button'" color="primary" :size :disabled="controls.disabled[demo]">
-      {{ controls.label }}
-    </v-btn>
+  <!-- Sets the theme without painting a background, so the demo sits on the shell canvas. -->
+  <v-theme-provider :theme="controls.dark ? 'dark' : 'light'">
+    <div class="demo">
+      <v-btn v-if="demo === 'button'" color="primary" :size :disabled="controls.disabled[demo]">
+        {{ controls.label }}
+      </v-btn>
 
-    <v-text-field
-      v-else-if="demo === 'input'"
-      v-model="name"
-      label="Name"
-      :color="themed"
-      :density
-      :disabled="controls.disabled[demo]"
-      hide-details
-    />
+      <v-text-field
+        v-else-if="demo === 'input'"
+        v-model="name"
+        label="Name"
+        :color="themed"
+        :density
+        :disabled="controls.disabled[demo]"
+        hide-details
+      />
 
-    <v-select
-      v-else-if="demo === 'select'"
-      v-model="fruit"
-      label="Fruit"
-      :color="themed"
-      :items="fruits"
-      :density
-      :disabled="controls.disabled[demo]"
-      :menu-props="{ attach: overlay }"
-      hide-details
-    />
+      <v-select
+        v-else-if="demo === 'select'"
+        v-model="fruit"
+        label="Fruit"
+        :color="themed"
+        :items="fruits"
+        :density
+        :disabled="controls.disabled[demo]"
+        :menu-props="{ attach: overlay }"
+        hide-details
+      />
 
-    <v-switch
-      v-else-if="demo === 'switch'"
-      v-model="enabled"
-      color="primary"
-      label="Notifications"
-      :density
-      :disabled="controls.disabled[demo]"
-      hide-details
-    />
+      <v-switch
+        v-else-if="demo === 'switch'"
+        v-model="enabled"
+        color="primary"
+        label="Notifications"
+        :density
+        :disabled="controls.disabled[demo]"
+        hide-details
+      />
 
-    <template v-else-if="demo === 'dialog'">
-      <v-btn :size :disabled="controls.disabled[demo]" @click="open = true">Open dialog</v-btn>
-      <v-dialog v-model="open" :attach="overlay" max-width="400" scroll-strategy="none">
-        <v-card title="Vuetify" text="This dialog is teleported into the Vuetify overlay host.">
-          <v-card-actions>
-            <v-spacer />
-            <v-btn @click="open = false">Close</v-btn>
-          </v-card-actions>
-        </v-card>
-      </v-dialog>
-    </template>
+      <template v-else-if="demo === 'dialog'">
+        <v-btn :size :disabled="controls.disabled[demo]" @click="open = true">Open dialog</v-btn>
+        <v-dialog v-model="open" :attach="overlay" max-width="400" scroll-strategy="none">
+          <v-card title="Vuetify" text="This dialog is teleported into the Vuetify overlay host.">
+            <v-card-actions>
+              <v-spacer />
+              <v-btn @click="open = false">Close</v-btn>
+            </v-card-actions>
+          </v-card>
+        </v-dialog>
+      </template>
+    </div>
   </v-theme-provider>
 </template>
 
@@ -76,8 +79,14 @@ const open = ref(false)
 .demo {
   display: flex;
   align-items: center;
+  justify-content: center;
   align-self: stretch;
   width: 100%;
   padding: 16px;
+}
+
+/* v-switch is a v-input, which grows to the full width; keep it control-sized so it centers. */
+.demo > .v-switch {
+  flex: none;
 }
 </style>

@@ -103,10 +103,11 @@ const nameId = useId()
 .demo {
   display: flex;
   align-items: center;
+  justify-content: center;
   align-self: stretch;
   width: 100%;
   padding: 16px;
-  background-color: var(--vize-ui-color-canvas);
+  /* No background: the demo sits on the shell's canvas like every other library. */
   color: var(--vize-ui-color-text);
   font-family: var(--vize-ui-type-family-sans);
 }

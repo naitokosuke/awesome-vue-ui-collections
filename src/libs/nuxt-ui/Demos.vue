@@ -56,10 +56,10 @@ const open = ref(false)
 .demo {
   display: flex;
   align-items: center;
+  justify-content: center;
   align-self: stretch;
   width: 100%;
   padding: 16px;
-  background: var(--ui-bg);
   color: var(--ui-text);
 }
 </style>

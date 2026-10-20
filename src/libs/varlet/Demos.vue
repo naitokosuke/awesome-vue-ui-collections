@@ -65,10 +65,10 @@ const open = ref(false)
 .demo {
   display: flex;
   align-items: center;
+  justify-content: center;
   align-self: stretch;
   width: 100%;
   padding: 16px;
-  background-color: var(--color-body);
   color: var(--color-text);
 }
 

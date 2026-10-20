@@ -1,3 +1,4 @@
+import './tokens.css'
 import { createApp } from 'vue'
 import Shell from './Shell.vue'
 

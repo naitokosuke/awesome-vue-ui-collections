@@ -17,9 +17,12 @@ defineProps<{
 .not-provided {
   display: flex;
   flex-direction: column;
-  gap: 2px;
-  padding: 16px;
-  color: GrayText;
-  font: 12px / 1.4 ui-monospace, monospace;
+  align-items: center;
+  gap: var(--avc-space-0-5);
+  width: 100%;
+  padding: var(--avc-space-4);
+  /* The shell's tokens (src/tokens.css), inherited into the cell. */
+  color: var(--avc-color-text-muted);
+  font: var(--avc-text-sm) / var(--avc-leading-normal) var(--avc-font-mono);
 }
 </style>

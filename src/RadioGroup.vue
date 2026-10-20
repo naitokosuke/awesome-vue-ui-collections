@@ -38,45 +38,50 @@ const idPrefix = useId()
 </template>
 
 <style scoped>
+/* Uses the shell's --avc-* tokens (../tokens.css). */
+
 .radio-group {
   display: flex;
   flex-wrap: wrap;
-  gap: 6px;
+  gap: var(--avc-space-2);
   margin: 0;
   padding: 0;
   border: 0;
 }
 
-/* Every option is the same box, whatever its content. */
+/* Every option is the same box, whatever its content; at least the minimum target size. */
 label {
   position: relative;
   display: inline-flex;
   align-items: center;
   justify-content: center;
   box-sizing: border-box;
-  inline-size: 9ch;
-  padding: 3px 8px;
+  inline-size: 10ch;
+  min-block-size: var(--avc-target-min);
+  padding: var(--avc-space-0-5) var(--avc-space-2);
   overflow: hidden;
-  border: 1px solid var(--border);
-  border-radius: 4px;
-  background: var(--surface);
-  color: var(--muted);
+  border: 1px solid var(--avc-color-border-control);
+  border-radius: var(--avc-radius-sm);
+  background: var(--avc-color-surface);
+  color: var(--avc-color-text-muted);
+  font-size: var(--avc-text-sm);
+  line-height: var(--avc-leading-tight);
   cursor: pointer;
   user-select: none;
 
   &:hover {
-    color: var(--text);
+    color: var(--avc-color-text);
   }
 }
 
 /* Selected: a ring around the box, the same for text and color options. */
 input:checked + label {
-  color: var(--text);
-  box-shadow: 0 0 0 2px var(--bg), 0 0 0 3px var(--text);
+  color: var(--avc-color-text);
+  box-shadow: 0 0 0 2px var(--avc-color-bg), 0 0 0 3px var(--avc-color-text);
 }
 
 input:focus-visible + label {
-  outline: 2px solid var(--text);
+  outline: var(--avc-focus-ring);
   outline-offset: 4px;
 }
 

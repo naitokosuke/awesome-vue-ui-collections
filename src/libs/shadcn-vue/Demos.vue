@@ -104,9 +104,9 @@ const open = ref(false)
 .demo {
   display: flex;
   align-items: center;
+  justify-content: center;
   width: 100%;
   padding: 16px;
-  background: var(--background);
   color: var(--foreground);
 }
 </style>

@@ -20,7 +20,7 @@ export default defineConfig({
     // Nuxt UI (Tailwind CSS v4 + auto-imported `U*` components). Its CSS is scoped like any other library.
     ui({ colorMode: false, router: false, dts: false, autoImport: false }),
     scopeLibraryCss(metas.map(({ id, cssMatch }) => ({ id, match: cssMatch }))),
-    npmStats(metas.map((meta) => meta.package)),
+    npmStats(metas.flatMap((meta) => meta.package ?? [])),
     {
       // `metas` is read once at startup (CSS scoping, npm stats), so adding, editing or
       // removing a library's meta.ts needs a dev-server restart to take effect.

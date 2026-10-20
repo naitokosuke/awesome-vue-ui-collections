@@ -1,5 +1,5 @@
 import { reactive, watch } from 'vue'
-import { DEMOS, type DemoKey } from './libs/types'
+import { DEMOS, type DemoKey, type Kind } from './libs/types'
 
 export const SIZES = ['small', 'medium', 'large'] as const
 
@@ -27,9 +27,9 @@ export interface Controls {
   /** Show the package / repository / release / downloads rows. */
   stats: boolean
   label: string
-  /** Which table is shown: libraries with a visual design, or headless primitives. */
-  kind: 'styled' | 'headless'
-  /** Primary color forced on every styled library, or null for each library's own default. */
+  /** Which table (tab) is shown. */
+  kind: Kind
+  /** Primary color forced on every styled and copy-paste library, or null for each library's own default. */
   color: Color | null
 }
 
