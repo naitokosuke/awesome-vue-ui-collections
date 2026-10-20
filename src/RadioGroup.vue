@@ -71,7 +71,9 @@ label {
 /* Selected: a ring around the box, the same for text and color options. */
 input:checked + label {
   color: var(--avc-color-text);
-  box-shadow: 0 0 0 2px var(--avc-color-bg), 0 0 0 3px var(--avc-color-text);
+  box-shadow:
+    0 0 0 2px var(--avc-color-bg),
+    0 0 0 3px var(--avc-color-text);
 }
 
 input:focus-visible + label {

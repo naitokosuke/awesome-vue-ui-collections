@@ -6,7 +6,7 @@ import type { DemoKey } from '../types'
 
 defineProps<{ demo: DemoKey }>()
 
-const size = computed(() => ({ small: 'sm', medium: undefined, large: 'lg' } as const)[controls.size])
+const size = computed(() => (({ small: 'sm', medium: undefined, large: 'lg' }) as const)[controls.size])
 const theme = computed(() => (controls.dark ? 'dark' : 'light'))
 
 const fruits = [
@@ -26,7 +26,13 @@ const open = ref(false)
       {{ controls.label }}
     </BButton>
 
-    <BFormInput v-else-if="demo === 'input'" v-model="name" placeholder="Name" :size :disabled="controls.disabled[demo]" />
+    <BFormInput
+      v-else-if="demo === 'input'"
+      v-model="name"
+      placeholder="Name"
+      :size
+      :disabled="controls.disabled[demo]"
+    />
 
     <BFormSelect
       v-else-if="demo === 'select'"
@@ -36,13 +42,7 @@ const open = ref(false)
       :disabled="controls.disabled[demo]"
     />
 
-    <BFormCheckbox
-      v-else-if="demo === 'switch'"
-      v-model="enabled"
-      switch
-      :size
-      :disabled="controls.disabled[demo]"
-    >
+    <BFormCheckbox v-else-if="demo === 'switch'" v-model="enabled" switch :size :disabled="controls.disabled[demo]">
       Notifications
     </BFormCheckbox>
 

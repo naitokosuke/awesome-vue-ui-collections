@@ -25,9 +25,9 @@ defineProps<{ demo: DemoKey }>()
 const overlay = inject(overlayKey)!
 const id = useId()
 
-const buttonSize = computed(() => ({ small: 'sm', medium: 'default', large: 'lg' } as const)[controls.size])
+const buttonSize = computed(() => (({ small: 'sm', medium: 'default', large: 'lg' }) as const)[controls.size])
 // Input and Select have no size prop (Select only `sm`/`default`): match the button heights.
-const height = computed(() => ({ small: 'h-8', medium: 'h-9', large: 'h-10' } as const)[controls.size])
+const height = computed(() => (({ small: 'h-8', medium: 'h-9', large: 'h-10' }) as const)[controls.size])
 
 const fruits = ['Apple', 'Banana', 'Cherry']
 const name = ref('')

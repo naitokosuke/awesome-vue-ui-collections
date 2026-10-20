@@ -12,7 +12,10 @@ export const meta: LibraryMeta = {
   repository: 'unovue/inspira-ui',
   // The Tailwind entry compiled by @tailwindcss/vite
   components: {
-    button: { name: 'InteractiveHoverButton', docs: 'https://inspira-ui.com/docs/en/components/buttons/interactive-hover-button' },
+    button: {
+      name: 'InteractiveHoverButton',
+      docs: 'https://inspira-ui.com/docs/en/components/buttons/interactive-hover-button',
+    },
     input: { name: 'IInput', docs: 'https://inspira-ui.com/docs/en/components/input-and-forms/input' },
     dialog: { name: 'AnimatedModal', docs: 'https://inspira-ui.com/docs/en/components/miscellaneous/animated-modal' },
   },

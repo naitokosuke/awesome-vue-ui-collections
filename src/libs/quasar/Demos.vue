@@ -66,7 +66,7 @@ const open = ref(false)
             This dialog is teleported into the Quasar overlay host.
           </q-card-section>
           <q-card-actions align="right">
-            <q-btn v-close-popup flat color="primary" label="Close" />
+            <q-btn v-close-popup color="primary" flat label="Close" />
           </q-card-actions>
         </q-card>
       </q-dialog>

@@ -10,7 +10,7 @@ import type { DemoKey } from '../types'
 
 defineProps<{ demo: DemoKey }>()
 
-const size = computed(() => ({ small: 'sm', medium: 'md', large: 'lg' } as const)[controls.size])
+const size = computed(() => (({ small: 'sm', medium: 'md', large: 'lg' }) as const)[controls.size])
 
 const fruits = ['Apple', 'Banana', 'Cherry']
 const name = ref('')
@@ -33,8 +33,8 @@ const open = ref(false)
     <TextInput
       v-else-if="demo === 'input'"
       v-model="name"
-      label="Name"
       is-label-hidden
+      label="Name"
       placeholder="Name"
       width="100%"
       :size
@@ -45,21 +45,27 @@ const open = ref(false)
     <Selector
       v-else-if="demo === 'select'"
       v-model="fruit"
-      label="Fruit"
       is-label-hidden
+      label="Fruit"
       placeholder="Fruit"
       :options="fruits"
       :size
       :disabled="controls.disabled[demo]"
     />
 
-    <Switch v-else-if="demo === 'switch'" v-model="enabled" label="Notifications" :size :is-disabled="controls.disabled[demo]" />
+    <Switch
+      v-else-if="demo === 'switch'"
+      v-model="enabled"
+      label="Notifications"
+      :size
+      :is-disabled="controls.disabled[demo]"
+    />
 
     <!-- A native <dialog> opened with showModal(): it stays in this cell (inside the CSS scope) and renders in the top layer. -->
     <template v-else-if="demo === 'dialog'">
       <Button label="Open dialog" :size :is-disabled="controls.disabled[demo]" @click="open = true" />
       <Dialog :is-open="open" width="400px" @open-change="open = $event">
-        <DialogHeader title="Astryx Vue" has-close-button />
+        <DialogHeader has-close-button title="Astryx Vue" />
         <p class="body">This dialog is a native &lt;dialog&gt; in the Astryx Vue cell.</p>
         <div class="actions">
           <Button label="Close" @click="open = false" />

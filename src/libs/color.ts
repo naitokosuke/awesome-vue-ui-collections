@@ -44,4 +44,4 @@ export function contrast(a: string, b: string): number {
 
 /** Whichever of `light` / `dark` reads better on `hex`. */
 export const readableOn = (hex: string, light = '#ffffff', dark = '#18181b') =>
-  (contrast(hex, light) >= contrast(hex, dark) ? light : dark)
+  contrast(hex, light) >= contrast(hex, dark) ? light : dark

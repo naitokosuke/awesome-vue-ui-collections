@@ -9,10 +9,12 @@ import Demos from './Demos.vue'
 
 export { version } from '@varlet/ui'
 
-const darkVars = Object.fromEntries(Object.entries(Themes.dark).map(([key, value]) => [
-  key.startsWith('--') ? key : `--${key.replace(/[A-Z]/g, (c) => `-${c.toLowerCase()}`)}`,
-  String(value),
-]))
+const darkVars = Object.fromEntries(
+  Object.entries(Themes.dark).map(([key, value]) => [
+    key.startsWith('--') ? key : `--${key.replace(/[A-Z]/g, (c) => `-${c.toLowerCase()}`)}`,
+    String(value),
+  ]),
+)
 
 /** Varlet's colors are `h, s%, l%` triplets; every primary color var derives from these two. */
 function primaryVars(hex: string) {

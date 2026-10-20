@@ -1,5 +1,5 @@
 import { type Selector, type SelectorComponent, transform } from 'lightningcss'
-import type { Plugin } from 'vite'
+import type { Plugin } from 'vite-plus'
 
 export interface ScopeRule {
   /** Value of the `data-lib` attribute the CSS is scoped to. */
@@ -50,12 +50,16 @@ function scopeComponent(id: string): SelectorComponent {
   return {
     type: 'pseudo-class',
     kind: 'where',
-    selectors: [[{
-      type: 'attribute',
-      namespace: null,
-      name: 'data-lib',
-      operation: { operator: 'equal', value: id, caseSensitivity: 'case-sensitive' },
-    }]],
+    selectors: [
+      [
+        {
+          type: 'attribute',
+          namespace: null,
+          name: 'data-lib',
+          operation: { operator: 'equal', value: id, caseSensitivity: 'case-sensitive' },
+        },
+      ],
+    ],
   }
 }
 
@@ -90,16 +94,21 @@ function scopeSelector(selector: Selector, scope: SelectorComponent): Selector {
   const [first] = selector
 
   // `:where(:root, :host, [data-theme])` -> `:where(<scope>, <scope> [data-theme])`
-  if (first?.type === 'pseudo-class' && (first.kind === 'where' || first.kind === 'is')
-    && first.selectors.some((inner) => inner.length === 1 && isGlobalElement(inner[0]))) {
+  if (
+    first?.type === 'pseudo-class' &&
+    (first.kind === 'where' || first.kind === 'is') &&
+    first.selectors.some((inner) => inner.length === 1 && isGlobalElement(inner[0]))
+  ) {
     const selectors = first.selectors.map((inner) =>
-      inner.length === 1 && isGlobalElement(inner[0]) ? [scope] : [scope, DESCENDANT, ...inner])
+      inner.length === 1 && isGlobalElement(inner[0]) ? [scope] : [scope, DESCENDANT, ...inner],
+    )
     return [{ ...first, selectors }, ...selector.slice(1)]
   }
 
   if (!isGlobalElement(first)) {
-    const themeRoot = compoundEnd(selector) === selector.length
-      && selector.every((component) => component.type === 'class' || component.type === 'attribute')
+    const themeRoot =
+      compoundEnd(selector) === selector.length &&
+      selector.every((component) => component.type === 'class' || component.type === 'attribute')
     const descendant = [scope, DESCENDANT, ...selector]
     return themeRoot ? [either(descendant, [scope, ...selector])] : descendant
   }

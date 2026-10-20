@@ -5,7 +5,7 @@ import type { DemoKey } from '../types'
 
 defineProps<{ demo: DemoKey }>()
 
-const buttonSize = computed(() => ({ small: 'small', medium: 'normal', large: 'large' } as const)[controls.size])
+const buttonSize = computed(() => (({ small: 'small', medium: 'normal', large: 'large' }) as const)[controls.size])
 // Inputs and selects only come in `small` and `normal`.
 const fieldSize = computed(() => (controls.size === 'small' ? 'small' : 'normal'))
 const switchSize = computed(() => ({ small: 16, medium: 20, large: 24 })[controls.size])
@@ -27,8 +27,8 @@ const open = ref(false)
     <var-input
       v-else-if="demo === 'input'"
       v-model="name"
-      variant="outlined"
       placeholder="Name"
+      variant="outlined"
       :size="fieldSize"
       :disabled="controls.disabled[demo]"
     />
@@ -36,8 +36,8 @@ const open = ref(false)
     <var-select
       v-else-if="demo === 'select'"
       v-model="fruit"
-      variant="outlined"
       placeholder="Fruit"
+      variant="outlined"
       :options="fruits"
       :size="fieldSize"
       :disabled="controls.disabled[demo]"

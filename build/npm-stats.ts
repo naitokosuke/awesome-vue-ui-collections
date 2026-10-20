@@ -1,5 +1,5 @@
 import { Temporal } from 'temporal-polyfill-lite'
-import type { Plugin } from 'vite'
+import type { Plugin } from 'vite-plus'
 
 /**
  * A `Temporal.Instant` in its string form. The stats travel to the page as JSON, so instants
@@ -17,7 +17,7 @@ export interface PackageStats {
   /** Downloads over the last 7 days, or null if the downloads API failed. */
   weeklyDownloads: number | null
   /** GitHub repository from the package's `repository` field, if it points to GitHub. */
-  github: { slug: string, url: string } | null
+  github: { slug: string; url: string } | null
 }
 
 export interface NpmStats {
@@ -69,8 +69,7 @@ async function fetchPackage(name: string): Promise<PackageStats | null> {
       weeklyDownloads: downloads?.downloads ?? null,
       github: githubRepository(registry.repository),
     }
-  }
-  catch (error) {
+  } catch (error) {
     console.warn(`[npm-stats] ${name}: ${error}`)
     return null
   }
@@ -83,8 +82,9 @@ async function fetchPackage(name: string): Promise<PackageStats | null> {
 function githubRepository(repository: unknown): PackageStats['github'] {
   const raw = typeof repository === 'string' ? repository : (repository as { url?: string } | undefined)?.url
   if (!raw) return null
-  const match = /github\.com[/:]([\w.-]+)\/([\w.-]+?)(?:\.git)?(?:[/#].*)?$/.exec(raw)
-    ?? /^(?:github:)?([\w.-]+)\/([\w.-]+)$/.exec(raw)
+  const match =
+    /github\.com[/:]([\w.-]+)\/([\w.-]+?)(?:\.git)?(?:[/#].*)?$/.exec(raw) ??
+    /^(?:github:)?([\w.-]+)\/([\w.-]+)$/.exec(raw)
   if (!match) return null
   const slug = `${match[1]}/${match[2]}`
   return { slug, url: `https://github.com/${slug}` }

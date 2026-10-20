@@ -1,26 +1,22 @@
 import { Temporal } from 'temporal-polyfill-lite'
-import { reactive } from 'vue'
 import npm from 'virtual:npm-stats'
 import { libraries } from './libs'
 import { type DemoKey, type Kind, KINDS, type Library } from './libs/types'
 
-/** Load state of each library app. */
-export const status = reactive({
-  versions: {} as Record<string, string>,
-  errors: {} as Record<string, string>,
-})
-
-export const KIND_LABELS: Record<Kind, { name: string, description: string }> = {
+export const KIND_LABELS: Record<Kind, { name: string; description: string }> = {
   'styled': { name: 'Styled', description: 'Ships a complete visual design' },
-  'copy-paste': { name: 'Copy-paste', description: 'Styled components a CLI copies into your project — you own the code' },
+  'copy-paste': {
+    name: 'Copy-paste',
+    description: 'Styled components a CLI copies into your project — you own the code',
+  },
   'fancy': { name: 'Fancy', description: 'Animated, effect-first components a CLI copies into your project' },
   'headless': { name: 'Headless', description: 'Unstyled, accessible primitives — styling is up to you' },
 }
 
 /** One table per kind, in display order. */
-export const groups = KINDS
-  .map((kind) => ({ kind, libraries: libraries.filter((lib) => lib.kind === kind) }))
-  .filter((group) => group.libraries.length > 0)
+export const groups = KINDS.map((kind) => ({ kind, libraries: libraries.filter((lib) => lib.kind === kind) })).filter(
+  (group) => group.libraries.length > 0,
+)
 
 export const DEMO_LABELS: Record<DemoKey, string> = {
   button: 'Button',
@@ -53,9 +49,9 @@ export interface Downloads {
 }
 
 /** npm stats for the library's package; null when it has none or the fetch failed. */
-const statsOf = (lib: Library) => (lib.package ? npm.packages[lib.package] ?? null : null)
+const statsOf = (lib: Library) => (lib.package ? (npm.packages[lib.package] ?? null) : null)
 
-const relativeDay =new Intl.RelativeTimeFormat('en', { numeric: 'auto' }) // "today", "yesterday"
+const relativeDay = new Intl.RelativeTimeFormat('en', { numeric: 'auto' }) // "today", "yesterday"
 const relative = new Intl.RelativeTimeFormat('en') // "1 month ago", not "last month"
 const compact = new Intl.NumberFormat('en', { notation: 'compact', maximumFractionDigits: 1 })
 const maxDownloads = Math.max(1, ...libraries.map((lib) => statsOf(lib)?.weeklyDownloads ?? 0))

@@ -3,12 +3,13 @@ import { computed, onBeforeUnmount, onMounted } from 'vue'
 import IconArrowUpRight from '~icons/lucide/arrow-up-right'
 import IconGithub from '~icons/lucide/github'
 import IconPackage from '~icons/lucide/package'
-import { DEMO_LABELS, downloads, github, groups, KIND_LABELS, npmFetchedAt, release, status } from './board'
+import { DEMO_LABELS, downloads, github, groups, KIND_LABELS, npmFetchedAt, release } from './board'
 import { libraries } from './libs'
 import { readableOn } from './libs/color'
 import { DEMOS, type DemoKey, type Library } from './libs/types'
 import RadioGroup from './RadioGroup.vue'
 import { type Color, COLORS, controls, SIZES } from './store'
+import { useLoadStatus } from './useLoadStatus'
 
 const SIZE_LABELS = { small: 'sm', medium: 'md', large: 'lg' } as const
 
@@ -23,7 +24,10 @@ const COLOR_OPTIONS = [
   COLORS.rose,
 ] as const
 
-const COLOR_NAMES = Object.fromEntries(Object.entries(COLORS).map(([name, value]) => [value, name])) as Record<Color, string>
+const COLOR_NAMES = Object.fromEntries(Object.entries(COLORS).map(([name, value]) => [value, name])) as Record<
+  Color,
+  string
+>
 
 /** The store keeps `null` for "default"; the radio group needs a string value for it. */
 const colorChoice = computed<(typeof COLOR_OPTIONS)[number]>({
@@ -45,6 +49,8 @@ const ROW_HEIGHTS: Record<DemoKey, number> = {
   switch: 88,
   dialog: 88,
 }
+
+const { versions, errors } = useLoadStatus()
 
 const cells: Record<string, Partial<Record<DemoKey, HTMLElement>>> = {}
 const overlays: Record<string, HTMLElement> = {}
@@ -69,19 +75,22 @@ onMounted(() => {
     if (!lib.load) {
       // Stats only: the version shown is npm's latest.
       const latest = release(lib)?.latest
-      if (latest) status.versions[lib.id] = latest
+      if (latest) versions.value[lib.id] = latest
       continue
     }
-    lib.load()
+    lib
+      .load()
       .then((mod) => {
-        status.versions[lib.id] = mod.version
-        unmounts.push(mod.mount({
-          cells: cells[lib.id] as Record<DemoKey, HTMLElement>,
-          overlay: overlays[lib.id]!,
-        }))
+        versions.value[lib.id] = mod.version
+        unmounts.push(
+          mod.mount({
+            cells: cells[lib.id] as Record<DemoKey, HTMLElement>,
+            overlay: overlays[lib.id]!,
+          }),
+        )
       })
       .catch((error: unknown) => {
-        status.errors[lib.id] = String(error)
+        errors.value[lib.id] = String(error)
         console.error(`[${lib.id}]`, error)
       })
   }
@@ -96,16 +105,16 @@ onBeforeUnmount(() => unmounts.forEach((unmount) => unmount()))
       <span class="brand">awesome-vue-ui-collections</span>
       <!-- Theme is a page setting, not part of what is compared, so it lives up here. -->
       <label class="switch">
-        <input v-model="controls.dark" type="checkbox" role="switch">
+        <input v-model="controls.dark" role="switch" type="checkbox">
         dark
       </label>
     </header>
 
     <main class="page">
       <!-- Which libraries to show: a tab row of its own, separate from the demo options below. -->
-      <nav class="tabs" aria-label="Kind">
+      <nav aria-label="Kind" class="tabs">
         <label v-for="group in groups" :key="group.kind" class="tab">
-          <input v-model="controls.kind" type="radio" name="kind" :value="group.kind">
+          <input v-model="controls.kind" name="kind" type="radio" :value="group.kind">
           {{ KIND_LABELS[group.kind].name.toLowerCase() }}
           <span class="muted">{{ group.libraries.length }}</span>
         </label>
@@ -114,20 +123,20 @@ onBeforeUnmount(() => unmounts.forEach((unmount) => unmount()))
 
       <!-- Options for the demos, right above the table they affect. -->
       <!-- Label column + options column; each row is a subgrid, so every row starts at the same x. -->
-      <section class="facets" aria-label="Demo options">
+      <section aria-label="Demo options" class="facets">
         <div class="facet">
-          <span class="facet-label" aria-hidden="true">size</span>
+          <span aria-hidden="true" class="facet-label">size</span>
           <div class="options">
-            <RadioGroup v-model="controls.size" :options="SIZES" name="size" legend="Size">
+            <RadioGroup v-model="controls.size" :options="SIZES" legend="Size" name="size">
               <template #option="{ option }">{{ SIZE_LABELS[option] }}</template>
             </RadioGroup>
           </div>
         </div>
         <!-- Headless libraries already share one neutral look (libs/headless-theme.css); fancy ones have no primary color to set. -->
         <div v-if="controls.kind === 'styled' || controls.kind === 'copy-paste'" class="facet">
-          <span class="facet-label" aria-hidden="true">color</span>
+          <span aria-hidden="true" class="facet-label">color</span>
           <div class="options">
-            <RadioGroup v-model="colorChoice" :options="COLOR_OPTIONS" name="color" legend="Primary color">
+            <RadioGroup v-model="colorChoice" :options="COLOR_OPTIONS" legend="Primary color" name="color">
               <template #option="{ option }">
                 <template v-if="option === 'default'">default</template>
                 <!-- The color fills the chip, labeled with its code. -->
@@ -153,7 +162,12 @@ onBeforeUnmount(() => unmounts.forEach((unmount) => unmount()))
           <!-- The stats live in the column headers, so their switch sits at the start of that row. -->
           <div class="head sticky corner">
             <label class="switch">
-              <input v-model="controls.stats" type="checkbox" role="switch" :aria-describedby="`stats-date-${group.kind}`">
+              <input
+                v-model="controls.stats"
+                role="switch"
+                type="checkbox"
+                :aria-describedby="`stats-date-${group.kind}`"
+              >
               stats
             </label>
             <span :id="`stats-date-${group.kind}`" class="stats-date" title="npm data; downloads cover the last 7 days">(as of {{ npmFetchedAt }})</span>
@@ -169,8 +183,8 @@ onBeforeUnmount(() => unmounts.forEach((unmount) => unmount()))
 
             <div class="line meta">
               <span>
-                <span v-if="status.errors[lib.id]" class="error" :title="status.errors[lib.id]">failed to load</span>
-                <template v-else>{{ status.versions[lib.id] ?? '…' }}</template>
+                <span v-if="errors[lib.id]" class="error" :title="errors[lib.id]">failed to load</span>
+                <template v-else>{{ versions[lib.id] ?? '…' }}</template>
                 <span
                   v-if="controls.stats && release(lib)"
                   :class="{ stale: release(lib)!.stale }"
@@ -182,8 +196,8 @@ onBeforeUnmount(() => unmounts.forEach((unmount) => unmount()))
                 <a
                   v-if="lib.package"
                   :href="`https://npmx.dev/package/${lib.package}`"
-                  target="_blank"
                   rel="noopener"
+                  target="_blank"
                   :title="`${lib.package} on npmx.dev (opens in a new tab)`"
                   :aria-label="`${lib.package} on npmx.dev (opens in a new tab)`"
                 >
@@ -192,8 +206,8 @@ onBeforeUnmount(() => unmounts.forEach((unmount) => unmount()))
                 <a
                   v-if="github(lib)"
                   :href="github(lib)!.url"
-                  target="_blank"
                   rel="noopener"
+                  target="_blank"
                   :title="`${github(lib)!.slug} on GitHub (opens in a new tab)`"
                   :aria-label="`${github(lib)!.slug} on GitHub (opens in a new tab)`"
                 >
@@ -211,16 +225,16 @@ onBeforeUnmount(() => unmounts.forEach((unmount) => unmount()))
                 <input
                   v-if="demo === 'button'"
                   v-model="controls.label"
-                  class="text-input"
-                  type="text"
-                  placeholder="label"
                   aria-label="Button label"
+                  class="text-input"
+                  placeholder="label"
+                  type="text"
                 >
                 <label class="switch">
                   <input
                     v-model="controls.disabled[demo]"
-                    type="checkbox"
                     role="switch"
+                    type="checkbox"
                     :aria-label="`${DEMO_LABELS[demo]} disabled`"
                   >
                   disabled
@@ -244,12 +258,12 @@ onBeforeUnmount(() => unmounts.forEach((unmount) => unmount()))
                     v-if="lib.components[demo].docs"
                     class="component-ref"
                     :href="lib.components[demo].docs"
-                    target="_blank"
                     rel="noopener"
+                    target="_blank"
                     :title="`${lib.name} ${lib.components[demo].name} docs (opens in a new tab)`"
                   >
                     {{ lib.components[demo].name }}
-                    <IconArrowUpRight class="component-ref-icon" aria-hidden="true" />
+                    <IconArrowUpRight aria-hidden="true" class="component-ref-icon" />
                   </a>
                   <span v-else class="component-ref">{{ lib.components[demo].name }}</span>
                 </template>
@@ -258,7 +272,7 @@ onBeforeUnmount(() => unmounts.forEach((unmount) => unmount()))
             </template>
           </template>
         </div>
-      </section>    </main>
+      </section> </main>
 
     <div class="overlays">
       <div

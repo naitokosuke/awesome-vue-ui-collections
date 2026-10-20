@@ -8,7 +8,9 @@ defineProps<{ demo: DemoKey }>()
 
 const overlay = inject(overlayKey)!
 const size = computed(() => ({ small: 'small', medium: 'default', large: 'large' })[controls.size])
-const density = computed(() => ({ small: 'compact', medium: 'comfortable', large: 'default' } as const)[controls.size])
+const density = computed(
+  () => (({ small: 'compact', medium: 'comfortable', large: 'default' }) as const)[controls.size],
+)
 
 /** Vuetify's fields don't use primary by default; only opt in when a color is chosen. */
 const themed = computed(() => (controls.color ? 'primary' : undefined))
@@ -63,7 +65,7 @@ const open = ref(false)
       <template v-else-if="demo === 'dialog'">
         <v-btn :size :disabled="controls.disabled[demo]" @click="open = true">Open dialog</v-btn>
         <v-dialog v-model="open" :attach="overlay" max-width="400" scroll-strategy="none">
-          <v-card title="Vuetify" text="This dialog is teleported into the Vuetify overlay host.">
+          <v-card text="This dialog is teleported into the Vuetify overlay host." title="Vuetify">
             <v-card-actions>
               <v-spacer />
               <v-btn @click="open = false">Close</v-btn>

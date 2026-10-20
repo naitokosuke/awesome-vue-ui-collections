@@ -39,15 +39,17 @@ function primaryVars(hex: string, dark: boolean) {
 export function mount(targets: MountTargets) {
   const stopColor = bindScopeVars(targets, () => (controls.color ? primaryVars(controls.color, controls.dark) : null))
   const unmount = mountLibrary(targets, Demos, (app) => {
-    app.use(createBootstrap({
-      // The registries plugin provides the modal manager, which toggles `modal-open` on <body>.
-      registries: false,
-      orchestrator: false,
-      components: {
-        // Render modals inside the overlay host and never lock <body> scroll / pad it.
-        BModal: { teleportTo: targets.overlay, bodyScrolling: true },
-      },
-    }))
+    app.use(
+      createBootstrap({
+        // The registries plugin provides the modal manager, which toggles `modal-open` on <body>.
+        registries: false,
+        orchestrator: false,
+        components: {
+          // Render modals inside the overlay host and never lock <body> scroll / pad it.
+          BModal: { teleportTo: targets.overlay, bodyScrolling: true },
+        },
+      }),
+    )
   })
   return () => {
     unmount()

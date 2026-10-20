@@ -1,13 +1,6 @@
 <script setup lang="ts">
 import { Button } from '@vizejs/ui/button'
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogOverlay,
-  DialogPortal,
-  DialogTitle,
-} from '@vizejs/ui/dialog'
+import { Dialog, DialogContent, DialogDescription, DialogOverlay, DialogPortal, DialogTitle } from '@vizejs/ui/dialog'
 import { Field, FieldLabel } from '@vizejs/ui/field'
 import { Input } from '@vizejs/ui/input'
 import { NativeSelect } from '@vizejs/ui/native-select'
@@ -48,7 +41,7 @@ const nameId = useId()
     </Button>
 
     <!-- Visible label like the other headless demos; Field wires it to the input. -->
-    <Field v-else-if="demo === 'input'" :id="nameId" name="name" class="field-group">
+    <Field v-else-if="demo === 'input'" :id="nameId" class="field-group" name="name">
       <FieldLabel class="field-label">Name</FieldLabel>
       <Input :id="nameId" v-model="name" class="field" placeholder="Name" :disabled="controls.disabled[demo]" />
     </Field>
@@ -56,8 +49,8 @@ const nameId = useId()
     <NativeSelect
       v-else-if="demo === 'select'"
       v-model="fruit"
-      class="field select"
       aria-label="Fruit"
+      class="field select"
       :options="fruits"
       :disabled="controls.disabled[demo]"
     />

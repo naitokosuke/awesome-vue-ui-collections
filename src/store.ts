@@ -49,8 +49,7 @@ export const controls = reactive<Controls>({
 watch(controls, (value) => {
   try {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(value))
-  }
-  catch {}
+  } catch {}
 })
 
 function restore(): Partial<Controls> {
@@ -59,8 +58,7 @@ function restore(): Partial<Controls> {
     // `disabled` used to be one boolean for every row.
     if (typeof saved.disabled !== 'object') delete saved.disabled
     return saved
-  }
-  catch {
+  } catch {
     return {}
   }
 }

@@ -53,11 +53,17 @@ const open = ref(false)
       <!-- Reka UI has no text input primitive; Label + native input is the intended pattern -->
       <div v-else-if="demo === 'input'" class="field">
         <Label class="label" :for="`${id}-name`">Name</Label>
-        <input :id="`${id}-name`" v-model="name" class="control input" placeholder="Name" :disabled="controls.disabled[demo]">
+        <input
+          :id="`${id}-name`"
+          v-model="name"
+          class="control input"
+          placeholder="Name"
+          :disabled="controls.disabled[demo]"
+        >
       </div>
 
       <SelectRoot v-else-if="demo === 'select'" v-model="fruit" :disabled="controls.disabled[demo]">
-        <SelectTrigger class="control trigger" aria-label="Fruit">
+        <SelectTrigger aria-label="Fruit" class="control trigger">
           <SelectValue placeholder="Fruit" />
           <SelectIcon class="chevron">▾</SelectIcon>
         </SelectTrigger>

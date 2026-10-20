@@ -7,7 +7,7 @@ import type { DemoKey } from '../types'
 defineProps<{ demo: DemoKey }>()
 
 const overlay = inject(overlayKey)!
-const size = computed(() => ({ small: 'sm', medium: 'md', large: 'lg' } as const)[controls.size])
+const size = computed(() => (({ small: 'sm', medium: 'md', large: 'lg' }) as const)[controls.size])
 
 const fruits = ['Apple', 'Banana', 'Cherry']
 const name = ref('')
@@ -23,7 +23,13 @@ const open = ref(false)
         {{ controls.label }}
       </UButton>
 
-      <UInput v-else-if="demo === 'input'" v-model="name" placeholder="Name" :size :disabled="controls.disabled[demo]" />
+      <UInput
+        v-else-if="demo === 'input'"
+        v-model="name"
+        placeholder="Name"
+        :size
+        :disabled="controls.disabled[demo]"
+      />
 
       <USelect
         v-else-if="demo === 'select'"
@@ -35,13 +41,19 @@ const open = ref(false)
         class="w-48"
       />
 
-      <USwitch v-else-if="demo === 'switch'" v-model="enabled" label="Notifications" :size :disabled="controls.disabled[demo]" />
+      <USwitch
+        v-else-if="demo === 'switch'"
+        v-model="enabled"
+        label="Notifications"
+        :size
+        :disabled="controls.disabled[demo]"
+      />
 
       <UModal
         v-else-if="demo === 'dialog'"
         v-model:open="open"
-        title="Nuxt UI"
         description="This dialog is teleported into the Nuxt UI overlay host."
+        title="Nuxt UI"
       >
         <UButton color="neutral" variant="outline" :size :disabled="controls.disabled[demo]">Open dialog</UButton>
         <template #footer>

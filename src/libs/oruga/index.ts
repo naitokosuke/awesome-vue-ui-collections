@@ -25,18 +25,20 @@ export function mount(targets: MountTargets) {
   // Inline on the scope elements, so it also beats ./dark.css in dark mode.
   const stopColor = bindScopeVars(targets, () => (controls.color ? primaryVars(controls.color) : null))
   const unmount = mountLibrary(targets, Demos, (app) => {
-    app.use(createOruga({
-      // Every teleported component (dialog, dropdown, …) goes to the overlay host.
-      teleportTarget: targets.overlay,
-      dialog: {
-        teleport: true,
-        // The dialog always toggles a scroll class on <body> (`o-scroll-clip`),
-        // and with blockScroll=false it also writes `body.style.top`. Keep
-        // blockScroll on and strip the class, so nothing touches <body>.
-        blockScroll: true,
-        transformClasses: (classes: string) => classes.replace(/\bo-scroll-clip\b/g, '').trim(),
-      },
-    }))
+    app.use(
+      createOruga({
+        // Every teleported component (dialog, dropdown, …) goes to the overlay host.
+        teleportTarget: targets.overlay,
+        dialog: {
+          teleport: true,
+          // The dialog always toggles a scroll class on <body> (`o-scroll-clip`),
+          // and with blockScroll=false it also writes `body.style.top`. Keep
+          // blockScroll on and strip the class, so nothing touches <body>.
+          blockScroll: true,
+          transformClasses: (classes: string) => classes.replace(/\bo-scroll-clip\b/g, '').trim(),
+        },
+      }),
+    )
   })
   return () => {
     unmount()

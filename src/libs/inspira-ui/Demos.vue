@@ -19,8 +19,10 @@ defineProps<{ demo: DemoKey }>()
 const overlay = inject(overlayKey)!
 
 // None of these components has a size prop: scale them through their `class` prop.
-const text = computed(() => ({ small: 'text-sm', medium: 'text-base', large: 'text-lg' } as const)[controls.size])
-const inputSize = computed(() => ({ small: 'h-8 text-xs', medium: 'h-10 text-sm', large: 'h-12 text-base' } as const)[controls.size])
+const text = computed(() => (({ small: 'text-sm', medium: 'text-base', large: 'text-lg' }) as const)[controls.size])
+const inputSize = computed(
+  () => (({ small: 'h-8 text-xs', medium: 'h-10 text-sm', large: 'h-12 text-base' }) as const)[controls.size],
+)
 // InteractiveHoverButton has no disabled styling; the attribute falls through to its <button>.
 const disabledLook = 'disabled:pointer-events-none disabled:opacity-50'
 
@@ -30,11 +32,21 @@ const open = ref(false)
 
 <template>
   <div v-if="demo === 'button'" class="demo">
-    <InteractiveHoverButton :text="controls.label" :class="[text, disabledLook].join(' ')" :disabled="controls.disabled[demo]" />
+    <InteractiveHoverButton
+      :text="controls.label"
+      :class="[text, disabledLook].join(' ')"
+      :disabled="controls.disabled[demo]"
+    />
   </div>
 
   <div v-else-if="demo === 'input'" class="demo">
-    <IInput v-model="name" placeholder="Name" container-class="w-full" :class="inputSize" :disabled="controls.disabled[demo]" />
+    <IInput
+      v-model="name"
+      container-class="w-full"
+      placeholder="Name"
+      :class="inputSize"
+      :disabled="controls.disabled[demo]"
+    />
   </div>
 
   <!--
@@ -56,7 +68,7 @@ const open = ref(false)
           <p class="text-muted-foreground mt-2 text-sm">This dialog is teleported into the Inspira UI overlay host.</p>
         </AnimatedModalContent>
         <AnimatedModalFooter>
-          <InteractiveHoverButton text="Close" class="text-sm" @click="closeModal" />
+          <InteractiveHoverButton class="text-sm" text="Close" @click="closeModal" />
         </AnimatedModalFooter>
       </AnimatedModalBody>
     </AnimatedModal>

@@ -7,7 +7,7 @@ import type { DemoKey } from '../types'
 defineProps<{ demo: DemoKey }>()
 
 const overlay = inject(overlayKey)!
-const buttonSize = computed(() => ({ small: 'small', medium: 'normal', large: 'large' } as const)[controls.size])
+const buttonSize = computed(() => (({ small: 'small', medium: 'normal', large: 'large' }) as const)[controls.size])
 const fieldSize = computed(() => (controls.size === 'large' ? 'large' : 'normal'))
 const switchSize = computed(() => ({ small: '20px', medium: '26px', large: '32px' })[controls.size])
 
@@ -52,9 +52,9 @@ const open = ref(false)
       <van-button :size="buttonSize" :disabled="controls.disabled[demo]" @click="open = true">Open dialog</van-button>
       <van-dialog
         v-model:show="open"
-        title="Vant"
-        message="This dialog is teleported into the Vant overlay host."
         confirm-button-text="Close"
+        message="This dialog is teleported into the Vant overlay host."
+        title="Vant"
         :width="400"
         :teleport="overlay"
         :lock-scroll="false"

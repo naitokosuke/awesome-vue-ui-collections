@@ -40,8 +40,8 @@ const open = ref(false)
     <o-switch
       v-else-if="demo === 'switch'"
       v-model="enabled"
-      variant="primary"
       label="Notifications"
+      variant="primary"
       :size="controls.size"
       :disabled="controls.disabled[demo]"
     />
@@ -49,7 +49,7 @@ const open = ref(false)
     <template v-else-if="demo === 'dialog'">
       <o-button :size="controls.size" :disabled="controls.disabled[demo]" @click="open = true">Open dialog</o-button>
       <!-- teleport target and scroll handling come from createOruga() in index.ts -->
-      <o-dialog v-model:active="open" title="Oruga" max-width="400px">
+      <o-dialog v-model:active="open" max-width="400px" title="Oruga">
         This dialog is teleported into the Oruga overlay host.
         <template #footer>
           <o-button @click="open = false">Close</o-button>

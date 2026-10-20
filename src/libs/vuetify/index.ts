@@ -26,9 +26,7 @@ export function mount(targets: MountTargets) {
 
   // Push the shared primary color into both themes; `on-primary` is derived by Vuetify.
   const themes = vuetify.theme.themes.value
-  const defaults = Object.fromEntries(
-    Object.entries(themes).map(([name, { colors }]) => [name, { ...colors }]),
-  )
+  const defaults = Object.fromEntries(Object.entries(themes).map(([name, { colors }]) => [name, { ...colors }]))
   const stop = watchEffect(() => {
     for (const [name, { colors }] of Object.entries(themes)) {
       const original = defaults[name]!

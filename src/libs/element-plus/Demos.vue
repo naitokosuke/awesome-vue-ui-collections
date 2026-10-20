@@ -7,7 +7,7 @@ import type { DemoKey } from '../types'
 defineProps<{ demo: DemoKey }>()
 
 const overlay = inject(overlayKey)!
-const size = computed(() => ({ small: 'small', medium: 'default', large: 'large' } as const)[controls.size])
+const size = computed(() => (({ small: 'small', medium: 'default', large: 'large' }) as const)[controls.size])
 
 const fruits = ['Apple', 'Banana', 'Cherry']
 const name = ref('')

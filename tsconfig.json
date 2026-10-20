@@ -9,7 +9,7 @@
     "allowImportingTsExtensions": true,
     "skipLibCheck": true,
     "isolatedModules": true,
-    "types": ["vite/client", "node", "unplugin-icons/types/vue"]
+    "types": ["vite-plus/client", "node", "unplugin-icons/types/vue"]
   },
   "include": ["src/**/*.ts", "src/**/*.vue", "build/**/*.ts", "vite.config.ts"]
 }

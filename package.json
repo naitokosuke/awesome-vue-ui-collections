@@ -2,12 +2,6 @@
   "name": "awesome-vue-ui-collections",
   "private": true,
   "type": "module",
-  "scripts": {
-    "dev": "vite",
-    "typecheck": "vize check",
-    "build": "vize check && vite build",
-    "preview": "vite preview"
-  },
   "dependencies": {
     "@arco-design/web-vue": "^2.58.0",
     "@astryx-vue/core": "^0.2.5",
@@ -43,12 +37,13 @@
   "devDependencies": {
     "@iconify-json/lucide": "^1.2.145",
     "@types/node": "^26.6.5",
-    "@vizejs/vite-plugin": "^0.491.0",
+    "@vizejs/vite-plugin": "0.492.0",
     "lightningcss": "^1.33.0",
     "shadcn-vue": "^2.8.2",
     "typescript": "^7.0.2",
     "unplugin-icons": "^24.0.0",
-    "vite": "^8.3.4",
-    "vize": "^0.491.0"
+    "vite": "catalog:",
+    "vite-plus": "catalog:",
+    "vize": "0.492.0"
   }
 }

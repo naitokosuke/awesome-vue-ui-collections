@@ -9,15 +9,15 @@ import SpecularButton from './ui/SpecularButton.vue'
 
 defineProps<{ demo: DemoKey }>()
 
-const size = computed(() => ({ small: 'sm', medium: 'md', large: 'lg' } as const)[controls.size])
+const size = computed(() => (({ small: 'sm', medium: 'md', large: 'lg' }) as const)[controls.size])
 
 // Vue Bits is designed on dark backgrounds; in light mode the colors are inverted to stay readable.
-const button = computed(() => (controls.dark
-  ? {}
-  : { textColor: '#18181b', lineColor: '#18181b', baseColor: '#a1a1aa' }))
-const wheel = computed(() => (controls.dark
-  ? { textColor: '#71717a', activeColor: '#fafafa' }
-  : { textColor: '#a1a1aa', activeColor: '#18181b' }))
+const button = computed(() =>
+  controls.dark ? {} : { textColor: '#18181b', lineColor: '#18181b', baseColor: '#a1a1aa' },
+)
+const wheel = computed(() =>
+  controls.dark ? { textColor: '#71717a', activeColor: '#fafafa' } : { textColor: '#a1a1aa', activeColor: '#18181b' },
+)
 
 const fruits = ['Apple', 'Banana', 'Cherry']
 const name = ref('')
@@ -32,9 +32,9 @@ const name = ref('')
   <div v-else-if="demo === 'input'" class="demo">
     <CurvedInput
       :value="name"
-      type="text"
-      placeholder="Name"
       aria-label="Name"
+      placeholder="Name"
+      type="text"
       :theme="controls.dark ? 'dark' : 'light'"
       width="100%"
       :height="44"
