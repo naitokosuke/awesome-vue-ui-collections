@@ -37,13 +37,13 @@
   "devDependencies": {
     "@iconify-json/lucide": "^1.2.145",
     "@types/node": "^26.6.5",
-    "@vizejs/vite-plugin": "0.492.0",
+    "@vizejs/vite-plugin": "0.501.0",
     "lightningcss": "^1.33.0",
     "shadcn-vue": "^2.8.2",
     "typescript": "^7.0.2",
     "unplugin-icons": "^24.0.0",
     "vite": "catalog:",
     "vite-plus": "catalog:",
-    "vize": "0.492.0"
+    "vize": "0.501.0"
   }
 }
