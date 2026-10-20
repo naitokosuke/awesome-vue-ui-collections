@@ -12,7 +12,7 @@ export const KINDS = ['styled', 'copy-paste', 'headless', 'fancy'] as const
 export type Kind = (typeof KINDS)[number]
 
 export interface MountTargets {
-  /** One cell per demo row; the library teleports each demo into its cell. */
+  /** One cell per demo row; the library mounts one app into each cell. */
   cells: Record<DemoKey, HTMLElement>
   /** Where the library should render dialogs and popups, inside its CSS scope. */
   overlay: HTMLElement

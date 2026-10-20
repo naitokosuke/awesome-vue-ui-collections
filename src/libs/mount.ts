@@ -1,4 +1,4 @@
-import { type App, type Component, createApp, h, type InjectionKey, Teleport, watchEffect } from 'vue'
+import { type App, type Component, createApp, type InjectionKey, watchEffect } from 'vue'
 import { DEMOS, type MountTargets } from './types'
 
 export const overlayKey: InjectionKey<HTMLElement> = Symbol('overlay')
@@ -6,20 +6,31 @@ export const overlayKey: InjectionKey<HTMLElement> = Symbol('overlay')
 let appCount = 0
 
 /**
- * Creates an isolated Vue app for one UI library.
- * Plugins installed via `install` stay inside this app, and each demo is
- * teleported into its grid cell so all libraries line up row by row.
+ * Creates one isolated Vue app per demo cell of a UI library.
+ * Plugins installed via `install` stay inside these apps (`install` runs once per cell),
+ * and each app mounts into a host element appended to its grid cell, after the shell's
+ * own content, so all libraries line up row by row.
  */
 export function mountLibrary(targets: MountTargets, Demos: Component, install: (app: App) => void) {
-  const app = createApp({
-    render: () => DEMOS.map((demo) => h(Teleport, { to: targets.cells[demo] }, h(Demos, { demo }))),
+  const unmounts = DEMOS.map((demo) => {
+    const app = createApp(Demos, { demo })
+    // Every app's useId() would otherwise start at `v-0`, so ids (label `for`, aria-*) collide across apps.
+    app.config.idPrefix = `app${appCount++}`
+    app.provide(overlayKey, targets.overlay)
+    install(app)
+    // `mount` replaces the container's content, so the shell's chip in the cell needs a host of its own.
+    const host = document.createElement('div')
+    host.className = 'demo-host'
+    // Layout-transparent, so the demo stays a flex item of the cell as before.
+    host.style.display = 'contents'
+    targets.cells[demo].append(host)
+    app.mount(host)
+    return () => {
+      app.unmount()
+      host.remove()
+    }
   })
-  // Every app's useId() would otherwise start at `v-0`, so ids (label `for`, aria-*) collide across libraries.
-  app.config.idPrefix = `app${appCount++}`
-  app.provide(overlayKey, targets.overlay)
-  install(app)
-  app.mount(document.createElement('div'))
-  return () => app.unmount()
+  return () => unmounts.forEach((unmount) => unmount())
 }
 
 /**

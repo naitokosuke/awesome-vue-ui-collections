@@ -141,7 +141,7 @@ onBeforeUnmount(() => unmounts.forEach((unmount) => unmount()))
         </div>
       </section>
 
-      <!-- One table per kind; both stay mounted (v-show) so every library keeps its teleport targets. -->
+      <!-- One table per kind; both stay mounted (v-show) so every library keeps its mount targets. -->
       <section
         v-for="group in groups"
         v-show="controls.kind === group.kind"
@@ -253,7 +253,7 @@ onBeforeUnmount(() => unmounts.forEach((unmount) => unmount()))
                   </a>
                   <span v-else class="component-ref">{{ lib.components[demo].name }}</span>
                 </template>
-                <!-- The library's demo is teleported in after this. -->
+                <!-- The library's app for this cell is mounted after this. -->
               </div>
             </template>
           </template>
