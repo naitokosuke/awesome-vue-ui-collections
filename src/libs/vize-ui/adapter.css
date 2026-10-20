@@ -1,0 +1,41 @@
+/*
+ * Adapter-local CSS for Vize UI. This file is NOT listed in meta.cssMatch, so its
+ * selectors are written already scoped to `[data-lib="vize-ui"]`.
+ * The rules below are unlayered, so they win over Vize UI's `vize.*` layers.
+ */
+@layer vize.tokens, vize.ui, vize.preset, vize.policy;
+
+/* Vize UI's tokens, mapped onto the shared headless look (../headless-theme.css). */
+:where([data-lib='vize-ui']) [data-vize-theme] {
+  --vize-ui-color-canvas: var(--hl-bg);
+  --vize-ui-color-surface: var(--hl-bg);
+  --vize-ui-color-text: var(--hl-fg);
+  --vize-ui-color-text-muted: var(--hl-muted);
+  --vize-ui-color-border: var(--hl-border);
+  --vize-ui-color-accent: var(--hl-accent);
+  --vize-ui-color-accent-contrast: var(--hl-accent-fg);
+  --vize-ui-color-neutral: var(--hl-fg);
+  --vize-ui-color-neutral-contrast: var(--hl-bg);
+  --vize-ui-color-danger: var(--hl-danger);
+  --vize-ui-focus-ring-color: var(--hl-focus);
+  --vize-ui-radius-sm: var(--hl-radius);
+  --vize-ui-radius-md: var(--hl-radius);
+  --vize-ui-radius-lg: var(--hl-radius);
+}
+
+/*
+ * The presets only switch light/dark through `prefers-color-scheme` (lightningcss'
+ * light-dark() fallback toggles these two variables). Drive them from the shell's dark
+ * toggle instead: meta.darkAttrs puts `data-theme="dark"` on the scope elements.
+ */
+:where([data-lib='vize-ui']:not([data-theme='dark'])) [data-vize-theme] {
+  --lightningcss-light: initial;
+  --lightningcss-dark: ;
+  color-scheme: light;
+}
+
+:where([data-lib='vize-ui'][data-theme='dark']) [data-vize-theme] {
+  --lightningcss-light: ;
+  --lightningcss-dark: initial;
+  color-scheme: dark;
+}

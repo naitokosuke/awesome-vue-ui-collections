@@ -1,0 +1,15 @@
+/*
+ * Workaround (not in meta.cssMatch on purpose): FieldDecorator measures its
+ * placeholder width with a span that is hard-coded to `<Teleport to="body">`,
+ * outside the `[data-lib="varlet"]` scope. Mirror Varlet's own hide rule for
+ * `.var-field-decorator__placeholder-text`, limited to those body children.
+ */
+body > .var-field-decorator__placeholder-text {
+  position: absolute;
+  top: -1000px;
+  z-index: -1000;
+  display: inline-block;
+  font-size: 16px;
+  opacity: 0;
+  pointer-events: none;
+}

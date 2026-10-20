@@ -1,0 +1,18 @@
+/*
+ * @oruga-ui/theme-oruga ships no dark theme, so remap its base tokens while the
+ * shell marks the scope as dark (see meta.darkAttrs). Component tokens derive
+ * from these, so they follow automatically.
+ */
+[data-lib='oruga'][data-theme='dark'] {
+  --oruga-font-color: #e8eaed;
+  --oruga-black: #e8eaed;
+  --oruga-white: #1b1e24;
+  --oruga-grey-lighter: #3a3f48;
+  --oruga-grey-lightest: #2a2e36;
+  --oruga-control-background-color: #22262d;
+  --oruga-control-border-color: #3a3f48;
+  --oruga-primary: #a6d13a;
+  --oruga-primary-invert: #1b1e24;
+  --oruga-primary-focus: #a6d13a40;
+  --oruga-primary-darker: #95bc34;
+}

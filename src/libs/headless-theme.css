@@ -1,0 +1,31 @@
+/*
+ * One shared, black-based look for every headless library, so the comparison shows
+ * differences in the primitives themselves, not in colors someone picked per library.
+ * Each headless adapter maps its own tokens onto these. Dark mode: `data-theme="dark"`
+ * on the scope element (every headless meta uses that as its darkAttrs).
+ */
+:where([data-lib='vize-ui'], [data-lib='reka-ui'], [data-lib='vuetify0']) {
+  --hl-fg: oklch(20% 0 0);
+  --hl-muted: oklch(52% 0 0);
+  --hl-bg: oklch(100% 0 0);
+  --hl-hover: oklch(96% 0 0);
+  --hl-border: oklch(86% 0 0);
+  --hl-off: oklch(86% 0 0);
+  --hl-focus: oklch(20% 0 0);
+  --hl-accent: oklch(20% 0 0);
+  --hl-accent-fg: oklch(100% 0 0);
+  --hl-danger: oklch(56% 0.2 25);
+  --hl-radius: 4px;
+}
+
+:where([data-lib='vize-ui'], [data-lib='reka-ui'], [data-lib='vuetify0'])[data-theme='dark'] {
+  --hl-fg: oklch(93% 0 0);
+  --hl-muted: oklch(66% 0 0);
+  --hl-bg: oklch(17% 0 0);
+  --hl-hover: oklch(23% 0 0);
+  --hl-border: oklch(34% 0 0);
+  --hl-off: oklch(34% 0 0);
+  --hl-focus: oklch(93% 0 0);
+  --hl-accent: oklch(93% 0 0);
+  --hl-accent-fg: oklch(17% 0 0);
+}
