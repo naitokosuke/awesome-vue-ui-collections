@@ -4,6 +4,7 @@ import ui from "@nuxt/ui/vite";
 import { defineConfig } from "@vizejs/vite-plugin/vite-plus";
 import Icons from "unplugin-icons/vite";
 import { lazyPlugins } from "vite-plus";
+import { naiveUiPreflight } from "./build/naive-ui-preflight.ts";
 import { npmStats } from "./build/npm-stats.ts";
 import { scopeLibraryCss } from "./build/scope-library-css.ts";
 import type { LibraryMeta } from "./src/libs/types.ts";
@@ -55,6 +56,7 @@ export default defineConfig({
     Icons({ compiler: "vue3" }),
     // Nuxt UI (Tailwind CSS v4 + auto-imported `U*` components). Its CSS is scoped like any other library.
     ui({ colorMode: false, router: false, dts: false, autoImport: false }),
+    naiveUiPreflight(),
     scopeLibraryCss(metas.map(({ id, cssMatch }) => ({ id, match: cssMatch }))),
     npmStats(metas.flatMap((meta) => meta.package ?? [])),
     {

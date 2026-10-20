@@ -9,3 +9,5 @@ declare module "virtual:npm-stats" {
   const stats: NpmStats;
   export default stats;
 }
+
+declare module "virtual:naive-ui-preflight.css";

@@ -32,7 +32,7 @@ const open = ref(false);
 </script>
 
 <template>
-  <!-- preflight-style-disabled: skip the runtime-injected global `body { ... }` rule -->
+  <!-- preflight-style-disabled: the runtime-injected `body { ... }` rule is imported scoped instead (virtual:naive-ui-preflight.css) -->
   <n-config-provider
     class="demo"
     :theme="controls.dark ? darkTheme : null"

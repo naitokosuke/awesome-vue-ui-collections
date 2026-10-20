@@ -1,3 +1,4 @@
+import "virtual:naive-ui-preflight.css";
 import naive from "naive-ui";
 import { mountLibrary } from "../mount";
 import type { MountTargets } from "../types";
