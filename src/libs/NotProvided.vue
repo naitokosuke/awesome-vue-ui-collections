@@ -2,8 +2,8 @@
 <script setup lang="ts">
 defineProps<{
   /** Optional note, e.g. what the library offers instead. */
-  note?: string
-}>()
+  note?: string;
+}>();
 </script>
 
 <template>

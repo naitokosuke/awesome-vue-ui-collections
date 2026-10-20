@@ -1,18 +1,18 @@
 <script setup lang="ts">
-import { inject, ref } from 'vue'
-import { controls } from '../../store'
-import { overlayKey } from '../mount'
-import type { DemoKey } from '../types'
+import { inject, ref } from "vue";
+import { controls } from "../../store";
+import { overlayKey } from "../mount";
+import type { DemoKey } from "../types";
 
-defineProps<{ demo: DemoKey }>()
+defineProps<{ demo: DemoKey }>();
 
-const overlay = inject(overlayKey)!
+const overlay = inject(overlayKey)!;
 
-const fruits = ['Apple', 'Banana', 'Cherry']
-const name = ref('')
-const fruit = ref<string>()
-const enabled = ref(true)
-const open = ref(false)
+const fruits = ["Apple", "Banana", "Cherry"];
+const name = ref("");
+const fruit = ref<string>();
+const enabled = ref(true);
+const open = ref(false);
 </script>
 
 <template>

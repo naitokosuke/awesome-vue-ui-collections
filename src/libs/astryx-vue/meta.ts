@@ -1,22 +1,22 @@
-import type { LibraryMeta } from '../types.ts'
+import type { LibraryMeta } from "../types.ts";
 
 // An unofficial Vue port of Meta's Astryx design system.
 export const meta: LibraryMeta = {
-  id: 'astryx-vue',
-  name: 'Astryx Vue',
-  package: '@astryx-vue/core',
-  kind: 'styled',
+  id: "astryx-vue",
+  name: "Astryx Vue",
+  package: "@astryx-vue/core",
+  kind: "styled",
   // Component structure (@astryx-vue/core) and the neutral theme (@astryx-vue/themes).
   components: {
-    button: { name: 'Button', docs: 'https://astryx-vue.pages.dev/en/components/button' },
-    input: { name: 'TextInput', docs: 'https://astryx-vue.pages.dev/en/components/text-input' },
-    select: { name: 'Selector', docs: 'https://astryx-vue.pages.dev/en/components/selector' },
-    switch: { name: 'Switch', docs: 'https://astryx-vue.pages.dev/en/components/switch' },
-    dialog: { name: 'Dialog', docs: 'https://astryx-vue.pages.dev/en/components/dialog' },
+    button: { name: "Button", docs: "https://astryx-vue.pages.dev/en/components/button" },
+    input: { name: "TextInput", docs: "https://astryx-vue.pages.dev/en/components/text-input" },
+    select: { name: "Selector", docs: "https://astryx-vue.pages.dev/en/components/selector" },
+    switch: { name: "Switch", docs: "https://astryx-vue.pages.dev/en/components/switch" },
+    dialog: { name: "Dialog", docs: "https://astryx-vue.pages.dev/en/components/dialog" },
   },
-  cssMatch: ['/node_modules/@astryx-vue/'],
+  cssMatch: ["/node_modules/@astryx-vue/"],
   // The theme's tokens are light-dark() pairs following color-scheme, which defaults to the OS
   // setting; these attributes pin it to the page's theme instead.
-  darkAttrs: { 'data-astryx-color-mode': 'dark' },
-  lightAttrs: { 'data-astryx-color-mode': 'light' },
-}
+  darkAttrs: { "data-astryx-color-mode": "dark" },
+  lightAttrs: { "data-astryx-color-mode": "light" },
+};

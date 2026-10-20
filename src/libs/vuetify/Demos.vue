@@ -1,25 +1,25 @@
 <script setup lang="ts">
-import { computed, inject, ref } from 'vue'
-import { controls } from '../../store'
-import { overlayKey } from '../mount'
-import type { DemoKey } from '../types'
+import { computed, inject, ref } from "vue";
+import { controls } from "../../store";
+import { overlayKey } from "../mount";
+import type { DemoKey } from "../types";
 
-defineProps<{ demo: DemoKey }>()
+defineProps<{ demo: DemoKey }>();
 
-const overlay = inject(overlayKey)!
-const size = computed(() => ({ small: 'small', medium: 'default', large: 'large' })[controls.size])
+const overlay = inject(overlayKey)!;
+const size = computed(() => ({ small: "small", medium: "default", large: "large" })[controls.size]);
 const density = computed(
-  () => (({ small: 'compact', medium: 'comfortable', large: 'default' }) as const)[controls.size],
-)
+  () => (({ small: "compact", medium: "comfortable", large: "default" }) as const)[controls.size],
+);
 
 /** Vuetify's fields don't use primary by default; only opt in when a color is chosen. */
-const themed = computed(() => (controls.color ? 'primary' : undefined))
+const themed = computed(() => (controls.color ? "primary" : undefined));
 
-const fruits = ['Apple', 'Banana', 'Cherry']
-const name = ref('')
-const fruit = ref<string | null>(null)
-const enabled = ref(true)
-const open = ref(false)
+const fruits = ["Apple", "Banana", "Cherry"];
+const name = ref("");
+const fruit = ref<string | null>(null);
+const enabled = ref(true);
+const open = ref(false);
 </script>
 
 <template>

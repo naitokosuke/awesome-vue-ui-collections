@@ -4,8 +4,8 @@
  * Scoped under [data-lib="shadcn-vue"] by build/scope-library-css.ts: `:root`/`body` become the
  * scope element, and a lone `.dark` also matches on it.
  */
-@import 'tailwindcss' source(none);
-@import 'tw-animate-css';
+@import "tailwindcss" source(none);
+@import "tw-animate-css";
 
 /* Only scan this adapter for utility classes. */
 @source "./";

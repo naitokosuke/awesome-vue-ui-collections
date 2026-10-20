@@ -1,41 +1,41 @@
 <script setup lang="ts">
-import { computed, onBeforeUnmount, onMounted } from 'vue'
-import IconArrowUpRight from '~icons/lucide/arrow-up-right'
-import IconGithub from '~icons/lucide/github'
-import IconPackage from '~icons/lucide/package'
-import { DEMO_LABELS, downloads, github, groups, KIND_LABELS, npmFetchedAt, release } from './board'
-import { libraries } from './libs'
-import { readableOn } from './libs/color'
-import { DEMOS, type DemoKey, type Library } from './libs/types'
-import RadioGroup from './RadioGroup.vue'
-import { type Color, COLORS, controls, SIZES } from './store'
-import { useLoadStatus } from './useLoadStatus'
+import { computed, onBeforeUnmount, onMounted } from "vue";
+import IconArrowUpRight from "~icons/lucide/arrow-up-right";
+import IconGithub from "~icons/lucide/github";
+import IconPackage from "~icons/lucide/package";
+import { DEMO_LABELS, downloads, github, groups, KIND_LABELS, npmFetchedAt, release } from "./board";
+import { libraries } from "./libs";
+import { readableOn } from "./libs/color";
+import { DEMOS, type DemoKey, type Library } from "./libs/types";
+import RadioGroup from "./RadioGroup.vue";
+import { type Color, COLORS, controls, SIZES } from "./store";
+import { useLoadStatus } from "./useLoadStatus";
 
-const SIZE_LABELS = { small: 'sm', medium: 'md', large: 'lg' } as const
+const SIZE_LABELS = { small: "sm", medium: "md", large: "lg" } as const;
 
 /** "default" (each library's own color) followed by the shared palette. */
 const COLOR_OPTIONS = [
-  'default',
+  "default",
   COLORS.black,
   COLORS.blue,
   COLORS.violet,
   COLORS.green,
   COLORS.orange,
   COLORS.rose,
-] as const
+] as const;
 
 const COLOR_NAMES = Object.fromEntries(Object.entries(COLORS).map(([name, value]) => [value, name])) as Record<
   Color,
   string
->
+>;
 
 /** The store keeps `null` for "default"; the radio group needs a string value for it. */
 const colorChoice = computed<(typeof COLOR_OPTIONS)[number]>({
-  get: () => controls.color ?? 'default',
+  get: () => controls.color ?? "default",
   set: (value) => {
-    controls.color = value === 'default' ? null : value
+    controls.color = value === "default" ? null : value;
   },
-})
+});
 
 /**
  * Minimum height of each demo row: the tallest any library gets at any size (measured at
@@ -48,55 +48,55 @@ const ROW_HEIGHTS: Record<DemoKey, number> = {
   select: 88,
   switch: 88,
   dialog: 88,
-}
+};
 
-const { versions, errors } = useLoadStatus()
+const { versions, errors } = useLoadStatus();
 
-const cells: Record<string, Partial<Record<DemoKey, HTMLElement>>> = {}
-const overlays: Record<string, HTMLElement> = {}
-const unmounts: (() => void)[] = []
+const cells: Record<string, Partial<Record<DemoKey, HTMLElement>>> = {};
+const overlays: Record<string, HTMLElement> = {};
+const unmounts: (() => void)[] = [];
 
 function scopeAttrs(lib: Library) {
-  return { 'data-lib': lib.id, ...(controls.dark ? lib.darkAttrs : lib.lightAttrs) }
+  return { "data-lib": lib.id, ...(controls.dark ? lib.darkAttrs : lib.lightAttrs) };
 }
 
 function setCell(libId: string, demo: DemoKey, el: unknown) {
-  if (el instanceof HTMLElement) (cells[libId] ??= {})[demo] = el
+  if (el instanceof HTMLElement) (cells[libId] ??= {})[demo] = el;
 }
 
 function setOverlay(libId: string, el: unknown) {
-  if (el instanceof HTMLElement) overlays[libId] = el
+  if (el instanceof HTMLElement) overlays[libId] = el;
 }
 
 onMounted(() => {
-  if (!groups.some((group) => group.kind === controls.kind)) controls.kind = groups[0]!.kind
+  if (!groups.some((group) => group.kind === controls.kind)) controls.kind = groups[0]!.kind;
 
   for (const lib of libraries) {
     if (!lib.load) {
       // Stats only: the version shown is npm's latest.
-      const latest = release(lib)?.latest
-      if (latest) versions.value[lib.id] = latest
-      continue
+      const latest = release(lib)?.latest;
+      if (latest) versions.value[lib.id] = latest;
+      continue;
     }
     lib
       .load()
       .then((mod) => {
-        versions.value[lib.id] = mod.version
+        versions.value[lib.id] = mod.version;
         unmounts.push(
           mod.mount({
             cells: cells[lib.id] as Record<DemoKey, HTMLElement>,
             overlay: overlays[lib.id]!,
           }),
-        )
+        );
       })
       .catch((error: unknown) => {
-        errors.value[lib.id] = String(error)
-        console.error(`[${lib.id}]`, error)
-      })
+        errors.value[lib.id] = String(error);
+        console.error(`[${lib.id}]`, error);
+      });
   }
-})
+});
 
-onBeforeUnmount(() => unmounts.forEach((unmount) => unmount()))
+onBeforeUnmount(() => unmounts.forEach((unmount) => unmount()));
 </script>
 
 <template>
@@ -177,14 +177,14 @@ onBeforeUnmount(() => unmounts.forEach((unmount) => unmount()))
             <div class="line">
               <span class="name">{{ lib.name }}</span>
               <span v-if="controls.stats" class="muted" :title="`npm downloads, last 7 days as of ${npmFetchedAt}`">
-                {{ downloads(lib)?.label ?? '—' }} / week
+                {{ downloads(lib)?.label ?? "—" }} / week
               </span>
             </div>
 
             <div class="line meta">
               <span>
                 <span v-if="errors[lib.id]" class="error" :title="errors[lib.id]">failed to load</span>
-                <template v-else>{{ versions[lib.id] ?? '…' }}</template>
+                <template v-else>{{ versions[lib.id] ?? "…" }}</template>
                 <span
                   v-if="controls.stats && release(lib)"
                   :class="{ stale: release(lib)!.stale }"
@@ -243,7 +243,7 @@ onBeforeUnmount(() => unmounts.forEach((unmount) => unmount()))
             </div>
             <template v-for="lib in group.libraries" :key="lib.id">
               <div v-if="lib.withoutDemos" class="cell empty" :style="{ minBlockSize: `${ROW_HEIGHTS[demo]}px` }">
-                {{ demo === DEMOS[0] ? `— ${lib.withoutDemos}` : '—' }}
+                {{ demo === DEMOS[0] ? `— ${lib.withoutDemos}` : "—" }}
               </div>
               <div
                 v-else

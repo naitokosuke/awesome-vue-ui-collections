@@ -1,22 +1,22 @@
 <script setup lang="ts">
-import { computed, inject, ref } from 'vue'
-import { controls } from '../../store'
-import { overlayKey } from '../mount'
-import type { DemoKey } from '../types'
+import { computed, inject, ref } from "vue";
+import { controls } from "../../store";
+import { overlayKey } from "../mount";
+import type { DemoKey } from "../types";
 
-defineProps<{ demo: DemoKey }>()
+defineProps<{ demo: DemoKey }>();
 
-const overlay = inject(overlayKey)!
-const buttonSize = computed(() => (({ small: 'small', medium: 'normal', large: 'large' }) as const)[controls.size])
-const fieldSize = computed(() => (controls.size === 'large' ? 'large' : 'normal'))
-const switchSize = computed(() => ({ small: '20px', medium: '26px', large: '32px' })[controls.size])
+const overlay = inject(overlayKey)!;
+const buttonSize = computed(() => (({ small: "small", medium: "normal", large: "large" }) as const)[controls.size]);
+const fieldSize = computed(() => (controls.size === "large" ? "large" : "normal"));
+const switchSize = computed(() => ({ small: "20px", medium: "26px", large: "32px" })[controls.size]);
 
 // Vant is a mobile library without a Select; DropdownMenu is its closest equivalent.
-const fruits = ['Apple', 'Banana', 'Cherry'].map((text) => ({ text, value: text }))
-const name = ref('')
-const fruit = ref<string>()
-const enabled = ref(true)
-const open = ref(false)
+const fruits = ["Apple", "Banana", "Cherry"].map((text) => ({ text, value: text }));
+const name = ref("");
+const fruit = ref<string>();
+const enabled = ref(true);
+const open = ref(false);
 </script>
 
 <template>

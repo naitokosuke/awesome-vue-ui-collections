@@ -4,8 +4,8 @@
  * Scoped under [data-lib="inspira-ui"] by build/scope-library-css.ts: `:root`/`html`/`body` become the
  * scope element, and a lone `.dark` / `html.dark` also matches on it.
  */
-@import 'tailwindcss' source(none);
-@import 'tw-animate-css';
+@import "tailwindcss" source(none);
+@import "tw-animate-css";
 
 /* Only scan this adapter for utility classes. */
 @source "./";

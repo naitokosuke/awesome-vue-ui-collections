@@ -1,5 +1,5 @@
-export const DEMOS = ['button', 'input', 'select', 'switch', 'dialog'] as const
-export type DemoKey = (typeof DEMOS)[number]
+export const DEMOS = ["button", "input", "select", "switch", "dialog"] as const;
+export type DemoKey = (typeof DEMOS)[number];
 
 /**
  * How a library reaches your project, in tab order:
@@ -8,53 +8,53 @@ export type DemoKey = (typeof DEMOS)[number]
  * unstyled, accessible primitives and leaves the styling to you; `fancy` is copied in like
  * copy-paste but is animated, effect-first components (most rows have no counterpart).
  */
-export const KINDS = ['styled', 'copy-paste', 'headless', 'fancy'] as const
-export type Kind = (typeof KINDS)[number]
+export const KINDS = ["styled", "copy-paste", "headless", "fancy"] as const;
+export type Kind = (typeof KINDS)[number];
 
 export interface MountTargets {
   /** One cell per demo row; the library mounts one app into each cell. */
-  cells: Record<DemoKey, HTMLElement>
+  cells: Record<DemoKey, HTMLElement>;
   /** Where the library should render dialogs and popups, inside its CSS scope. */
-  overlay: HTMLElement
+  overlay: HTMLElement;
 }
 
 /** The library's own component behind one demo row, as its docs name it. */
 export interface ComponentRef {
   /** e.g. `VTextField`, `QToggle`; for a plain element, how it's built (`native <button>`). */
-  name: string
+  name: string;
   /** The component's docs page; absent when there is none (e.g. a native element). */
-  docs?: string
+  docs?: string;
 }
 
 /** Static info about a library. Must not import the library itself (read by vite.config). */
 export interface LibraryMeta {
   /** Directory name under src/libs and value of `data-lib`. */
-  id: string
-  name: string
+  id: string;
+  name: string;
   /** npm package linked from the column header and used for npm stats; absent when it isn't on npm. */
-  package?: string
+  package?: string;
   /** Which tab the library is in; see KINDS. */
-  kind: Kind
+  kind: Kind;
   /** Path fragments of CSS files to scope under `[data-lib="<id>"]`. */
-  cssMatch: string[]
+  cssMatch: string[];
   /** Attributes set on the library's scope elements while dark mode is on. */
-  darkAttrs?: Record<string, string>
+  darkAttrs?: Record<string, string>;
   /** Attributes set while dark mode is off, for libraries that otherwise follow the OS setting. */
-  lightAttrs?: Record<string, string>
+  lightAttrs?: Record<string, string>;
   /** GitHub `owner/repo`, when the package's npm `repository` field is missing or outdated. */
-  repository?: string
+  repository?: string;
   /** What each demo row shows in this library; rows it has no component for are left out. */
-  components?: Partial<Record<DemoKey, ComponentRef>>
+  components?: Partial<Record<DemoKey, ComponentRef>>;
   /** Why the library has no demos; it's then listed with npm stats only (and has no index.ts). */
-  withoutDemos?: string
+  withoutDemos?: string;
 }
 
 export interface LibraryModule {
-  version: string
-  mount: (targets: MountTargets) => () => void
+  version: string;
+  mount: (targets: MountTargets) => () => void;
 }
 
 export interface Library extends LibraryMeta {
   /** Null for a stats-only library (`withoutDemos`). */
-  load: (() => Promise<LibraryModule>) | null
+  load: (() => Promise<LibraryModule>) | null;
 }

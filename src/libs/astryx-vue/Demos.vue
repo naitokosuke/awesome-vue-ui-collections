@@ -1,22 +1,22 @@
 <script setup lang="ts">
-import { Button } from '@astryx-vue/core/Button'
-import { Dialog, DialogHeader } from '@astryx-vue/core/Dialog'
-import { Selector } from '@astryx-vue/core/Selector'
-import { Switch } from '@astryx-vue/core/Switch'
-import { TextInput } from '@astryx-vue/core/TextInput'
-import { computed, ref } from 'vue'
-import { controls } from '../../store'
-import type { DemoKey } from '../types'
+import { Button } from "@astryx-vue/core/Button";
+import { Dialog, DialogHeader } from "@astryx-vue/core/Dialog";
+import { Selector } from "@astryx-vue/core/Selector";
+import { Switch } from "@astryx-vue/core/Switch";
+import { TextInput } from "@astryx-vue/core/TextInput";
+import { computed, ref } from "vue";
+import { controls } from "../../store";
+import type { DemoKey } from "../types";
 
-defineProps<{ demo: DemoKey }>()
+defineProps<{ demo: DemoKey }>();
 
-const size = computed(() => (({ small: 'sm', medium: 'md', large: 'lg' }) as const)[controls.size])
+const size = computed(() => (({ small: "sm", medium: "md", large: "lg" }) as const)[controls.size]);
 
-const fruits = ['Apple', 'Banana', 'Cherry']
-const name = ref('')
-const fruit = ref<string | null>(null)
-const enabled = ref(true)
-const open = ref(false)
+const fruits = ["Apple", "Banana", "Cherry"];
+const name = ref("");
+const fruit = ref<string | null>(null);
+const enabled = ref(true);
+const open = ref(false);
 </script>
 
 <template>

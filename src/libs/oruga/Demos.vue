@@ -1,16 +1,16 @@
 <script setup lang="ts">
-import { OButton, ODialog, OInput, OSelect, OSwitch } from '@oruga-ui/oruga-next'
-import { ref } from 'vue'
-import { controls } from '../../store'
-import type { DemoKey } from '../types'
+import { OButton, ODialog, OInput, OSelect, OSwitch } from "@oruga-ui/oruga-next";
+import { ref } from "vue";
+import { controls } from "../../store";
+import type { DemoKey } from "../types";
 
-defineProps<{ demo: DemoKey }>()
+defineProps<{ demo: DemoKey }>();
 
-const fruits = ['Apple', 'Banana', 'Cherry']
-const name = ref('')
-const fruit = ref<string>()
-const enabled = ref(true)
-const open = ref(false)
+const fruits = ["Apple", "Banana", "Cherry"];
+const name = ref("");
+const fruit = ref<string>();
+const enabled = ref(true);
+const open = ref(false);
 </script>
 
 <template>

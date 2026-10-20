@@ -1,32 +1,32 @@
-import '@astryx-vue/themes/neutral.css'
-import { controls } from '../../store'
-import { tint } from '../color'
-import { bindScopeVars, mountLibrary } from '../mount'
-import type { MountTargets } from '../types'
-import Demos from './Demos.vue'
+import "@astryx-vue/themes/neutral.css";
+import { controls } from "../../store";
+import { tint } from "../color";
+import { bindScopeVars, mountLibrary } from "../mount";
+import type { MountTargets } from "../types";
+import Demos from "./Demos.vue";
 
-export { version } from '@astryx-vue/core/package.json'
+export { version } from "@astryx-vue/core/package.json";
 
 /** The neutral theme's accent tokens (primary button, switch, focus ring) as one color. */
 function accentVars(hex: string) {
   return {
-    '--astryx-color-accent': hex,
-    '--astryx-color-on-accent': '#ffffff',
-    '--astryx-color-text-accent': hex,
-    '--astryx-color-icon-accent': hex,
-    '--astryx-color-accent-muted': tint(hex, 0.9),
-  }
+    "--astryx-color-accent": hex,
+    "--astryx-color-on-accent": "#ffffff",
+    "--astryx-color-text-accent": hex,
+    "--astryx-color-icon-accent": hex,
+    "--astryx-color-accent-muted": tint(hex, 0.9),
+  };
 }
 
 export function mount(targets: MountTargets) {
-  const stopColor = bindScopeVars(targets, () => (controls.color ? accentVars(controls.color) : null))
-  const stopAdopting = adoptListboxes(targets)
-  const unmount = mountLibrary(targets, Demos, () => {})
+  const stopColor = bindScopeVars(targets, () => (controls.color ? accentVars(controls.color) : null));
+  const stopAdopting = adoptListboxes(targets);
+  const unmount = mountLibrary(targets, Demos, () => {});
   return () => {
-    unmount()
-    stopAdopting()
-    stopColor()
-  }
+    unmount();
+    stopAdopting();
+    stopColor();
+  };
 }
 
 /**
@@ -36,9 +36,9 @@ export function mount(targets: MountTargets) {
  */
 function adoptListboxes(targets: MountTargets) {
   const adopt = (node: Node) => {
-    if (node instanceof HTMLElement && node.classList.contains('astryx-selector-listbox')) targets.overlay.append(node)
-  }
-  const observer = new MutationObserver((records) => records.forEach((record) => record.addedNodes.forEach(adopt)))
-  observer.observe(document.body, { childList: true })
-  return () => observer.disconnect()
+    if (node instanceof HTMLElement && node.classList.contains("astryx-selector-listbox")) targets.overlay.append(node);
+  };
+  const observer = new MutationObserver((records) => records.forEach((record) => record.addedNodes.forEach(adopt)));
+  observer.observe(document.body, { childList: true });
+  return () => observer.disconnect();
 }

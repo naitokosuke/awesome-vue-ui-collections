@@ -30,8 +30,8 @@
   --avc-color-danger: oklch(50% 0.19 25);
 
   /* ---- type ---- */
-  --avc-font-sans: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
-  --avc-font-mono: ui-monospace, 'SF Mono', Menlo, Consolas, monospace;
+  --avc-font-sans: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --avc-font-mono: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
   /* Three steps only. sm is the floor: meta, options, chips. md: controls and body. lg: headings. */
   --avc-text-sm: 0.875rem;
   --avc-text-md: 1rem;

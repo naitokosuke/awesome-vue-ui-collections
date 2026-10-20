@@ -1,33 +1,33 @@
 <script setup lang="ts">
-import { computed, inject, ref } from 'vue'
-import { controls } from '../../store'
-import NotProvided from '../NotProvided.vue'
-import { overlayKey } from '../mount'
-import type { DemoKey } from '../types'
+import { computed, inject, ref } from "vue";
+import { controls } from "../../store";
+import NotProvided from "../NotProvided.vue";
+import { overlayKey } from "../mount";
+import type { DemoKey } from "../types";
 import {
   AnimatedModal,
   AnimatedModalBody,
   AnimatedModalContent,
   AnimatedModalFooter,
   AnimatedModalTrigger,
-} from './ui/animated-modal'
-import { IInput } from './ui/input'
-import { InteractiveHoverButton } from './ui/interactive-hover-button'
+} from "./ui/animated-modal";
+import { IInput } from "./ui/input";
+import { InteractiveHoverButton } from "./ui/interactive-hover-button";
 
-defineProps<{ demo: DemoKey }>()
+defineProps<{ demo: DemoKey }>();
 
-const overlay = inject(overlayKey)!
+const overlay = inject(overlayKey)!;
 
 // None of these components has a size prop: scale them through their `class` prop.
-const text = computed(() => (({ small: 'text-sm', medium: 'text-base', large: 'text-lg' }) as const)[controls.size])
+const text = computed(() => (({ small: "text-sm", medium: "text-base", large: "text-lg" }) as const)[controls.size]);
 const inputSize = computed(
-  () => (({ small: 'h-8 text-xs', medium: 'h-10 text-sm', large: 'h-12 text-base' }) as const)[controls.size],
-)
+  () => (({ small: "h-8 text-xs", medium: "h-10 text-sm", large: "h-12 text-base" }) as const)[controls.size],
+);
 // InteractiveHoverButton has no disabled styling; the attribute falls through to its <button>.
-const disabledLook = 'disabled:pointer-events-none disabled:opacity-50'
+const disabledLook = "disabled:pointer-events-none disabled:opacity-50";
 
-const name = ref('')
-const open = ref(false)
+const name = ref("");
+const open = ref(false);
 </script>
 
 <template>

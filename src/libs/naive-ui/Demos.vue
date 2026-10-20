@@ -1,19 +1,19 @@
 <script setup lang="ts">
-import { darkTheme, type GlobalThemeOverrides } from 'naive-ui'
-import { computed, inject, ref } from 'vue'
-import { controls } from '../../store'
-import { shade, tint } from '../color'
-import { overlayKey } from '../mount'
-import type { DemoKey } from '../types'
+import { darkTheme, type GlobalThemeOverrides } from "naive-ui";
+import { computed, inject, ref } from "vue";
+import { controls } from "../../store";
+import { shade, tint } from "../color";
+import { overlayKey } from "../mount";
+import type { DemoKey } from "../types";
 
-defineProps<{ demo: DemoKey }>()
+defineProps<{ demo: DemoKey }>();
 
-const overlay = inject(overlayKey)!
+const overlay = inject(overlayKey)!;
 
 // Naive's dark theme pairs a light primary with dark text, so lighten the color there.
 const themeOverrides = computed<GlobalThemeOverrides | null>(() => {
-  if (!controls.color) return null
-  const primary = controls.dark ? tint(controls.color, 0.35) : controls.color
+  if (!controls.color) return null;
+  const primary = controls.dark ? tint(controls.color, 0.35) : controls.color;
   return {
     common: {
       primaryColor: primary,
@@ -21,14 +21,14 @@ const themeOverrides = computed<GlobalThemeOverrides | null>(() => {
       primaryColorPressed: shade(primary, 0.15),
       primaryColorSuppl: controls.dark ? shade(primary, 0.35) : tint(primary, 0.15),
     },
-  }
-})
+  };
+});
 
-const fruits = ['Apple', 'Banana', 'Cherry'].map((label) => ({ label, value: label }))
-const name = ref('')
-const fruit = ref<string | null>(null)
-const enabled = ref(true)
-const open = ref(false)
+const fruits = ["Apple", "Banana", "Cherry"].map((label) => ({ label, value: label }));
+const name = ref("");
+const fruit = ref<string | null>(null);
+const enabled = ref(true);
+const open = ref(false);
 </script>
 
 <template>

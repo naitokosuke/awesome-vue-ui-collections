@@ -1,26 +1,26 @@
 <script setup lang="ts">
-import { computed, ref } from 'vue'
-import { controls } from '../../store'
-import NotProvided from '../NotProvided.vue'
-import type { DemoKey } from '../types'
-import CurvedInput from './ui/CurvedInput.vue'
-import OptionWheel from './ui/OptionWheel.vue'
-import SpecularButton from './ui/SpecularButton.vue'
+import { computed, ref } from "vue";
+import { controls } from "../../store";
+import NotProvided from "../NotProvided.vue";
+import type { DemoKey } from "../types";
+import CurvedInput from "./ui/CurvedInput.vue";
+import OptionWheel from "./ui/OptionWheel.vue";
+import SpecularButton from "./ui/SpecularButton.vue";
 
-defineProps<{ demo: DemoKey }>()
+defineProps<{ demo: DemoKey }>();
 
-const size = computed(() => (({ small: 'sm', medium: 'md', large: 'lg' }) as const)[controls.size])
+const size = computed(() => (({ small: "sm", medium: "md", large: "lg" }) as const)[controls.size]);
 
 // Vue Bits is designed on dark backgrounds; in light mode the colors are inverted to stay readable.
 const button = computed(() =>
-  controls.dark ? {} : { textColor: '#18181b', lineColor: '#18181b', baseColor: '#a1a1aa' },
-)
+  controls.dark ? {} : { textColor: "#18181b", lineColor: "#18181b", baseColor: "#a1a1aa" },
+);
 const wheel = computed(() =>
-  controls.dark ? { textColor: '#71717a', activeColor: '#fafafa' } : { textColor: '#a1a1aa', activeColor: '#18181b' },
-)
+  controls.dark ? { textColor: "#71717a", activeColor: "#fafafa" } : { textColor: "#a1a1aa", activeColor: "#18181b" },
+);
 
-const fruits = ['Apple', 'Banana', 'Cherry']
-const name = ref('')
+const fruits = ["Apple", "Banana", "Cherry"];
+const name = ref("");
 </script>
 
 <template>

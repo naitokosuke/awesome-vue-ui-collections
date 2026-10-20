@@ -1,21 +1,21 @@
 <script setup lang="ts">
-import type { GlobalConfigProvider } from 'tdesign-vue-next'
-import { inject, ref } from 'vue'
-import { controls } from '../../store'
-import { overlayKey } from '../mount'
-import type { DemoKey } from '../types'
+import type { GlobalConfigProvider } from "tdesign-vue-next";
+import { inject, ref } from "vue";
+import { controls } from "../../store";
+import { overlayKey } from "../mount";
+import type { DemoKey } from "../types";
 
-defineProps<{ demo: DemoKey }>()
+defineProps<{ demo: DemoKey }>();
 
-const overlay = inject(overlayKey)!
+const overlay = inject(overlayKey)!;
 // Global attach: popups and dialogs render into the overlay host instead of body.
-const globalConfig: GlobalConfigProvider = { attach: () => overlay }
+const globalConfig: GlobalConfigProvider = { attach: () => overlay };
 
-const fruits = ['Apple', 'Banana', 'Cherry'].map((label) => ({ label, value: label }))
-const name = ref('')
-const fruit = ref<string>()
-const enabled = ref(true)
-const open = ref(false)
+const fruits = ["Apple", "Banana", "Cherry"].map((label) => ({ label, value: label }));
+const name = ref("");
+const fruit = ref<string>();
+const enabled = ref(true);
+const open = ref(false);
 </script>
 
 <template>

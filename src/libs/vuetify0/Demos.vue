@@ -1,20 +1,20 @@
 <script setup lang="ts">
-import { Button, Dialog, Input, Select, Switch } from '@vuetify/v0'
-import { inject, ref, useId } from 'vue'
-import { controls } from '../../store'
-import { overlayKey } from '../mount'
-import type { DemoKey } from '../types'
+import { Button, Dialog, Input, Select, Switch } from "@vuetify/v0";
+import { inject, ref, useId } from "vue";
+import { controls } from "../../store";
+import { overlayKey } from "../mount";
+import type { DemoKey } from "../types";
 
-defineProps<{ demo: DemoKey }>()
+defineProps<{ demo: DemoKey }>();
 
-const overlay = inject(overlayKey)!
-const id = useId()
+const overlay = inject(overlayKey)!;
+const id = useId();
 
-const fruits = ['Apple', 'Banana', 'Cherry']
-const name = ref('')
-const fruit = ref<string>()
-const enabled = ref(true)
-const open = ref(false)
+const fruits = ["Apple", "Banana", "Cherry"];
+const name = ref("");
+const fruit = ref<string>();
+const enabled = ref(true);
+const open = ref(false);
 </script>
 
 <template>

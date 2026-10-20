@@ -6,7 +6,7 @@
 @layer vize.tokens, vize.ui, vize.preset, vize.policy;
 
 /* Vize UI's tokens, mapped onto the shared headless look (../headless-theme.css). */
-:where([data-lib='vize-ui']) [data-vize-theme] {
+:where([data-lib="vize-ui"]) [data-vize-theme] {
   --vize-ui-color-canvas: var(--hl-bg);
   --vize-ui-color-surface: var(--hl-bg);
   --vize-ui-color-text: var(--hl-fg);
@@ -28,13 +28,13 @@
  * light-dark() fallback toggles these two variables). Drive them from the shell's dark
  * toggle instead: meta.darkAttrs puts `data-theme="dark"` on the scope elements.
  */
-:where([data-lib='vize-ui']:not([data-theme='dark'])) [data-vize-theme] {
+:where([data-lib="vize-ui"]:not([data-theme="dark"])) [data-vize-theme] {
   --lightningcss-light: initial;
   --lightningcss-dark: ;
   color-scheme: light;
 }
 
-:where([data-lib='vize-ui'][data-theme='dark']) [data-vize-theme] {
+:where([data-lib="vize-ui"][data-theme="dark"]) [data-vize-theme] {
   --lightningcss-light: ;
   --lightningcss-dark: initial;
   color-scheme: dark;

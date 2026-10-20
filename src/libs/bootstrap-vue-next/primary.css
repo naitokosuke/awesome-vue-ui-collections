@@ -4,13 +4,13 @@
  * vars set by index.ts and fall back to Bootstrap's own values when they are unset.
  * `[data-bs-theme]` rules redeclare the theme vars, hence they are overridden there.
  */
-[data-lib='bootstrap-vue-next'] [data-bs-theme] {
+[data-lib="bootstrap-vue-next"] [data-bs-theme] {
   --bs-primary: var(--bvn-primary, #0d6efd);
   --bs-primary-rgb: var(--bvn-primary-rgb, 13, 110, 253);
   --bs-focus-ring-color: var(--bvn-focus-ring, rgba(13, 110, 253, 0.25));
 }
 
-[data-lib='bootstrap-vue-next'] [data-bs-theme='light'] {
+[data-lib="bootstrap-vue-next"] [data-bs-theme="light"] {
   --bs-primary-text-emphasis: var(--bvn-primary-text-emphasis, #052c65);
   --bs-primary-bg-subtle: var(--bvn-primary-bg-subtle, #cfe2ff);
   --bs-primary-border-subtle: var(--bvn-primary-border-subtle, #9ec5fe);
@@ -20,7 +20,7 @@
   --bs-link-hover-color-rgb: var(--bvn-link-hover-rgb, 10, 88, 202);
 }
 
-[data-lib='bootstrap-vue-next'] [data-bs-theme='dark'] {
+[data-lib="bootstrap-vue-next"] [data-bs-theme="dark"] {
   --bs-primary-text-emphasis: var(--bvn-primary-text-emphasis, #6ea8fe);
   --bs-primary-bg-subtle: var(--bvn-primary-bg-subtle, #031633);
   --bs-primary-border-subtle: var(--bvn-primary-border-subtle, #084298);
@@ -30,7 +30,7 @@
   --bs-link-hover-color-rgb: var(--bvn-link-hover-rgb, 139, 185, 254);
 }
 
-[data-lib='bootstrap-vue-next'] .btn-primary {
+[data-lib="bootstrap-vue-next"] .btn-primary {
   --bs-btn-bg: var(--bvn-primary, #0d6efd);
   --bs-btn-border-color: var(--bvn-primary, #0d6efd);
   --bs-btn-hover-bg: var(--bvn-btn-hover-bg, #0b5ed7);
@@ -43,19 +43,19 @@
 }
 
 /* :where() keeps Bootstrap's specificity, so validation states (.is-valid:focus) still win. */
-:where([data-lib='bootstrap-vue-next']) .form-control:focus,
-:where([data-lib='bootstrap-vue-next']) .form-select:focus,
-:where([data-lib='bootstrap-vue-next']) .form-check-input:focus {
+:where([data-lib="bootstrap-vue-next"]) .form-control:focus,
+:where([data-lib="bootstrap-vue-next"]) .form-select:focus,
+:where([data-lib="bootstrap-vue-next"]) .form-check-input:focus {
   border-color: var(--bvn-focus-border, #86b7fe);
   box-shadow: 0 0 0 0.25rem var(--bvn-focus-ring, rgba(13, 110, 253, 0.25));
 }
 
-:where([data-lib='bootstrap-vue-next']) .form-check-input:checked {
+:where([data-lib="bootstrap-vue-next"]) .form-check-input:checked {
   background-color: var(--bvn-primary, #0d6efd);
   border-color: var(--bvn-primary, #0d6efd);
 }
 
-:where([data-lib='bootstrap-vue-next']) .form-switch .form-check-input:focus {
+:where([data-lib="bootstrap-vue-next"]) .form-switch .form-check-input:focus {
   --bs-form-switch-bg: var(
     --bvn-switch-focus-bg,
     url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='-4 -4 8 8'%3e%3ccircle r='3' fill='%2386b7fe'/%3e%3c/svg%3e")
@@ -63,10 +63,10 @@
 }
 
 /* Keep the white "on" thumb: the focus rule above would otherwise win over Bootstrap's :checked one. */
-:where([data-lib='bootstrap-vue-next']) .form-switch .form-check-input:checked {
+:where([data-lib="bootstrap-vue-next"]) .form-switch .form-check-input:checked {
   --bs-form-switch-bg: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='-4 -4 8 8'%3e%3ccircle r='3' fill='%23fff'/%3e%3c/svg%3e");
 }
 
-[data-lib='bootstrap-vue-next'] .btn-close {
+[data-lib="bootstrap-vue-next"] .btn-close {
   --bs-btn-close-focus-shadow: 0 0 0 0.25rem var(--bvn-focus-ring, rgba(13, 110, 253, 0.25));
 }

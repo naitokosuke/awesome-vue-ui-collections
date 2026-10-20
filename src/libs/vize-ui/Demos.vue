@@ -1,37 +1,37 @@
 <script setup lang="ts">
-import { Button } from '@vizejs/ui/button'
-import { Dialog, DialogContent, DialogDescription, DialogOverlay, DialogPortal, DialogTitle } from '@vizejs/ui/dialog'
-import { Field, FieldLabel } from '@vizejs/ui/field'
-import { Input } from '@vizejs/ui/input'
-import { NativeSelect } from '@vizejs/ui/native-select'
-import { Switch } from '@vizejs/ui/switch'
-import { computed, inject, ref, useId } from 'vue'
-import { controls } from '../../store'
-import { overlayKey } from '../mount'
-import type { DemoKey } from '../types'
+import { Button } from "@vizejs/ui/button";
+import { Dialog, DialogContent, DialogDescription, DialogOverlay, DialogPortal, DialogTitle } from "@vizejs/ui/dialog";
+import { Field, FieldLabel } from "@vizejs/ui/field";
+import { Input } from "@vizejs/ui/input";
+import { NativeSelect } from "@vizejs/ui/native-select";
+import { Switch } from "@vizejs/ui/switch";
+import { computed, inject, ref, useId } from "vue";
+import { controls } from "../../store";
+import { overlayKey } from "../mount";
+import type { DemoKey } from "../types";
 
-defineProps<{ demo: DemoKey }>()
+defineProps<{ demo: DemoKey }>();
 
-const overlay = inject(overlayKey)!
+const overlay = inject(overlayKey)!;
 
 // Theme scope attributes (see `themeScopeAttributes` in @vizejs/ui/theme-scope):
 // a preset plus the density scale, which drives control heights and spacing.
 const scope = computed(() => ({
-  'data-vize-theme': 'headless',
-  'data-vize-density': ({ small: 'compact', medium: undefined, large: 'comfortable' } as const)[controls.size],
-}))
+  "data-vize-theme": "headless",
+  "data-vize-density": ({ small: "compact", medium: undefined, large: "comfortable" } as const)[controls.size],
+}));
 
 const fruits = [
-  { value: '', label: 'Fruit', disabled: true },
-  ...['Apple', 'Banana', 'Cherry'].map((label) => ({ value: label, label })),
-]
-const name = ref('')
-const fruit = ref('')
-const enabled = ref(true)
-const open = ref(false)
-const switchLabel = useId()
+  { value: "", label: "Fruit", disabled: true },
+  ...["Apple", "Banana", "Cherry"].map((label) => ({ value: label, label })),
+];
+const name = ref("");
+const fruit = ref("");
+const enabled = ref(true);
+const open = ref(false);
+const switchLabel = useId();
 /** Field's label points at `id`; Input doesn't pick it up on its own, so both get it. */
-const nameId = useId()
+const nameId = useId();
 </script>
 
 <template>

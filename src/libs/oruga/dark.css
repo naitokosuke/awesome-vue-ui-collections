@@ -3,7 +3,7 @@
  * shell marks the scope as dark (see meta.darkAttrs). Component tokens derive
  * from these, so they follow automatically.
  */
-[data-lib='oruga'][data-theme='dark'] {
+[data-lib="oruga"][data-theme="dark"] {
   --oruga-font-color: #e8eaed;
   --oruga-black: #e8eaed;
   --oruga-white: #1b1e24;

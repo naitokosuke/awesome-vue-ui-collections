@@ -1,21 +1,21 @@
 <script setup lang="ts">
-import { ClosePopup, QBtn, QCard, QCardActions, QCardSection, QDialog, QInput, QSelect, QToggle } from 'quasar'
-import { computed, ref } from 'vue'
-import { controls } from '../../store'
-import type { DemoKey } from '../types'
+import { ClosePopup, QBtn, QCard, QCardActions, QCardSection, QDialog, QInput, QSelect, QToggle } from "quasar";
+import { computed, ref } from "vue";
+import { controls } from "../../store";
+import type { DemoKey } from "../types";
 
-defineProps<{ demo: DemoKey }>()
+defineProps<{ demo: DemoKey }>();
 
-const vClosePopup = ClosePopup
-const size = computed(() => ({ small: 'sm', medium: 'md', large: 'lg' })[controls.size])
+const vClosePopup = ClosePopup;
+const size = computed(() => ({ small: "sm", medium: "md", large: "lg" })[controls.size]);
 // QInput / QSelect only come in two heights
-const dense = computed(() => controls.size === 'small')
+const dense = computed(() => controls.size === "small");
 
-const fruits = ['Apple', 'Banana', 'Cherry']
-const name = ref('')
-const fruit = ref<string | null>(null)
-const enabled = ref(true)
-const open = ref(false)
+const fruits = ["Apple", "Banana", "Cherry"];
+const name = ref("");
+const fruit = ref<string | null>(null);
+const enabled = ref(true);
+const open = ref(false);
 </script>
 
 <template>

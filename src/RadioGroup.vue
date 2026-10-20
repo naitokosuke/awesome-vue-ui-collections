@@ -1,21 +1,21 @@
 <script setup lang="ts" generic="Option extends string">
-import { useId } from 'vue'
+import { useId } from "vue";
 
-const model = defineModel<Option>({ required: true })
+const model = defineModel<Option>({ required: true });
 
 defineProps<{
   /** At least two choices, or it isn't a choice. */
-  options: readonly [Option, Option, ...Option[]]
-  name: string
+  options: readonly [Option, Option, ...Option[]];
+  name: string;
   /** Accessible name of the group (rendered visually hidden). */
-  legend: string
-}>()
+  legend: string;
+}>();
 
 defineSlots<{
-  option?: (props: { option: Option }) => unknown
-}>()
+  option?: (props: { option: Option }) => unknown;
+}>();
 
-const idPrefix = useId()
+const idPrefix = useId();
 </script>
 
 <template>

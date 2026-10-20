@@ -1,10 +1,10 @@
 <script setup lang="ts">
-import { ConfigProvider } from 'reka-ui'
-import { computed, inject, ref, useId } from 'vue'
-import { controls } from '../../store'
-import { overlayKey } from '../mount'
-import type { DemoKey } from '../types'
-import { Button } from './ui/button'
+import { ConfigProvider } from "reka-ui";
+import { computed, inject, ref, useId } from "vue";
+import { controls } from "../../store";
+import { overlayKey } from "../mount";
+import type { DemoKey } from "../types";
+import { Button } from "./ui/button";
 import {
   Dialog,
   DialogClose,
@@ -14,26 +14,26 @@ import {
   DialogHeader,
   DialogTitle,
   DialogTrigger,
-} from './ui/dialog'
-import { Input } from './ui/input'
-import { Label } from './ui/label'
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './ui/select'
-import { Switch } from './ui/switch'
+} from "./ui/dialog";
+import { Input } from "./ui/input";
+import { Label } from "./ui/label";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "./ui/select";
+import { Switch } from "./ui/switch";
 
-defineProps<{ demo: DemoKey }>()
+defineProps<{ demo: DemoKey }>();
 
-const overlay = inject(overlayKey)!
-const id = useId()
+const overlay = inject(overlayKey)!;
+const id = useId();
 
-const buttonSize = computed(() => (({ small: 'sm', medium: 'default', large: 'lg' }) as const)[controls.size])
+const buttonSize = computed(() => (({ small: "sm", medium: "default", large: "lg" }) as const)[controls.size]);
 // Input and Select have no size prop (Select only `sm`/`default`): match the button heights.
-const height = computed(() => (({ small: 'h-8', medium: 'h-9', large: 'h-10' }) as const)[controls.size])
+const height = computed(() => (({ small: "h-8", medium: "h-9", large: "h-10" }) as const)[controls.size]);
 
-const fruits = ['Apple', 'Banana', 'Cherry']
-const name = ref('')
-const fruit = ref<string>()
-const enabled = ref(true)
-const open = ref(false)
+const fruits = ["Apple", "Banana", "Cherry"];
+const name = ref("");
+const fruit = ref<string>();
+const enabled = ref(true);
+const open = ref(false);
 </script>
 
 <template>

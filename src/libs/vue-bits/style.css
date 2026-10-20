@@ -3,7 +3,7 @@
  * `source(none)` + `@source` so only this adapter is scanned.
  * Scoped under [data-lib="vue-bits"] by build/scope-library-css.ts.
  */
-@import 'tailwindcss' source(none);
+@import "tailwindcss" source(none);
 
 /* Only scan this adapter for utility classes. */
 @source "./";

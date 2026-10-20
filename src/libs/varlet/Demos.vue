@@ -1,20 +1,20 @@
 <script setup lang="ts">
-import { computed, ref } from 'vue'
-import { controls } from '../../store'
-import type { DemoKey } from '../types'
+import { computed, ref } from "vue";
+import { controls } from "../../store";
+import type { DemoKey } from "../types";
 
-defineProps<{ demo: DemoKey }>()
+defineProps<{ demo: DemoKey }>();
 
-const buttonSize = computed(() => (({ small: 'small', medium: 'normal', large: 'large' }) as const)[controls.size])
+const buttonSize = computed(() => (({ small: "small", medium: "normal", large: "large" }) as const)[controls.size]);
 // Inputs and selects only come in `small` and `normal`.
-const fieldSize = computed(() => (controls.size === 'small' ? 'small' : 'normal'))
-const switchSize = computed(() => ({ small: 16, medium: 20, large: 24 })[controls.size])
+const fieldSize = computed(() => (controls.size === "small" ? "small" : "normal"));
+const switchSize = computed(() => ({ small: 16, medium: 20, large: 24 })[controls.size]);
 
-const fruits = ['Apple', 'Banana', 'Cherry'].map((label) => ({ label, value: label }))
-const name = ref('')
-const fruit = ref<string>()
-const enabled = ref(true)
-const open = ref(false)
+const fruits = ["Apple", "Banana", "Cherry"].map((label) => ({ label, value: label }));
+const name = ref("");
+const fruit = ref<string>();
+const enabled = ref(true);
+const open = ref(false);
 </script>
 
 <template>

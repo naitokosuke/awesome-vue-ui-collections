@@ -1,22 +1,22 @@
 <script setup lang="ts">
-import { BButton, BFormCheckbox, BFormInput, BFormSelect, BModal } from 'bootstrap-vue-next'
-import { computed, ref } from 'vue'
-import { controls } from '../../store'
-import type { DemoKey } from '../types'
+import { BButton, BFormCheckbox, BFormInput, BFormSelect, BModal } from "bootstrap-vue-next";
+import { computed, ref } from "vue";
+import { controls } from "../../store";
+import type { DemoKey } from "../types";
 
-defineProps<{ demo: DemoKey }>()
+defineProps<{ demo: DemoKey }>();
 
-const size = computed(() => (({ small: 'sm', medium: undefined, large: 'lg' }) as const)[controls.size])
-const theme = computed(() => (controls.dark ? 'dark' : 'light'))
+const size = computed(() => (({ small: "sm", medium: undefined, large: "lg" }) as const)[controls.size]);
+const theme = computed(() => (controls.dark ? "dark" : "light"));
 
 const fruits = [
-  { value: null, text: 'Fruit', disabled: true },
-  ...['Apple', 'Banana', 'Cherry'].map((text) => ({ value: text, text })),
-]
-const name = ref('')
-const fruit = ref<string | null>(null)
-const enabled = ref(true)
-const open = ref(false)
+  { value: null, text: "Fruit", disabled: true },
+  ...["Apple", "Banana", "Cherry"].map((text) => ({ value: text, text })),
+];
+const name = ref("");
+const fruit = ref<string | null>(null);
+const enabled = ref(true);
+const open = ref(false);
 </script>
 
 <template>
