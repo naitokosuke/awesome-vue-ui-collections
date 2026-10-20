@@ -1,15 +1,15 @@
 <script setup lang="ts">
-import { computed, onBeforeUnmount, onMounted } from "vue";
+import { computed } from "vue";
 import IconArrowUpRight from "~icons/lucide/arrow-up-right";
 import IconGithub from "~icons/lucide/github";
 import IconPackage from "~icons/lucide/package";
-import { DEMO_LABELS, downloads, github, groups, KIND_LABELS, npmFetchedAt, release } from "./board";
+import { DEMO_LABELS, groups, KIND_LABELS, npmFetchedAt } from "./board";
 import { libraries } from "./libs";
 import { readableOn } from "./libs/color";
 import { DEMOS, type DemoKey, type Library } from "./libs/types";
 import RadioGroup from "./RadioGroup.vue";
 import { type Color, COLORS, controls, SIZES } from "./store";
-import { useLoadStatus } from "./useLoadStatus";
+import { useLibraryApps } from "./useLibraryApps";
 
 const SIZE_LABELS = { small: "sm", medium: "md", large: "lg" } as const;
 
@@ -50,53 +50,14 @@ const ROW_HEIGHTS: Record<DemoKey, number> = {
   dialog: 88,
 };
 
-const { versions, errors } = useLoadStatus();
+const { versions, errors, setCell, setOverlay } = useLibraryApps(() => controls.kind);
 
-const cells: Record<string, Partial<Record<DemoKey, HTMLElement>>> = {};
-const overlays: Record<string, HTMLElement> = {};
-const unmounts: (() => void)[] = [];
+/** Libraries with an app of their own (not stats-only), each of which gets an overlay host. */
+const mountedLibraries = libraries.filter((lib) => lib.load);
 
 function scopeAttrs(lib: Library) {
   return { "data-lib": lib.id, ...(controls.dark ? lib.darkAttrs : lib.lightAttrs) };
 }
-
-function setCell(libId: string, demo: DemoKey, el: unknown) {
-  if (el instanceof HTMLElement) (cells[libId] ??= {})[demo] = el;
-}
-
-function setOverlay(libId: string, el: unknown) {
-  if (el instanceof HTMLElement) overlays[libId] = el;
-}
-
-onMounted(() => {
-  if (!groups.some((group) => group.kind === controls.kind)) controls.kind = groups[0]!.kind;
-
-  for (const lib of libraries) {
-    if (!lib.load) {
-      // Stats only: the version shown is npm's latest.
-      const latest = release(lib)?.latest;
-      if (latest) versions.value[lib.id] = latest;
-      continue;
-    }
-    lib
-      .load()
-      .then((mod) => {
-        versions.value[lib.id] = mod.version;
-        unmounts.push(
-          mod.mount({
-            cells: cells[lib.id] as Record<DemoKey, HTMLElement>,
-            overlay: overlays[lib.id]!,
-          }),
-        );
-      })
-      .catch((error: unknown) => {
-        errors.value[lib.id] = String(error);
-        console.error(`[${lib.id}]`, error);
-      });
-  }
-});
-
-onBeforeUnmount(() => unmounts.forEach((unmount) => unmount()));
 </script>
 
 <template>
@@ -116,7 +77,7 @@ onBeforeUnmount(() => unmounts.forEach((unmount) => unmount()));
         <label v-for="group in groups" :key="group.kind" class="tab">
           <input v-model="controls.kind" name="kind" type="radio" :value="group.kind">
           {{ KIND_LABELS[group.kind].name.toLowerCase() }}
-          <span class="muted">{{ group.libraries.length }}</span>
+          <span class="muted">{{ group.columns.length }}</span>
         </label>
       </nav>
       <p class="kind-description">{{ KIND_LABELS[controls.kind].description }}</p>
@@ -150,7 +111,7 @@ onBeforeUnmount(() => unmounts.forEach((unmount) => unmount()));
         </div>
       </section>
 
-      <!-- One table per kind; both stay mounted (v-show) so every library keeps its mount targets. -->
+      <!-- One table per kind; all stay mounted (v-show), so a library mounted once keeps its cells. -->
       <section
         v-for="group in groups"
         v-show="controls.kind === group.kind"
@@ -158,7 +119,7 @@ onBeforeUnmount(() => unmounts.forEach((unmount) => unmount()));
         class="table"
         :aria-label="KIND_LABELS[group.kind].name"
       >
-        <div class="grid" :style="{ '--libs': group.libraries.length }">
+        <div class="grid" :style="{ '--libs': group.columns.length }">
           <!-- The stats live in the column headers, so their switch sits at the start of that row. -->
           <div class="head sticky corner">
             <label class="switch">
@@ -173,23 +134,24 @@ onBeforeUnmount(() => unmounts.forEach((unmount) => unmount()));
             <span :id="`stats-date-${group.kind}`" class="stats-date" title="npm data; downloads cover the last 7 days">(as of {{ npmFetchedAt }})</span>
           </div>
           <!-- Two lines per column: name and downloads, then version, release age and links. -->
-          <div v-for="lib in group.libraries" :key="lib.id" class="head">
+          <div v-for="lib in group.columns" :key="lib.id" class="head">
             <div class="line">
               <span class="name">{{ lib.name }}</span>
               <span v-if="controls.stats" class="muted" :title="`npm downloads, last 7 days as of ${npmFetchedAt}`">
-                {{ downloads(lib)?.label ?? "—" }} / week
+                {{ lib.downloads?.label ?? "—" }} / week
               </span>
             </div>
 
             <div class="line meta">
               <span>
                 <span v-if="errors[lib.id]" class="error" :title="errors[lib.id]">failed to load</span>
-                <template v-else>{{ versions[lib.id] ?? "…" }}</template>
+                <!-- A stats-only library (no app to report its version) shows npm's latest. -->
+                <template v-else>{{ (lib.load ? versions[lib.id] : lib.release?.latest) ?? "…" }}</template>
                 <span
-                  v-if="controls.stats && release(lib)"
-                  :class="{ stale: release(lib)!.stale }"
-                  :title="`latest release ${release(lib)!.date}${release(lib)!.stale ? ', over a year ago' : ''}`"
-                > · {{ release(lib)!.ago }}</span>
+                  v-if="controls.stats && lib.release"
+                  :class="{ stale: lib.release.stale }"
+                  :title="`latest release ${lib.release.date}${lib.release.stale ? ', over a year ago' : ''}`"
+                > · {{ lib.release.ago }}</span>
               </span>
               <!-- Links leave the page: the icons say where to, the tooltip says it opens a new tab. -->
               <span v-if="controls.stats" class="links">
@@ -204,12 +166,12 @@ onBeforeUnmount(() => unmounts.forEach((unmount) => unmount()));
                   <IconPackage aria-hidden="true" />
                 </a>
                 <a
-                  v-if="github(lib)"
-                  :href="github(lib)!.url"
+                  v-if="lib.github"
+                  :href="lib.github.url"
                   rel="noopener"
                   target="_blank"
-                  :title="`${github(lib)!.slug} on GitHub (opens in a new tab)`"
-                  :aria-label="`${github(lib)!.slug} on GitHub (opens in a new tab)`"
+                  :title="`${lib.github.slug} on GitHub (opens in a new tab)`"
+                  :aria-label="`${lib.github.slug} on GitHub (opens in a new tab)`"
                 >
                   <IconGithub aria-hidden="true" />
                 </a>
@@ -241,7 +203,7 @@ onBeforeUnmount(() => unmounts.forEach((unmount) => unmount()));
                 </label>
               </div>
             </div>
-            <template v-for="lib in group.libraries" :key="lib.id">
+            <template v-for="lib in group.columns" :key="lib.id">
               <div v-if="lib.withoutDemos" class="cell empty" :style="{ minBlockSize: `${ROW_HEIGHTS[demo]}px` }">
                 {{ demo === DEMOS[0] ? `— ${lib.withoutDemos}` : "—" }}
               </div>
@@ -267,7 +229,7 @@ onBeforeUnmount(() => unmounts.forEach((unmount) => unmount()));
                   </a>
                   <span v-else class="component-ref">{{ lib.components[demo].name }}</span>
                 </template>
-                <!-- The library's app for this cell is mounted after this. -->
+                <!-- The library's demo for this row is teleported in after this. -->
               </div>
             </template>
           </template>
@@ -276,7 +238,7 @@ onBeforeUnmount(() => unmounts.forEach((unmount) => unmount()));
 
     <div class="overlays">
       <div
-        v-for="lib in libraries.filter((lib) => lib.load)"
+        v-for="lib in mountedLibraries"
         :key="lib.id"
         :id="`overlay-${lib.id}`"
         :ref="(el) => setOverlay(lib.id, el)"

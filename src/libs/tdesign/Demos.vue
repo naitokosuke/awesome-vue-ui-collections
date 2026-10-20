@@ -1,13 +1,10 @@
 <script setup lang="ts">
 import type { GlobalConfigProvider } from "tdesign-vue-next";
-import { inject, ref } from "vue";
-import { controls } from "../../store";
-import { overlayKey } from "../mount";
-import type { DemoKey } from "../types";
+import { ref } from "vue";
+import DemoCells from "../DemoCells.vue";
+import { useMountContext } from "../mount";
 
-defineProps<{ demo: DemoKey }>();
-
-const overlay = inject(overlayKey)!;
+const { controls, overlay } = useMountContext();
 // Global attach: popups and dialogs render into the overlay host instead of body.
 const globalConfig: GlobalConfigProvider = { attach: () => overlay };
 
@@ -20,37 +17,28 @@ const open = ref(false);
 
 <template>
   <t-config-provider :global-config>
-    <div class="demo">
-      <t-button v-if="demo === 'button'" theme="primary" :size="controls.size" :disabled="controls.disabled[demo]">
-        {{ controls.label }}
-      </t-button>
+    <DemoCells>
+      <template #button="{ disabled }">
+        <t-button theme="primary" :size="controls.size" :disabled>{{ controls.label }}</t-button>
+      </template>
 
-      <t-input
-        v-else-if="demo === 'input'"
-        v-model="name"
-        placeholder="Name"
-        :size="controls.size"
-        :disabled="controls.disabled[demo]"
-      />
+      <template #input="{ disabled }">
+        <t-input v-model="name" placeholder="Name" :size="controls.size" :disabled />
+      </template>
 
-      <t-select
-        v-else-if="demo === 'select'"
-        v-model="fruit"
-        placeholder="Fruit"
-        :options="fruits"
-        :size="controls.size"
-        :disabled="controls.disabled[demo]"
-      />
+      <template #select="{ disabled }">
+        <t-select v-model="fruit" placeholder="Fruit" :options="fruits" :size="controls.size" :disabled />
+      </template>
 
-      <t-space v-else-if="demo === 'switch'" align="center">
-        <t-switch v-model="enabled" :size="controls.size" :disabled="controls.disabled[demo]" />
-        <span class="text">Notifications</span>
-      </t-space>
+      <template #switch="{ disabled }">
+        <t-space align="center">
+          <t-switch v-model="enabled" :size="controls.size" :disabled />
+          <span class="text">Notifications</span>
+        </t-space>
+      </template>
 
-      <template v-else-if="demo === 'dialog'">
-        <t-button variant="outline" :size="controls.size" :disabled="controls.disabled[demo]" @click="open = true">
-          Open dialog
-        </t-button>
+      <template #dialog="{ disabled }">
+        <t-button variant="outline" :size="controls.size" :disabled @click="open = true">Open dialog</t-button>
         <!-- prevent-scroll-through would append an `html body { overflow-y: hidden }` style element to body -->
         <t-dialog v-model:visible="open" header="TDesign" width="400px" :prevent-scroll-through="false">
           This dialog is teleported into the TDesign overlay host.
@@ -59,19 +47,11 @@ const open = ref(false);
           </template>
         </t-dialog>
       </template>
-    </div>
+    </DemoCells>
   </t-config-provider>
 </template>
 
 <style scoped>
-.demo {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 100%;
-  padding: 16px;
-}
-
 .text {
   color: var(--td-text-color-primary);
 }

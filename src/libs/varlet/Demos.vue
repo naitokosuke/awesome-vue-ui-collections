@@ -1,10 +1,9 @@
 <script setup lang="ts">
 import { computed, ref } from "vue";
-import { controls } from "../../store";
-import type { DemoKey } from "../types";
+import DemoCells from "../DemoCells.vue";
+import { useMountContext } from "../mount";
 
-defineProps<{ demo: DemoKey }>();
-
+const { controls } = useMountContext();
 const buttonSize = computed(() => (({ small: "small", medium: "normal", large: "large" }) as const)[controls.size]);
 // Inputs and selects only come in `small` and `normal`.
 const fieldSize = computed(() => (controls.size === "small" ? "small" : "normal"));
@@ -19,37 +18,36 @@ const open = ref(false);
 
 <template>
   <!-- Theme variables (dark + primary color) are set on the scope element in index.ts. -->
-  <div class="demo">
-    <var-button v-if="demo === 'button'" type="primary" :size="buttonSize" :disabled="controls.disabled[demo]">
-      {{ controls.label }}
-    </var-button>
+  <DemoCells style="color: var(--color-text)">
+    <template #button="{ disabled }">
+      <var-button type="primary" :size="buttonSize" :disabled>{{ controls.label }}</var-button>
+    </template>
 
-    <var-input
-      v-else-if="demo === 'input'"
-      v-model="name"
-      placeholder="Name"
-      variant="outlined"
-      :size="fieldSize"
-      :disabled="controls.disabled[demo]"
-    />
+    <template #input="{ disabled }">
+      <var-input v-model="name" class="grow" placeholder="Name" variant="outlined" :size="fieldSize" :disabled />
+    </template>
 
-    <var-select
-      v-else-if="demo === 'select'"
-      v-model="fruit"
-      placeholder="Fruit"
-      variant="outlined"
-      :options="fruits"
-      :size="fieldSize"
-      :disabled="controls.disabled[demo]"
-    />
+    <template #select="{ disabled }">
+      <var-select
+        v-model="fruit"
+        class="grow"
+        placeholder="Fruit"
+        variant="outlined"
+        :options="fruits"
+        :size="fieldSize"
+        :disabled
+      />
+    </template>
 
-    <div v-else-if="demo === 'switch'" class="switch">
-      <var-switch v-model="enabled" :size="switchSize" :disabled="controls.disabled[demo]" />
-      Notifications
-    </div>
+    <template #switch="{ disabled }">
+      <div class="switch">
+        <var-switch v-model="enabled" :size="switchSize" :disabled />
+        Notifications
+      </div>
+    </template>
 
-    <template v-else-if="demo === 'dialog'">
-      <var-button :size="buttonSize" :disabled="controls.disabled[demo]" @click="open = true">Open dialog</var-button>
+    <template #dialog="{ disabled }">
+      <var-button :size="buttonSize" :disabled @click="open = true">Open dialog</var-button>
       <!-- teleport / lockScroll come from Dialog.setPropsDefaults in index.ts -->
       <var-dialog v-model:show="open" title="Varlet" :confirm-button="false" :cancel-button="false">
         This dialog is teleported into the Varlet overlay host.
@@ -58,22 +56,11 @@ const open = ref(false);
         </template>
       </var-dialog>
     </template>
-  </div>
+  </DemoCells>
 </template>
 
 <style scoped>
-.demo {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  align-self: stretch;
-  width: 100%;
-  padding: 16px;
-  color: var(--color-text);
-}
-
-.demo > :deep(.var-input),
-.demo > :deep(.var-select) {
+.grow {
   flex: 1;
 }
 

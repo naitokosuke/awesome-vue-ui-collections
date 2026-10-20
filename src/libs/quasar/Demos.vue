@@ -1,12 +1,12 @@
 <script setup lang="ts">
 import { ClosePopup, QBtn, QCard, QCardActions, QCardSection, QDialog, QInput, QSelect, QToggle } from "quasar";
 import { computed, ref } from "vue";
-import { controls } from "../../store";
-import type { DemoKey } from "../types";
-
-defineProps<{ demo: DemoKey }>();
+import DemoCells from "../DemoCells.vue";
+import { useMountContext } from "../mount";
 
 const vClosePopup = ClosePopup;
+
+const { controls } = useMountContext();
 const size = computed(() => ({ small: "sm", medium: "md", large: "lg" })[controls.size]);
 // QInput / QSelect only come in two heights
 const dense = computed(() => controls.size === "small");
@@ -19,45 +19,36 @@ const open = ref(false);
 </script>
 
 <template>
-  <div class="demo">
-    <q-btn v-if="demo === 'button'" color="primary" :label="controls.label" :size :disable="controls.disabled[demo]" />
+  <DemoCells>
+    <template #button="{ disabled }">
+      <q-btn color="primary" :label="controls.label" :size :disable="disabled" />
+    </template>
 
-    <q-input
-      v-else-if="demo === 'input'"
-      v-model="name"
-      class="field"
-      label="Name"
-      outlined
-      :dense
-      :dark="controls.dark"
-      :disable="controls.disabled[demo]"
-    />
+    <template #input="{ disabled }">
+      <q-input v-model="name" class="field" label="Name" outlined :dense :dark="controls.dark" :disable="disabled" />
+    </template>
 
     <!-- the menu is portaled to <body>; index.ts moves it into the overlay host -->
-    <q-select
-      v-else-if="demo === 'select'"
-      v-model="fruit"
-      class="field"
-      label="Fruit"
-      :options="fruits"
-      behavior="menu"
-      outlined
-      :dense
-      :dark="controls.dark"
-      :disable="controls.disabled[demo]"
-    />
+    <template #select="{ disabled }">
+      <q-select
+        v-model="fruit"
+        class="field"
+        label="Fruit"
+        :options="fruits"
+        behavior="menu"
+        outlined
+        :dense
+        :dark="controls.dark"
+        :disable="disabled"
+      />
+    </template>
 
-    <q-toggle
-      v-else-if="demo === 'switch'"
-      v-model="enabled"
-      label="Notifications"
-      :size
-      :dark="controls.dark"
-      :disable="controls.disabled[demo]"
-    />
+    <template #switch="{ disabled }">
+      <q-toggle v-model="enabled" label="Notifications" :size :dark="controls.dark" :disable="disabled" />
+    </template>
 
-    <template v-else-if="demo === 'dialog'">
-      <q-btn label="Open dialog" :size :disable="controls.disabled[demo]" @click="open = true" />
+    <template #dialog="{ disabled }">
+      <q-btn label="Open dialog" :size :disable="disabled" @click="open = true" />
       <!-- `seamless`: a modal QDialog locks scrolling via classes/styles on <html>/<body> -->
       <q-dialog v-model="open" seamless>
         <q-card :dark="controls.dark" style="width: 400px">
@@ -71,18 +62,10 @@ const open = ref(false);
         </q-card>
       </q-dialog>
     </template>
-  </div>
+  </DemoCells>
 </template>
 
 <style scoped>
-.demo {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 100%;
-  padding: 16px;
-}
-
 .field {
   flex: 1;
 }

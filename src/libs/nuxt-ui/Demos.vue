@@ -1,12 +1,9 @@
 <script setup lang="ts">
-import { computed, inject, ref } from "vue";
-import { controls } from "../../store";
-import { overlayKey } from "../mount";
-import type { DemoKey } from "../types";
+import { computed, ref } from "vue";
+import DemoCells from "../DemoCells.vue";
+import { useMountContext } from "../mount";
 
-defineProps<{ demo: DemoKey }>();
-
-const overlay = inject(overlayKey)!;
+const { controls, overlay } = useMountContext();
 const size = computed(() => (({ small: "sm", medium: "md", large: "lg" }) as const)[controls.size]);
 
 const fruits = ["Apple", "Banana", "Cherry"];
@@ -18,60 +15,35 @@ const open = ref(false);
 
 <template>
   <UApp :portal="overlay">
-    <div class="demo">
-      <UButton v-if="demo === 'button'" :size :disabled="controls.disabled[demo]">
-        {{ controls.label }}
-      </UButton>
+    <DemoCells style="color: var(--ui-text)">
+      <template #button="{ disabled }">
+        <UButton :size :disabled>{{ controls.label }}</UButton>
+      </template>
 
-      <UInput
-        v-else-if="demo === 'input'"
-        v-model="name"
-        placeholder="Name"
-        :size
-        :disabled="controls.disabled[demo]"
-      />
+      <template #input="{ disabled }">
+        <UInput v-model="name" placeholder="Name" :size :disabled />
+      </template>
 
-      <USelect
-        v-else-if="demo === 'select'"
-        v-model="fruit"
-        placeholder="Fruit"
-        :items="fruits"
-        :size
-        :disabled="controls.disabled[demo]"
-        class="w-48"
-      />
+      <template #select="{ disabled }">
+        <USelect v-model="fruit" placeholder="Fruit" :items="fruits" :size :disabled class="w-48" />
+      </template>
 
-      <USwitch
-        v-else-if="demo === 'switch'"
-        v-model="enabled"
-        label="Notifications"
-        :size
-        :disabled="controls.disabled[demo]"
-      />
+      <template #switch="{ disabled }">
+        <USwitch v-model="enabled" label="Notifications" :size :disabled />
+      </template>
 
-      <UModal
-        v-else-if="demo === 'dialog'"
-        v-model:open="open"
-        description="This dialog is teleported into the Nuxt UI overlay host."
-        title="Nuxt UI"
-      >
-        <UButton color="neutral" variant="outline" :size :disabled="controls.disabled[demo]">Open dialog</UButton>
-        <template #footer>
-          <UButton color="neutral" variant="outline" @click="open = false">Close</UButton>
-        </template>
-      </UModal>
-    </div>
+      <template #dialog="{ disabled }">
+        <UModal
+          v-model:open="open"
+          description="This dialog is teleported into the Nuxt UI overlay host."
+          title="Nuxt UI"
+        >
+          <UButton color="neutral" variant="outline" :size :disabled>Open dialog</UButton>
+          <template #footer>
+            <UButton color="neutral" variant="outline" @click="open = false">Close</UButton>
+          </template>
+        </UModal>
+      </template>
+    </DemoCells>
   </UApp>
 </template>
-
-<style scoped>
-.demo {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  align-self: stretch;
-  width: 100%;
-  padding: 16px;
-  color: var(--ui-text);
-}
-</style>

@@ -5,14 +5,11 @@ import { Field, FieldLabel } from "@vizejs/ui/field";
 import { Input } from "@vizejs/ui/input";
 import { NativeSelect } from "@vizejs/ui/native-select";
 import { Switch } from "@vizejs/ui/switch";
-import { computed, inject, ref, useId } from "vue";
-import { controls } from "../../store";
-import { overlayKey } from "../mount";
-import type { DemoKey } from "../types";
+import { computed, ref, useId } from "vue";
+import DemoCells from "../DemoCells.vue";
+import { useMountContext } from "../mount";
 
-defineProps<{ demo: DemoKey }>();
-
-const overlay = inject(overlayKey)!;
+const { controls, overlay } = useMountContext();
 
 // Theme scope attributes (see `themeScopeAttributes` in @vizejs/ui/theme-scope):
 // a preset plus the density scale, which drives control heights and spacing.
@@ -35,36 +32,36 @@ const nameId = useId();
 </script>
 
 <template>
-  <div class="demo" v-bind="scope">
-    <Button v-if="demo === 'button'" :disabled="controls.disabled[demo]">
-      {{ controls.label }}
-    </Button>
+  <!-- Each cell's frame is a theme scope. No background: the demo sits on the shell's canvas like every other library. -->
+  <DemoCells v-bind="scope" style="color: var(--vize-ui-color-text); font-family: var(--vize-ui-type-family-sans)">
+    <template #button="{ disabled }">
+      <Button :disabled>{{ controls.label }}</Button>
+    </template>
 
     <!-- Visible label like the other headless demos; Field wires it to the input. -->
-    <Field v-else-if="demo === 'input'" :id="nameId" class="field-group" name="name">
-      <FieldLabel class="field-label">Name</FieldLabel>
-      <Input :id="nameId" v-model="name" class="field" placeholder="Name" :disabled="controls.disabled[demo]" />
-    </Field>
+    <template #input="{ disabled }">
+      <Field :id="nameId" class="field-group" name="name">
+        <FieldLabel class="field-label">Name</FieldLabel>
+        <Input :id="nameId" v-model="name" class="field" placeholder="Name" :disabled />
+      </Field>
+    </template>
 
-    <NativeSelect
-      v-else-if="demo === 'select'"
-      v-model="fruit"
-      aria-label="Fruit"
-      class="field select"
-      :options="fruits"
-      :disabled="controls.disabled[demo]"
-    />
+    <template #select="{ disabled }">
+      <NativeSelect v-model="fruit" aria-label="Fruit" class="field select" :options="fruits" :disabled />
+    </template>
 
-    <div v-else-if="demo === 'switch'" class="switch">
-      <Switch v-model="enabled" :aria-labelledby="switchLabel" :disabled="controls.disabled[demo]" />
-      <span :id="switchLabel">Notifications</span>
-    </div>
+    <template #switch="{ disabled }">
+      <div class="switch">
+        <Switch v-model="enabled" :aria-labelledby="switchLabel" :disabled />
+        <span :id="switchLabel">Notifications</span>
+      </div>
+    </template>
 
-    <template v-else-if="demo === 'dialog'">
-      <Button class="secondary" :disabled="controls.disabled[demo]" @press="open = true">Open dialog</Button>
+    <template #dialog="{ disabled }">
+      <Button class="secondary" :disabled @press="open = true">Open dialog</Button>
       <Dialog v-model:open="open">
         <DialogPortal :to="overlay">
-          <!-- Re-open a theme scope: the portal content lives outside .demo. -->
+          <!-- Re-open a theme scope: the portal content lives outside the cell. -->
           <div v-bind="scope">
             <DialogOverlay />
             <!-- lock-scroll would set overflow on <html>/<body>. -->
@@ -79,7 +76,7 @@ const nameId = useId();
         </DialogPortal>
       </Dialog>
     </template>
-  </div>
+  </DemoCells>
 </template>
 
 <style scoped>
@@ -91,18 +88,6 @@ const nameId = useId();
   --vize-ui-color-accent: var(--hl-bg);
   --vize-ui-color-accent-contrast: var(--hl-fg);
   box-shadow: inset 0 0 0 1px var(--hl-border);
-}
-
-.demo {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  align-self: stretch;
-  width: 100%;
-  padding: 16px;
-  /* No background: the demo sits on the shell's canvas like every other library. */
-  color: var(--vize-ui-color-text);
-  font-family: var(--vize-ui-type-family-sans);
 }
 
 .field {

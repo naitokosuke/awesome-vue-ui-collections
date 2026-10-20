@@ -1,8 +1,7 @@
 import "@astryx-vue/themes/neutral.css";
-import { controls } from "../../store";
 import { tint } from "../color";
 import { bindScopeVars, mountLibrary } from "../mount";
-import type { MountTargets } from "../types";
+import type { MountContext } from "../types";
 import Demos from "./Demos.vue";
 
 export { version } from "@astryx-vue/core/package.json";
@@ -18,10 +17,11 @@ function accentVars(hex: string) {
   };
 }
 
-export function mount(targets: MountTargets) {
-  const stopColor = bindScopeVars(targets, () => (controls.color ? accentVars(controls.color) : null));
-  const stopAdopting = adoptListboxes(targets);
-  const unmount = mountLibrary(targets, Demos, () => {});
+export function mount(context: MountContext) {
+  const { controls } = context;
+  const stopColor = bindScopeVars(context, () => (controls.color ? accentVars(controls.color) : null));
+  const stopAdopting = adoptListboxes(context);
+  const unmount = mountLibrary(context, Demos);
   return () => {
     unmount();
     stopAdopting();
@@ -34,9 +34,9 @@ export function mount(targets: MountTargets) {
  * scope, where it would render unstyled. Move it into the overlay host as soon as it lands there;
  * it is fixed-positioned, and Vue keeps patching and removing it wherever it lives.
  */
-function adoptListboxes(targets: MountTargets) {
+function adoptListboxes(context: MountContext) {
   const adopt = (node: Node) => {
-    if (node instanceof HTMLElement && node.classList.contains("astryx-selector-listbox")) targets.overlay.append(node);
+    if (node instanceof HTMLElement && node.classList.contains("astryx-selector-listbox")) context.overlay.append(node);
   };
   const observer = new MutationObserver((records) => records.forEach((record) => record.addedNodes.forEach(adopt)));
   observer.observe(document.body, { childList: true });

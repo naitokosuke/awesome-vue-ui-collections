@@ -2,10 +2,9 @@ import "bootstrap/dist/css/bootstrap.min.css";
 import "bootstrap-vue-next/dist/bootstrap-vue-next.css";
 import "./primary.css";
 import { createBootstrap } from "bootstrap-vue-next";
-import { controls } from "../../store";
 import { mix, rgbChannels, shade, tint } from "../color";
 import { bindScopeVars, mountLibrary } from "../mount";
-import type { MountTargets } from "../types";
+import type { MountContext } from "../types";
 import Demos from "./Demos.vue";
 
 // bootstrap-vue-next doesn't export its version or expose its package.json through `exports`.
@@ -36,9 +35,10 @@ function primaryVars(hex: string, dark: boolean) {
   };
 }
 
-export function mount(targets: MountTargets) {
-  const stopColor = bindScopeVars(targets, () => (controls.color ? primaryVars(controls.color, controls.dark) : null));
-  const unmount = mountLibrary(targets, Demos, (app) => {
+export function mount(context: MountContext) {
+  const { controls } = context;
+  const stopColor = bindScopeVars(context, () => (controls.color ? primaryVars(controls.color, controls.dark) : null));
+  const unmount = mountLibrary(context, Demos, (app) => {
     app.use(
       createBootstrap({
         // The registries plugin provides the modal manager, which toggles `modal-open` on <body>.
@@ -46,7 +46,7 @@ export function mount(targets: MountTargets) {
         orchestrator: false,
         components: {
           // Render modals inside the overlay host and never lock <body> scroll / pad it.
-          BModal: { teleportTo: targets.overlay, bodyScrolling: true },
+          BModal: { teleportTo: context.overlay, bodyScrolling: true },
         },
       }),
     );

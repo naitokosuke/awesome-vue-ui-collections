@@ -13,11 +13,6 @@ export const KIND_LABELS: Record<Kind, { name: string; description: string }> = 
   "headless": { name: "Headless", description: "Unstyled, accessible primitives — styling is up to you" },
 };
 
-/** One table per kind, in display order. */
-export const groups = KINDS.map((kind) => ({ kind, libraries: libraries.filter((lib) => lib.kind === kind) })).filter(
-  (group) => group.libraries.length > 0,
-);
-
 export const DEMO_LABELS: Record<DemoKey, string> = {
   button: "Button",
   input: "Input",
@@ -56,7 +51,7 @@ const relative = new Intl.RelativeTimeFormat("en"); // "1 month ago", not "last 
 const compact = new Intl.NumberFormat("en", { notation: "compact", maximumFractionDigits: 1 });
 const maxDownloads = Math.max(1, ...libraries.map((lib) => statsOf(lib)?.weeklyDownloads ?? 0));
 
-export function release(lib: Library): Release | null {
+function release(lib: Library): Release | null {
   const stats = statsOf(lib);
   if (!stats) return null;
   const releasedOn = toDate(stats.released);
@@ -78,7 +73,7 @@ function ago(date: Temporal.PlainDate) {
   return relative.format(-years, "year");
 }
 
-export function downloads(lib: Library): Downloads | null {
+function downloads(lib: Library): Downloads | null {
   const count = statsOf(lib)?.weeklyDownloads;
   if (count == null) return null;
   // Log scale, so an 800/week library is still visible next to a 1M/week one.
@@ -87,7 +82,24 @@ export function downloads(lib: Library): Downloads | null {
   return { label, ratio: Math.log10(count + 1) / Math.log10(maxDownloads + 1) };
 }
 
-export function github(lib: Library) {
+function github(lib: Library) {
   if (lib.repository) return { slug: lib.repository, url: `https://github.com/${lib.repository}` };
   return statsOf(lib)?.github ?? null;
 }
+
+// ---- table --------------------------------------------------------------------
+
+/** A library as its table column shows it: the npm data is static, so it's derived once here. */
+export interface Column extends Library {
+  release: Release | null;
+  downloads: Downloads | null;
+  github: { slug: string; url: string } | null;
+}
+
+/** One table per kind, in display order. */
+export const groups = KINDS.map((kind) => ({
+  kind,
+  columns: libraries
+    .filter((lib) => lib.kind === kind)
+    .map((lib): Column => ({ ...lib, release: release(lib), downloads: downloads(lib), github: github(lib) })),
+})).filter((group) => group.columns.length > 0);

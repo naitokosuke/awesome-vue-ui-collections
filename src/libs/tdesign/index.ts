@@ -1,9 +1,8 @@
 import "tdesign-vue-next/dist/tdesign.css";
 import TDesign from "tdesign-vue-next";
-import { controls } from "../../store";
 import { mix, shade, tint } from "../color";
 import { bindScopeVars, mountLibrary } from "../mount";
-import type { MountTargets } from "../types";
+import type { MountContext } from "../types";
 import Demos from "./Demos.vue";
 
 export const version: string = TDesign.version;
@@ -41,11 +40,12 @@ function palette(hex: string, dark: boolean): Record<string, string> {
   };
 }
 
-export function mount(targets: MountTargets) {
-  const unmount = mountLibrary(targets, Demos, (app) => {
+export function mount(context: MountContext) {
+  const { controls } = context;
+  const unmount = mountLibrary(context, Demos, (app) => {
     app.use(TDesign);
   });
-  const unbind = bindScopeVars(targets, () => (controls.color ? palette(controls.color, controls.dark) : null));
+  const unbind = bindScopeVars(context, () => (controls.color ? palette(controls.color, controls.dark) : null));
   return () => {
     unbind();
     unmount();

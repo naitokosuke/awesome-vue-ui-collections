@@ -1,3 +1,6 @@
+import type { DeepReadonly } from "vue";
+import type { Controls } from "../store";
+
 export const DEMOS = ["button", "input", "select", "switch", "dialog"] as const;
 export type DemoKey = (typeof DEMOS)[number];
 
@@ -11,11 +14,14 @@ export type DemoKey = (typeof DEMOS)[number];
 export const KINDS = ["styled", "copy-paste", "headless", "fancy"] as const;
 export type Kind = (typeof KINDS)[number];
 
-export interface MountTargets {
-  /** One cell per demo row; the library mounts one app into each cell. */
+/** What the shell hands a library: where to render, and the options to render with. */
+export interface MountContext {
+  /** One cell per demo row; the library's demos are teleported into them (see DemoCells.vue). */
   cells: Record<DemoKey, HTMLElement>;
   /** Where the library should render dialogs and popups, inside its CSS scope. */
   overlay: HTMLElement;
+  /** The shell's demo options: libraries read them, only the shell changes them. */
+  controls: DeepReadonly<Controls>;
 }
 
 /** The library's own component behind one demo row, as its docs name it. */
@@ -51,7 +57,7 @@ export interface LibraryMeta {
 
 export interface LibraryModule {
   version: string;
-  mount: (targets: MountTargets) => () => void;
+  mount: (context: MountContext) => () => void;
 }
 
 export interface Library extends LibraryMeta {

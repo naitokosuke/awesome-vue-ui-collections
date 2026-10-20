@@ -1,10 +1,9 @@
 import "@arco-design/web-vue/dist/arco.css";
 import ArcoVue from "@arco-design/web-vue";
 import pkg from "@arco-design/web-vue/package.json";
-import { controls } from "../../store";
 import { mix, rgbChannels, shade, tint } from "../color";
 import { bindScopeVars, mountLibrary } from "../mount";
-import type { MountTargets } from "../types";
+import type { MountContext } from "../types";
 import Demos from "./Demos.vue";
 
 // Arco does not export its version, so read it from its package.json.
@@ -24,11 +23,12 @@ function palette(base: string, dark: boolean): Record<string, string> {
   return Object.fromEntries(steps.map((color, i) => [`--primary-${i + 1}`, rgbChannels(color)]));
 }
 
-export function mount(targets: MountTargets) {
-  const unmount = mountLibrary(targets, Demos, (app) => {
+export function mount(context: MountContext) {
+  const { controls } = context;
+  const unmount = mountLibrary(context, Demos, (app) => {
     app.use(ArcoVue);
   });
-  const unbind = bindScopeVars(targets, () => (controls.color ? palette(controls.color, controls.dark) : null));
+  const unbind = bindScopeVars(context, () => (controls.color ? palette(controls.color, controls.dark) : null));
   return () => {
     unbind();
     unmount();

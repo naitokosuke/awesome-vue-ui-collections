@@ -1,8 +1,7 @@
 import "./style.css";
-import { controls } from "../../store";
 import { luminance } from "../color";
 import { bindScopeVars, mountLibrary } from "../mount";
-import type { MountTargets } from "../types";
+import type { MountContext } from "../types";
 import Demos from "./Demos.vue";
 
 // Inspira UI itself isn't versioned on npm; this is the `@inspira-ui/plugins` runtime the components import.
@@ -13,10 +12,11 @@ function foreground(hex: string) {
   return luminance(hex) > 0.179 ? "oklch(0.141 0.005 285.823)" : "oklch(0.985 0 0)";
 }
 
-export function mount(targets: MountTargets) {
-  const unmount = mountLibrary(targets, Demos, () => {});
+export function mount(context: MountContext) {
+  const { controls } = context;
+  const unmount = mountLibrary(context, Demos);
   // Inline vars on the scope elements win over both the `:root` and `.dark` token rules.
-  const unbind = bindScopeVars(targets, () => {
+  const unbind = bindScopeVars(context, () => {
     const hex = controls.color;
     if (!hex) return null;
     return {

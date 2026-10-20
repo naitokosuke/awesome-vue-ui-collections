@@ -1,5 +1,5 @@
 import { reactive, watch } from "vue";
-import { DEMOS, type DemoKey, type Kind } from "./libs/types";
+import { DEMOS, type DemoKey, type Kind, KINDS } from "./libs/types";
 
 export const SIZES = ["small", "medium", "large"] as const;
 
@@ -33,7 +33,7 @@ export interface Controls {
   color: Color | null;
 }
 
-/** Shared by the shell and every library app; they all run on the same Vue runtime. */
+/** Owned by the shell; library apps get it read-only through their mount context. */
 export const controls = reactive<Controls>({
   size: "medium",
   disabled: Object.fromEntries(DEMOS.map((demo) => [demo, false])) as Record<DemoKey, boolean>,
@@ -52,13 +52,34 @@ watch(controls, (value) => {
   } catch {}
 });
 
+/** The saved controls, field by field; anything missing, outdated or invalid keeps its default. */
 function restore(): Partial<Controls> {
+  let saved: unknown;
   try {
-    const saved = JSON.parse(localStorage.getItem(STORAGE_KEY) ?? "{}");
-    // `disabled` used to be one boolean for every row.
-    if (typeof saved.disabled !== "object") delete saved.disabled;
-    return saved;
+    saved = JSON.parse(localStorage.getItem(STORAGE_KEY) ?? "{}");
   } catch {
     return {};
   }
+  if (typeof saved !== "object" || saved === null) return {};
+  const { size, disabled, dark, stats, label, kind, color } = saved as Record<string, unknown>;
+  const restored: Partial<Controls> = {};
+  if (oneOf(SIZES, size)) restored.size = size;
+  // `disabled` used to be one boolean for every row.
+  if (typeof disabled === "object" && disabled !== null) {
+    const rows = disabled as Record<string, unknown>;
+    restored.disabled = Object.fromEntries(DEMOS.map((demo) => [demo, rows[demo] === true])) as Record<
+      DemoKey,
+      boolean
+    >;
+  }
+  if (typeof dark === "boolean") restored.dark = dark;
+  if (typeof stats === "boolean") restored.stats = stats;
+  if (typeof label === "string") restored.label = label;
+  if (oneOf(KINDS, kind)) restored.kind = kind;
+  if (color === null || oneOf(Object.values(COLORS), color)) restored.color = color;
+  return restored;
+}
+
+function oneOf<T>(values: readonly T[], value: unknown): value is T {
+  return values.includes(value as T);
 }

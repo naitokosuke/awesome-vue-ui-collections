@@ -1,12 +1,9 @@
 <script setup lang="ts">
-import { computed, inject, ref } from "vue";
-import { controls } from "../../store";
-import { overlayKey } from "../mount";
-import type { DemoKey } from "../types";
+import { computed, ref } from "vue";
+import DemoCells from "../DemoCells.vue";
+import { useMountContext } from "../mount";
 
-defineProps<{ demo: DemoKey }>();
-
-const overlay = inject(overlayKey)!;
+const { controls, overlay } = useMountContext();
 const size = computed(() => (({ small: "small", medium: "default", large: "large" }) as const)[controls.size]);
 
 const fruits = ["Apple", "Banana", "Cherry"];
@@ -18,32 +15,27 @@ const open = ref(false);
 
 <template>
   <el-config-provider :size>
-    <div class="demo">
-      <el-button v-if="demo === 'button'" type="primary" :disabled="controls.disabled[demo]">
-        {{ controls.label }}
-      </el-button>
+    <DemoCells>
+      <template #button="{ disabled }">
+        <el-button type="primary" :disabled>{{ controls.label }}</el-button>
+      </template>
 
-      <el-input v-else-if="demo === 'input'" v-model="name" placeholder="Name" :disabled="controls.disabled[demo]" />
+      <template #input="{ disabled }">
+        <el-input v-model="name" placeholder="Name" :disabled />
+      </template>
 
-      <el-select
-        v-else-if="demo === 'select'"
-        v-model="fruit"
-        placeholder="Fruit"
-        :append-to="overlay"
-        :disabled="controls.disabled[demo]"
-      >
-        <el-option v-for="item in fruits" :key="item" :label="item" :value="item" />
-      </el-select>
+      <template #select="{ disabled }">
+        <el-select v-model="fruit" placeholder="Fruit" :append-to="overlay" :disabled>
+          <el-option v-for="item in fruits" :key="item" :label="item" :value="item" />
+        </el-select>
+      </template>
 
-      <el-switch
-        v-else-if="demo === 'switch'"
-        v-model="enabled"
-        active-text="Notifications"
-        :disabled="controls.disabled[demo]"
-      />
+      <template #switch="{ disabled }">
+        <el-switch v-model="enabled" active-text="Notifications" :disabled />
+      </template>
 
-      <template v-else-if="demo === 'dialog'">
-        <el-button :disabled="controls.disabled[demo]" @click="open = true">Open dialog</el-button>
+      <template #dialog="{ disabled }">
+        <el-button :disabled @click="open = true">Open dialog</el-button>
         <el-dialog v-model="open" title="Element Plus" width="400" :append-to="overlay" :lock-scroll="false">
           This dialog is teleported into the Element Plus overlay host.
           <template #footer>
@@ -51,16 +43,6 @@ const open = ref(false);
           </template>
         </el-dialog>
       </template>
-    </div>
+    </DemoCells>
   </el-config-provider>
 </template>
-
-<style scoped>
-.demo {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 100%;
-  padding: 16px;
-}
-</style>

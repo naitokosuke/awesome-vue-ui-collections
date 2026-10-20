@@ -1,17 +1,13 @@
 <script setup lang="ts">
-import { computed, inject, ref } from "vue";
-import { controls } from "../../store";
-import { overlayKey } from "../mount";
-import type { DemoKey } from "../types";
+import { computed, ref } from "vue";
+import DemoCells from "../DemoCells.vue";
+import { useMountContext } from "../mount";
 
-defineProps<{ demo: DemoKey }>();
-
-const overlay = inject(overlayKey)!;
+const { controls, overlay } = useMountContext();
 const size = computed(() => ({ small: "small", medium: "default", large: "large" })[controls.size]);
 const density = computed(
   () => (({ small: "compact", medium: "comfortable", large: "default" }) as const)[controls.size],
 );
-
 /** Vuetify's fields don't use primary by default; only opt in when a color is chosen. */
 const themed = computed(() => (controls.color ? "primary" : undefined));
 
@@ -23,47 +19,45 @@ const open = ref(false);
 </script>
 
 <template>
-  <!-- Sets the theme without painting a background, so the demo sits on the shell canvas. -->
+  <!-- Provides the theme to the components (each sets its own theme class), without painting a background. -->
   <v-theme-provider :theme="controls.dark ? 'dark' : 'light'">
-    <div class="demo">
-      <v-btn v-if="demo === 'button'" color="primary" :size :disabled="controls.disabled[demo]">
-        {{ controls.label }}
-      </v-btn>
+    <DemoCells>
+      <template #button="{ disabled }">
+        <v-btn color="primary" :size :disabled>{{ controls.label }}</v-btn>
+      </template>
 
-      <v-text-field
-        v-else-if="demo === 'input'"
-        v-model="name"
-        label="Name"
-        :color="themed"
-        :density
-        :disabled="controls.disabled[demo]"
-        hide-details
-      />
+      <template #input="{ disabled }">
+        <v-text-field v-model="name" label="Name" :color="themed" :density :disabled hide-details />
+      </template>
 
-      <v-select
-        v-else-if="demo === 'select'"
-        v-model="fruit"
-        label="Fruit"
-        :color="themed"
-        :items="fruits"
-        :density
-        :disabled="controls.disabled[demo]"
-        :menu-props="{ attach: overlay }"
-        hide-details
-      />
+      <template #select="{ disabled }">
+        <v-select
+          v-model="fruit"
+          label="Fruit"
+          :color="themed"
+          :items="fruits"
+          :density
+          :disabled
+          :menu-props="{ attach: overlay }"
+          hide-details
+        />
+      </template>
 
-      <v-switch
-        v-else-if="demo === 'switch'"
-        v-model="enabled"
-        color="primary"
-        label="Notifications"
-        :density
-        :disabled="controls.disabled[demo]"
-        hide-details
-      />
+      <!-- v-switch is a v-input, which grows to the full width; keep it control-sized so it centers. -->
+      <template #switch="{ disabled }">
+        <v-switch
+          v-model="enabled"
+          class="flex-none"
+          color="primary"
+          label="Notifications"
+          :density
+          :disabled
+          hide-details
+        />
+      </template>
 
-      <template v-else-if="demo === 'dialog'">
-        <v-btn :size :disabled="controls.disabled[demo]" @click="open = true">Open dialog</v-btn>
+      <template #dialog="{ disabled }">
+        <v-btn :size :disabled @click="open = true">Open dialog</v-btn>
         <v-dialog v-model="open" :attach="overlay" max-width="400" scroll-strategy="none">
           <v-card text="This dialog is teleported into the Vuetify overlay host." title="Vuetify">
             <v-card-actions>
@@ -73,22 +67,12 @@ const open = ref(false);
           </v-card>
         </v-dialog>
       </template>
-    </div>
+    </DemoCells>
   </v-theme-provider>
 </template>
 
 <style scoped>
-.demo {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  align-self: stretch;
-  width: 100%;
-  padding: 16px;
-}
-
-/* v-switch is a v-input, which grows to the full width; keep it control-sized so it centers. */
-.demo > .v-switch {
+.flex-none {
   flex: none;
 }
 </style>

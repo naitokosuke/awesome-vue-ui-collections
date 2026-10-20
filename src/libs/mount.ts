@@ -1,36 +1,37 @@
-import { type App, type Component, createApp, type InjectionKey, watchEffect } from "vue";
-import { DEMOS, type MountTargets } from "./types";
+import { type App, type Component, createApp, inject, type InjectionKey, watchEffect } from "vue";
+import type { MountContext } from "./types";
 
-export const overlayKey: InjectionKey<HTMLElement> = Symbol("overlay");
+const contextKey: InjectionKey<MountContext> = Symbol("mount-context");
+
+/** The shell's mount context, inside a library's app: its cells, overlay host and controls. */
+export function useMountContext(): MountContext {
+  const context = inject(contextKey);
+  if (!context) throw new Error("useMountContext() called outside an app created by mountLibrary()");
+  return context;
+}
 
 let appCount = 0;
 
 /**
- * Creates one isolated Vue app per demo cell of a UI library.
- * Plugins installed via `install` stay inside these apps (`install` runs once per cell),
- * and each app mounts into a host element appended to its grid cell, after the shell's
- * own content, so all libraries line up row by row.
+ * Creates the Vue app of one UI library, so plugins installed via `install` stay inside it.
+ * `Demos` renders every row at once through DemoCells.vue, which teleports each one into its
+ * grid cell after the shell's own content, so all libraries line up row by row.
  */
-export function mountLibrary(targets: MountTargets, Demos: Component, install: (app: App) => void) {
-  const unmounts = DEMOS.map((demo) => {
-    const app = createApp(Demos, { demo });
-    // Every app's useId() would otherwise start at `v-0`, so ids (label `for`, aria-*) collide across apps.
-    app.config.idPrefix = `app${appCount++}`;
-    app.provide(overlayKey, targets.overlay);
-    install(app);
-    // `mount` replaces the container's content, so the shell's chip in the cell needs a host of its own.
-    const host = document.createElement("div");
-    host.className = "demo-host";
-    // Layout-transparent, so the demo stays a flex item of the cell as before.
-    host.style.display = "contents";
-    targets.cells[demo].append(host);
-    app.mount(host);
-    return () => {
-      app.unmount();
-      host.remove();
-    };
-  });
-  return () => unmounts.forEach((unmount) => unmount());
+export function mountLibrary(context: MountContext, Demos: Component, install: (app: App) => void = () => {}) {
+  const app = createApp(Demos);
+  // Every app's useId() would otherwise start at `v-0`, so ids (label `for`, aria-*) collide across apps.
+  app.config.idPrefix = `app${appCount++}`;
+  app.provide(contextKey, context);
+  install(app);
+  // The root itself renders only what isn't teleported (e.g. a provider's wrapper element), so it
+  // lives in the overlay host: inside the library's CSS scope, and out of the table's layout.
+  const host = document.createElement("div");
+  context.overlay.append(host);
+  app.mount(host);
+  return () => {
+    app.unmount();
+    host.remove();
+  };
 }
 
 /**
@@ -38,8 +39,8 @@ export function mountLibrary(targets: MountTargets, Demos: Component, install: (
  * overlay host), e.g. to push the selected primary color into a CSS-variable-themed library.
  * `vars` returning null removes them again. Returns a function that stops and cleans up.
  */
-export function bindScopeVars(targets: MountTargets, vars: () => Record<string, string> | null) {
-  const elements = [...Object.values(targets.cells), targets.overlay];
+export function bindScopeVars(context: MountContext, vars: () => Record<string, string> | null) {
+  const elements = [...Object.values(context.cells), context.overlay];
   let applied: string[] = [];
   const clear = (keep: Record<string, string> = {}) => {
     for (const el of elements) for (const name of applied) if (!(name in keep)) el.style.removeProperty(name);

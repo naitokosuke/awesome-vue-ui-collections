@@ -1,13 +1,10 @@
 <script setup lang="ts">
 import { Button, Dialog, Input, Select, Switch } from "@vuetify/v0";
-import { inject, ref, useId } from "vue";
-import { controls } from "../../store";
-import { overlayKey } from "../mount";
-import type { DemoKey } from "../types";
+import { ref, useId } from "vue";
+import DemoCells from "../DemoCells.vue";
+import { useMountContext } from "../mount";
 
-defineProps<{ demo: DemoKey }>();
-
-const overlay = inject(overlayKey)!;
+const { controls, overlay } = useMountContext();
 const id = useId();
 
 const fruits = ["Apple", "Banana", "Cherry"];
@@ -18,68 +15,69 @@ const open = ref(false);
 </script>
 
 <template>
-  <div class="demo" :class="`size-${controls.size}`">
-    <Button.Root v-if="demo === 'button'" class="control button primary" :disabled="controls.disabled[demo]">
-      {{ controls.label }}
-    </Button.Root>
+  <DemoCells class="v0-demo" :class="`v0-size-${controls.size}`">
+    <template #button="{ disabled }">
+      <Button.Root class="control button primary" :disabled>{{ controls.label }}</Button.Root>
+    </template>
 
-    <Input.Root
-      v-else-if="demo === 'input'"
-      :id="`${id}-name`"
-      v-model="name"
-      class="field"
-      :disabled="controls.disabled[demo]"
-    >
-      <label class="label" :for="`${id}-name`">Name</label>
-      <Input.Control class="control input" placeholder="Name" />
-    </Input.Root>
+    <template #input="{ disabled }">
+      <Input.Root :id="`${id}-name`" v-model="name" class="field" :disabled>
+        <label class="label" :for="`${id}-name`">Name</label>
+        <Input.Control class="control input" placeholder="Name" />
+      </Input.Root>
+    </template>
 
-    <Select.Root v-else-if="demo === 'select'" v-model="fruit" :disabled="controls.disabled[demo]">
-      <Select.Activator class="control trigger" label="Fruit">
-        <Select.Placeholder class="placeholder">Fruit</Select.Placeholder>
-        <Select.Value />
-        <Select.Cue class="chevron">▾</Select.Cue>
-      </Select.Activator>
-      <!--
-        Select.Content renders in place as a native [popover] (top layer, CSS
-        anchor positioning). It is teleported only so it sits inside the scope.
-      -->
-      <Teleport :to="overlay">
-        <Select.Content class="v0-popup v0-listbox">
-          <Select.Item v-for="item in fruits" :key="item" class="option" :value="item">
-            {{ item }}
-          </Select.Item>
-        </Select.Content>
-      </Teleport>
-    </Select.Root>
+    <template #select="{ disabled }">
+      <Select.Root v-model="fruit" :disabled>
+        <Select.Activator class="control trigger" label="Fruit">
+          <Select.Placeholder class="placeholder">Fruit</Select.Placeholder>
+          <Select.Value />
+          <Select.Cue class="chevron">▾</Select.Cue>
+        </Select.Activator>
+        <!--
+          Select.Content renders in place as a native [popover] (top layer, CSS
+          anchor positioning). It is teleported only so it sits inside the scope.
+        -->
+        <Teleport :to="overlay">
+          <Select.Content class="v0-popup v0-listbox">
+            <Select.Item v-for="item in fruits" :key="item" class="option" :value="item">
+              {{ item }}
+            </Select.Item>
+          </Select.Content>
+        </Teleport>
+      </Select.Root>
+    </template>
 
-    <div v-else-if="demo === 'switch'" class="field row">
-      <Switch.Root :id="`${id}-switch`" v-model="enabled" class="switch" :disabled="controls.disabled[demo]">
-        <Switch.Thumb class="thumb" />
-      </Switch.Root>
-      <label class="label" :for="`${id}-switch`">Notifications</label>
-    </div>
+    <template #switch="{ disabled }">
+      <div class="field row">
+        <Switch.Root :id="`${id}-switch`" v-model="enabled" class="switch" :disabled>
+          <Switch.Thumb class="thumb" />
+        </Switch.Root>
+        <label class="label" :for="`${id}-switch`">Notifications</label>
+      </div>
+    </template>
 
-    <Dialog.Root v-else-if="demo === 'dialog'" v-model="open">
-      <!-- Dialog.Activator has no disabled prop; the attribute falls through to the <button>. -->
-      <Dialog.Activator class="control button" :disabled="controls.disabled[demo]">Open dialog</Dialog.Activator>
-      <!--
-        Dialog.Content is a native <dialog> opened with showModal(): top layer,
-        ::backdrop and inertness come from the browser, no body locks. It has no
-        portal of its own, so it is teleported to stay inside the scope.
-      -->
-      <Teleport :to="overlay">
-        <Dialog.Content class="v0-popup v0-dialog">
-          <Dialog.Title class="title">Vuetify0</Dialog.Title>
-          <Dialog.Description class="text">This dialog is teleported into the Vuetify0 overlay host.</Dialog.Description
-          >
-          <div class="actions">
-            <Dialog.Close class="control button">Close</Dialog.Close>
-          </div>
-        </Dialog.Content>
-      </Teleport>
-    </Dialog.Root>
-  </div>
+    <template #dialog="{ disabled }">
+      <Dialog.Root v-model="open">
+        <!-- Dialog.Activator has no disabled prop; the attribute falls through to the <button>. -->
+        <Dialog.Activator class="control button" :disabled>Open dialog</Dialog.Activator>
+        <!--
+          Dialog.Content is a native <dialog> opened with showModal(): top layer,
+          ::backdrop and inertness come from the browser, no body locks. It has no
+          portal of its own, so it is teleported to stay inside the scope.
+        -->
+        <Teleport :to="overlay">
+          <Dialog.Content class="v0-popup v0-dialog">
+            <Dialog.Title class="title">Vuetify0</Dialog.Title>
+            <Dialog.Description class="text">This dialog is teleported into the Vuetify0 overlay host.</Dialog.Description>
+            <div class="actions">
+              <Dialog.Close class="control button">Close</Dialog.Close>
+            </div>
+          </Dialog.Content>
+        </Teleport>
+      </Dialog.Root>
+    </template>
+  </DemoCells>
 </template>
 
 <!-- Deliberately plain styles: @vuetify/v0 is headless, these only make the primitives visible. -->
@@ -96,7 +94,7 @@ const open = ref(false);
 }
 
 /*
- * Popup roots live in the overlay host, outside .demo, so they set their own
+ * Popup roots live in the overlay host, outside the cells, so they set their own
  * font. Both are top-layer elements (popover / modal dialog), so no z-index.
  */
 [data-lib='vuetify0'] .v0-popup {
@@ -132,25 +130,21 @@ const open = ref(false);
  * (element + comment), so they never receive the scoped data-v attribute.
  */
 [data-lib='vuetify0'] {
-  .demo {
+  /* Each cell's frame (DemoCells). */
+  .v0-demo {
     --v0-height: 32px;
     --v0-font: 14px;
 
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    width: 100%;
-    padding: 16px;
     color: var(--v0-fg);
     font: var(--v0-font) / 1.4 system-ui, sans-serif;
   }
 
-  .size-small {
+  .v0-size-small {
     --v0-height: 24px;
     --v0-font: 12px;
   }
 
-  .size-large {
+  .v0-size-large {
     --v0-height: 40px;
     --v0-font: 16px;
   }

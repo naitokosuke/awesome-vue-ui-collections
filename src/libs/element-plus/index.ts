@@ -1,10 +1,9 @@
 import "element-plus/dist/index.css";
 import "element-plus/theme-chalk/dark/css-vars.css";
 import ElementPlus from "element-plus";
-import { controls } from "../../store";
 import { mix, rgbChannels, shade, tint } from "../color";
 import { bindScopeVars, mountLibrary } from "../mount";
-import type { MountTargets } from "../types";
+import type { MountContext } from "../types";
 import Demos from "./Demos.vue";
 
 export { version } from "element-plus";
@@ -21,11 +20,12 @@ function palette(hex: string, dark: boolean): Record<string, string> {
   };
 }
 
-export function mount(targets: MountTargets) {
-  const unmount = mountLibrary(targets, Demos, (app) => {
+export function mount(context: MountContext) {
+  const { controls } = context;
+  const unmount = mountLibrary(context, Demos, (app) => {
     app.use(ElementPlus);
   });
-  const unbind = bindScopeVars(targets, () => (controls.color ? palette(controls.color, controls.dark) : null));
+  const unbind = bindScopeVars(context, () => (controls.color ? palette(controls.color, controls.dark) : null));
   return () => {
     unbind();
     unmount();

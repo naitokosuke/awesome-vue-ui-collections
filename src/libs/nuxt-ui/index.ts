@@ -1,9 +1,8 @@
 import "./style.css";
 import ui from "@nuxt/ui/vue-plugin";
-import { controls } from "../../store";
 import { shade, tint } from "../color";
 import { bindScopeVars, mountLibrary } from "../mount";
-import type { MountTargets } from "../types";
+import type { MountContext } from "../types";
 import Demos from "./Demos.vue";
 
 // `@nuxt/ui` doesn't expose its package.json through `exports`.
@@ -32,12 +31,13 @@ function primaryVars(hex: string, dark: boolean) {
   return vars;
 }
 
-export function mount(targets: MountTargets) {
-  const unmount = mountLibrary(targets, Demos, (app) => {
+export function mount(context: MountContext) {
+  const { controls } = context;
+  const unmount = mountLibrary(context, Demos, (app) => {
     app.use(ui);
   });
   // `--ui-primary` resolves on `:root`, so it must be set here too, not just the scale.
-  const unbind = bindScopeVars(targets, () => (controls.color ? primaryVars(controls.color, controls.dark) : null));
+  const unbind = bindScopeVars(context, () => (controls.color ? primaryVars(controls.color, controls.dark) : null));
   return () => {
     unbind();
     unmount();

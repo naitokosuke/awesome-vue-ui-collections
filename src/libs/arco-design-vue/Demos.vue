@@ -1,12 +1,9 @@
 <script setup lang="ts">
-import { inject, ref } from "vue";
-import { controls } from "../../store";
-import { overlayKey } from "../mount";
-import type { DemoKey } from "../types";
+import { ref } from "vue";
+import DemoCells from "../DemoCells.vue";
+import { useMountContext } from "../mount";
 
-defineProps<{ demo: DemoKey }>();
-
-const overlay = inject(overlayKey)!;
+const { controls, overlay } = useMountContext();
 
 const fruits = ["Apple", "Banana", "Cherry"];
 const name = ref("");
@@ -18,34 +15,30 @@ const open = ref(false);
 <template>
   <!-- Arco's switch only has small/medium sizes; everything else reads the provider size. -->
   <a-config-provider :size="controls.size">
-    <div class="demo">
-      <a-button v-if="demo === 'button'" type="primary" :disabled="controls.disabled[demo]">
-        {{ controls.label }}
-      </a-button>
+    <DemoCells>
+      <template #button="{ disabled }">
+        <a-button type="primary" :disabled>{{ controls.label }}</a-button>
+      </template>
 
-      <a-input v-else-if="demo === 'input'" v-model="name" placeholder="Name" :disabled="controls.disabled[demo]" />
+      <template #input="{ disabled }">
+        <a-input v-model="name" placeholder="Name" :disabled />
+      </template>
 
-      <a-select
-        v-else-if="demo === 'select'"
-        v-model="fruit"
-        placeholder="Fruit"
-        :popup-container="overlay"
-        :disabled="controls.disabled[demo]"
-      >
-        <a-option v-for="item in fruits" :key="item" :value="item">{{ item }}</a-option>
-      </a-select>
+      <template #select="{ disabled }">
+        <a-select v-model="fruit" placeholder="Fruit" :popup-container="overlay" :disabled>
+          <a-option v-for="item in fruits" :key="item" :value="item">{{ item }}</a-option>
+        </a-select>
+      </template>
 
-      <a-space v-else-if="demo === 'switch'" align="center">
-        <a-switch
-          v-model="enabled"
-          :size="controls.size === 'small' ? 'small' : 'medium'"
-          :disabled="controls.disabled[demo]"
-        />
-        <span class="text">Notifications</span>
-      </a-space>
+      <template #switch="{ disabled }">
+        <a-space align="center">
+          <a-switch v-model="enabled" :size="controls.size === 'small' ? 'small' : 'medium'" :disabled />
+          <span class="text">Notifications</span>
+        </a-space>
+      </template>
 
-      <template v-else-if="demo === 'dialog'">
-        <a-button :disabled="controls.disabled[demo]" @click="open = true">Open dialog</a-button>
+      <template #dialog="{ disabled }">
+        <a-button :disabled @click="open = true">Open dialog</a-button>
         <!-- Arco only hides overflow on the popup container when it scrolls; the overlay host never does. -->
         <a-modal v-model:visible="open" title="Arco Design Vue" :width="400" :popup-container="overlay">
           This dialog is teleported into the Arco Design Vue overlay host.
@@ -54,19 +47,11 @@ const open = ref(false);
           </template>
         </a-modal>
       </template>
-    </div>
+    </DemoCells>
   </a-config-provider>
 </template>
 
 <style scoped>
-.demo {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 100%;
-  padding: 16px;
-}
-
 .text {
   color: var(--color-text-1);
 }

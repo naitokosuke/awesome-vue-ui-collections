@@ -1,20 +1,20 @@
 import "quasar/dist/quasar.css";
 import "@quasar/extras/material-icons/material-icons.css";
 import { Quasar } from "quasar";
-import { controls } from "../../store";
 import { bindScopeVars, mountLibrary } from "../mount";
-import type { MountTargets } from "../types";
+import type { MountContext } from "../types";
 import Demos from "./Demos.vue";
 
 export const version: string = Quasar.version;
 
-export function mount(targets: MountTargets) {
+export function mount(context: MountContext) {
+  const { controls } = context;
   // Workaround: Quasar's Platform/Dark plugins unconditionally add classes to <body>
   // (`desktop`, `no-touch`, `body--light`, ...) on install. None of the demos depend
   // on them (dark mode comes from `darkAttrs` + the `dark` prop), so undo them.
   const bodyClass = document.body.className;
 
-  const unmount = mountLibrary(targets, Demos, (app) => {
+  const unmount = mountLibrary(context, Demos, (app) => {
     app.use(Quasar, {
       config: {
         dark: false,
@@ -30,7 +30,7 @@ export function mount(targets: MountTargets) {
   // appends `#q-portal--<type>--<n>` nodes to <body>. Move them into the overlay host,
   // inside the CSS scope. Vue's Teleport keeps targeting the same (moved) node.
   const adopt = (node: Node) => {
-    if (node instanceof HTMLElement && node.id.startsWith("q-portal--")) targets.overlay.append(node);
+    if (node instanceof HTMLElement && node.id.startsWith("q-portal--")) context.overlay.append(node);
   };
   const observer = new MutationObserver((records) => {
     for (const record of records) record.addedNodes.forEach(adopt);
@@ -39,7 +39,7 @@ export function mount(targets: MountTargets) {
 
   // quasar.css reads `--q-primary` everywhere (bg/text-primary, toggle, focused field,
   // active item); its `:root` default is scoped onto these same elements.
-  const unbind = bindScopeVars(targets, () => (controls.color ? { "--q-primary": controls.color } : null));
+  const unbind = bindScopeVars(context, () => (controls.color ? { "--q-primary": controls.color } : null));
 
   return () => {
     unbind();

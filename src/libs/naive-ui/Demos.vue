@@ -1,14 +1,11 @@
 <script setup lang="ts">
 import { darkTheme, type GlobalThemeOverrides } from "naive-ui";
-import { computed, inject, ref } from "vue";
-import { controls } from "../../store";
+import { computed, ref } from "vue";
 import { shade, tint } from "../color";
-import { overlayKey } from "../mount";
-import type { DemoKey } from "../types";
+import DemoCells from "../DemoCells.vue";
+import { useMountContext } from "../mount";
 
-defineProps<{ demo: DemoKey }>();
-
-const overlay = inject(overlayKey)!;
+const { controls, overlay } = useMountContext();
 
 // Naive's dark theme pairs a light primary with dark text, so lighten the color there.
 const themeOverrides = computed<GlobalThemeOverrides | null>(() => {
@@ -32,65 +29,59 @@ const open = ref(false);
 </script>
 
 <template>
-  <!-- preflight-style-disabled: the runtime-injected `body { ... }` rule is imported scoped instead (virtual:naive-ui-preflight.css) -->
+  <!--
+    abstract: no wrapper element (it would stay behind in the overlay host; the demos are teleported out).
+    preflight-style-disabled: the runtime-injected `body { ... }` rule is imported scoped instead (virtual:naive-ui-preflight.css).
+  -->
   <n-config-provider
-    class="demo"
+    abstract
     :theme="controls.dark ? darkTheme : null"
     :theme-overrides="themeOverrides"
     preflight-style-disabled
   >
-    <n-button v-if="demo === 'button'" type="primary" :size="controls.size" :disabled="controls.disabled[demo]">
-      {{ controls.label }}
-    </n-button>
+    <DemoCells>
+      <template #button="{ disabled }">
+        <n-button type="primary" :size="controls.size" :disabled>{{ controls.label }}</n-button>
+      </template>
 
-    <n-input
-      v-else-if="demo === 'input'"
-      v-model:value="name"
-      placeholder="Name"
-      :size="controls.size"
-      :disabled="controls.disabled[demo]"
-    />
+      <template #input="{ disabled }">
+        <n-input v-model:value="name" placeholder="Name" :size="controls.size" :disabled />
+      </template>
 
-    <n-select
-      v-else-if="demo === 'select'"
-      v-model:value="fruit"
-      placeholder="Fruit"
-      :options="fruits"
-      :to="overlay"
-      :size="controls.size"
-      :disabled="controls.disabled[demo]"
-    />
+      <template #select="{ disabled }">
+        <n-select
+          v-model:value="fruit"
+          placeholder="Fruit"
+          :options="fruits"
+          :to="overlay"
+          :size="controls.size"
+          :disabled
+        />
+      </template>
 
-    <n-space v-else-if="demo === 'switch'" align="center">
-      <n-switch v-model:value="enabled" :size="controls.size" :disabled="controls.disabled[demo]" />
-      <n-text>Notifications</n-text>
-    </n-space>
+      <template #switch="{ disabled }">
+        <n-space align="center">
+          <n-switch v-model:value="enabled" :size="controls.size" :disabled />
+          <n-text>Notifications</n-text>
+        </n-space>
+      </template>
 
-    <template v-else-if="demo === 'dialog'">
-      <n-button :size="controls.size" :disabled="controls.disabled[demo]" @click="open = true">Open dialog</n-button>
-      <n-modal
-        v-model:show="open"
-        preset="card"
-        title="Naive UI"
-        :to="overlay"
-        :block-scroll="false"
-        style="width: 400px"
-      >
-        This dialog is teleported into the Naive UI overlay host.
-        <template #footer>
-          <n-button @click="open = false">Close</n-button>
-        </template>
-      </n-modal>
-    </template>
+      <template #dialog="{ disabled }">
+        <n-button :size="controls.size" :disabled @click="open = true">Open dialog</n-button>
+        <n-modal
+          v-model:show="open"
+          preset="card"
+          title="Naive UI"
+          :to="overlay"
+          :block-scroll="false"
+          style="width: 400px"
+        >
+          This dialog is teleported into the Naive UI overlay host.
+          <template #footer>
+            <n-button @click="open = false">Close</n-button>
+          </template>
+        </n-modal>
+      </template>
+    </DemoCells>
   </n-config-provider>
 </template>
-
-<style scoped>
-.demo {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 100%;
-  padding: 16px;
-}
-</style>

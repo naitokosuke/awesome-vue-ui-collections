@@ -21,14 +21,11 @@ import {
   SwitchRoot,
   SwitchThumb,
 } from "reka-ui";
-import { inject, ref, useId } from "vue";
-import { controls } from "../../store";
-import { overlayKey } from "../mount";
-import type { DemoKey } from "../types";
+import { ref, useId } from "vue";
+import DemoCells from "../DemoCells.vue";
+import { useMountContext } from "../mount";
 
-defineProps<{ demo: DemoKey }>();
-
-const overlay = inject(overlayKey)!;
+const { controls, overlay } = useMountContext();
 const id = useId();
 
 const fruits = ["Apple", "Banana", "Cherry"];
@@ -45,72 +42,74 @@ const open = ref(false);
     body locks are turned off per component below.
   -->
   <ConfigProvider :teleport-to="overlay" :scroll-body="false">
-    <div class="demo" :class="`size-${controls.size}`">
-      <button v-if="demo === 'button'" class="control button primary" type="button" :disabled="controls.disabled[demo]">
-        {{ controls.label }}
-      </button>
+    <DemoCells class="rk-demo" :class="`rk-size-${controls.size}`">
+      <template #button="{ disabled }">
+        <button class="control button primary" type="button" :disabled>{{ controls.label }}</button>
+      </template>
 
       <!-- Reka UI has no text input primitive; Label + native input is the intended pattern -->
-      <div v-else-if="demo === 'input'" class="field">
-        <Label class="label" :for="`${id}-name`">Name</Label>
-        <input
-          :id="`${id}-name`"
-          v-model="name"
-          class="control input"
-          placeholder="Name"
-          :disabled="controls.disabled[demo]"
-        >
-      </div>
+      <template #input="{ disabled }">
+        <div class="field">
+          <Label class="label" :for="`${id}-name`">Name</Label>
+          <input :id="`${id}-name`" v-model="name" class="control input" placeholder="Name" :disabled>
+        </div>
+      </template>
 
-      <SelectRoot v-else-if="demo === 'select'" v-model="fruit" :disabled="controls.disabled[demo]">
-        <SelectTrigger aria-label="Fruit" class="control trigger">
-          <SelectValue placeholder="Fruit" />
-          <SelectIcon class="chevron">▾</SelectIcon>
-        </SelectTrigger>
-        <SelectPortal>
-          <!-- body-lock / outside-pointer-events would set overflow and pointer-events on <body> -->
-          <SelectContent
-            class="rk-popup rk-listbox"
-            position="popper"
-            :side-offset="4"
-            :body-lock="false"
-            :disable-outside-pointer-events="false"
-          >
-            <SelectViewport>
-              <SelectItem v-for="item in fruits" :key="item" class="option" :value="item">
-                <SelectItemText>{{ item }}</SelectItemText>
-              </SelectItem>
-            </SelectViewport>
-          </SelectContent>
-        </SelectPortal>
-      </SelectRoot>
+      <template #select="{ disabled }">
+        <SelectRoot v-model="fruit" :disabled>
+          <SelectTrigger aria-label="Fruit" class="control trigger">
+            <SelectValue placeholder="Fruit" />
+            <SelectIcon class="chevron">▾</SelectIcon>
+          </SelectTrigger>
+          <SelectPortal>
+            <!-- body-lock / outside-pointer-events would set overflow and pointer-events on <body> -->
+            <SelectContent
+              class="rk-popup rk-listbox"
+              position="popper"
+              :side-offset="4"
+              :body-lock="false"
+              :disable-outside-pointer-events="false"
+            >
+              <SelectViewport>
+                <SelectItem v-for="item in fruits" :key="item" class="option" :value="item">
+                  <SelectItemText>{{ item }}</SelectItemText>
+                </SelectItem>
+              </SelectViewport>
+            </SelectContent>
+          </SelectPortal>
+        </SelectRoot>
+      </template>
 
-      <div v-else-if="demo === 'switch'" class="field row">
-        <SwitchRoot :id="`${id}-switch`" v-model="enabled" class="switch" :disabled="controls.disabled[demo]">
-          <SwitchThumb class="thumb" />
-        </SwitchRoot>
-        <Label class="label" :for="`${id}-switch`">Notifications</Label>
-      </div>
+      <template #switch="{ disabled }">
+        <div class="field row">
+          <SwitchRoot :id="`${id}-switch`" v-model="enabled" class="switch" :disabled>
+            <SwitchThumb class="thumb" />
+          </SwitchRoot>
+          <Label class="label" :for="`${id}-switch`">Notifications</Label>
+        </div>
+      </template>
 
       <!--
         modal=false: a modal DialogRoot always locks the page (DialogOverlay sets
         body overflow:hidden, DialogContent sets body pointer-events:none and
         aria-hides siblings) with no option to opt out. The backdrop below is plain markup.
       -->
-      <DialogRoot v-else-if="demo === 'dialog'" v-model:open="open" :modal="false">
-        <DialogTrigger class="control button" :disabled="controls.disabled[demo]">Open dialog</DialogTrigger>
-        <DialogPortal>
-          <div v-if="open" class="backdrop" />
-          <DialogContent class="rk-popup rk-dialog">
-            <DialogTitle class="title">Reka UI</DialogTitle>
-            <DialogDescription class="text">This dialog is teleported into the Reka UI overlay host.</DialogDescription>
-            <div class="actions">
-              <DialogClose class="control button">Close</DialogClose>
-            </div>
-          </DialogContent>
-        </DialogPortal>
-      </DialogRoot>
-    </div>
+      <template #dialog="{ disabled }">
+        <DialogRoot v-model:open="open" :modal="false">
+          <DialogTrigger class="control button" :disabled>Open dialog</DialogTrigger>
+          <DialogPortal>
+            <div v-if="open" class="backdrop" />
+            <DialogContent class="rk-popup rk-dialog">
+              <DialogTitle class="title">Reka UI</DialogTitle>
+              <DialogDescription class="text">This dialog is teleported into the Reka UI overlay host.</DialogDescription>
+              <div class="actions">
+                <DialogClose class="control button">Close</DialogClose>
+              </div>
+            </DialogContent>
+          </DialogPortal>
+        </DialogRoot>
+      </template>
+    </DemoCells>
   </ConfigProvider>
 </template>
 
@@ -127,10 +126,29 @@ const open = ref(false);
   --rk-off: var(--hl-off);
 }
 
+/* Each cell's frame (DemoCells): not this component's element, so it's styled by class here. */
+[data-lib='reka-ui'] .rk-demo {
+  --rk-height: 32px;
+  --rk-font: 14px;
+
+  color: var(--rk-fg);
+  font: var(--rk-font) / 1.4 system-ui, sans-serif;
+}
+
+[data-lib='reka-ui'] .rk-size-small {
+  --rk-height: 24px;
+  --rk-font: 12px;
+}
+
+[data-lib='reka-ui'] .rk-size-large {
+  --rk-height: 40px;
+  --rk-font: 16px;
+}
+
 /*
  * Roots of portalled content (SelectContent, DialogContent) sit behind Presence
  * wrappers, so they are styled by class here instead of relying on scoped ids.
- * They live in the overlay host, outside .demo, so they set their own font.
+ * They live in the overlay host, outside the cells, so they set their own font.
  */
 [data-lib='reka-ui'] .rk-popup {
   box-sizing: border-box;
@@ -160,29 +178,6 @@ const open = ref(false);
 </style>
 
 <style scoped>
-.demo {
-  --rk-height: 32px;
-  --rk-font: 14px;
-
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 100%;
-  padding: 16px;
-  color: var(--rk-fg);
-  font: var(--rk-font) / 1.4 system-ui, sans-serif;
-}
-
-.size-small {
-  --rk-height: 24px;
-  --rk-font: 12px;
-}
-
-.size-large {
-  --rk-height: 40px;
-  --rk-font: 16px;
-}
-
 .control {
   box-sizing: border-box;
   height: var(--rk-height);

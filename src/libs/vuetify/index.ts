@@ -4,15 +4,15 @@ import { createVuetify } from "vuetify";
 import * as components from "vuetify/components";
 import * as directives from "vuetify/directives";
 import { aliases, mdi } from "vuetify/iconsets/mdi-svg";
-import { controls } from "../../store";
 import { shade } from "../color";
 import { mountLibrary } from "../mount";
-import type { MountTargets } from "../types";
+import type { MountContext } from "../types";
 import Demos from "./Demos.vue";
 
 export { version } from "vuetify";
 
-export function mount(targets: MountTargets) {
+export function mount(context: MountContext) {
+  const { controls } = context;
   const vuetify = createVuetify({
     components,
     directives,
@@ -20,7 +20,7 @@ export function mount(targets: MountTargets) {
     // The runtime theme stylesheet targets `:root` unless scoped.
     theme: { defaultTheme: "light", scope: '[data-lib="vuetify"]' },
   });
-  const unmount = mountLibrary(targets, Demos, (app) => {
+  const unmount = mountLibrary(context, Demos, (app) => {
     app.use(vuetify);
   });
 

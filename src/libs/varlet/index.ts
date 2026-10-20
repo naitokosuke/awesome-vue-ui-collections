@@ -1,10 +1,9 @@
 import "@varlet/ui/es/varlet.css";
 import "./measure.css";
 import Varlet, { Dialog, Menu, Themes } from "@varlet/ui";
-import { controls } from "../../store";
 import { hexToRgb } from "../color";
 import { bindScopeVars, mountLibrary } from "../mount";
-import type { MountTargets } from "../types";
+import type { MountContext } from "../types";
 import Demos from "./Demos.vue";
 
 export { version } from "@varlet/ui";
@@ -33,22 +32,23 @@ function hexToHsl(hex: string) {
   return `${Math.round(h * 60)}, ${Math.round(s * 1000) / 10}%, ${Math.round(l * 1000) / 10}%`;
 }
 
-export function mount(targets: MountTargets) {
+export function mount(context: MountContext) {
+  const { controls } = context;
   // Select renders its options through an internal <var-menu> that teleports to `body`
   // and has no prop to change that, so set the defaults globally. Dialog gets the same,
   // plus no `var--lock` class on <body>.
-  Menu.setPropsDefaults({ teleport: targets.overlay });
-  Dialog.setPropsDefaults({ teleport: targets.overlay, lockScroll: false });
+  Menu.setPropsDefaults({ teleport: context.overlay });
+  Dialog.setPropsDefaults({ teleport: context.overlay, lockScroll: false });
 
   // `StyleProvider(vars)` would write the theme to `:root`; instead the dark theme and the
   // chosen primary go inline on the scope elements (cells + overlay host), where Varlet's
   // `:root` vars are declared, so derived vars like `--color-primary` pick them up.
-  const stopTheme = bindScopeVars(targets, () => {
+  const stopTheme = bindScopeVars(context, () => {
     const vars = { ...(controls.dark ? darkVars : {}), ...(controls.color ? primaryVars(controls.color) : {}) };
     return Object.keys(vars).length ? vars : null;
   });
 
-  const unmount = mountLibrary(targets, Demos, (app) => {
+  const unmount = mountLibrary(context, Demos, (app) => {
     app.use(Varlet);
   });
   return () => {

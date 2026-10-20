@@ -1,4 +1,4 @@
-<!-- Shown in a row whose component the library doesn't offer, so every row still has a cell. -->
+<!-- Fills a DemoCells slot for a row whose component the library doesn't offer, so every row still has a cell. -->
 <script setup lang="ts">
 defineProps<{
   /** Optional note, e.g. what the library offers instead. */
@@ -20,7 +20,7 @@ defineProps<{
   align-items: center;
   gap: var(--avc-space-0-5);
   width: 100%;
-  padding: var(--avc-space-4);
+  /* No padding of its own: it sits in a DemoCells frame, which has it. */
   /* The shell's tokens (src/tokens.css), inherited into the cell. */
   color: var(--avc-color-text-muted);
   font: var(--avc-text-sm) / var(--avc-leading-normal) var(--avc-font-mono);
