@@ -1,9 +1,3 @@
-<!--
-  A radio group drawn as a row of equal chips; the selected chip gets a ring.
-  Type-safe as in https://zenn.dev/comm_vue_nuxt/articles/vue-radio-etude: `Option` is inferred
-  from `options` as a literal union, so `v-model` only accepts one of them.
-  Each chip shows the option itself unless the `option` slot renders something else.
--->
 <script setup lang="ts" generic="Option extends string">
 import { useId } from 'vue'
 
