@@ -32,9 +32,20 @@ const open = ref(false);
         <USwitch v-model="enabled" label="Notifications" :size :disabled />
       </template>
 
+      <!--
+        modal=false: a modal UModal (a Reka dialog) locks the page (body overflow:hidden,
+        body pointer-events:none) with no opt-out, and its overlay only renders for modal
+        dialogs. The backdrop is plain markup instead, with UModal's own overlay look.
+        z-50: both would otherwise paint under the table's sticky header row and label column.
+      -->
       <template #dialog="{ disabled }">
+        <Teleport :to="overlay">
+          <div v-if="open" class="fixed inset-0 z-50 bg-elevated/75" />
+        </Teleport>
         <UModal
           v-model:open="open"
+          :modal="false"
+          :ui="{ content: 'z-50' }"
           description="This dialog is teleported into the Nuxt UI overlay host."
           title="Nuxt UI"
         >

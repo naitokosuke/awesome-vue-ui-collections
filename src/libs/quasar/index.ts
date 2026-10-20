@@ -12,7 +12,7 @@ export function mount(context: MountContext) {
   // Workaround: Quasar's Platform/Dark plugins unconditionally add classes to <body>
   // (`desktop`, `no-touch`, `body--light`, ...) on install. None of the demos depend
   // on them (dark mode comes from `darkAttrs` + the `dark` prop), so undo them.
-  const bodyClass = document.body.className;
+  const bodyClass = document.body.getAttribute("class");
 
   const unmount = mountLibrary(context, Demos, (app) => {
     app.use(Quasar, {
@@ -24,7 +24,9 @@ export function mount(context: MountContext) {
     });
   });
 
-  document.body.className = bodyClass;
+  // Restored exactly: no `class=""` left behind on a <body> that had no class attribute.
+  if (bodyClass === null) document.body.removeAttribute("class");
+  else document.body.setAttribute("class", bodyClass);
 
   // Workaround: Quasar has no option for where portals (QMenu, QDialog, ...) go; it always
   // appends `#q-portal--<type>--<n>` nodes to <body>. Move them into the overlay host,

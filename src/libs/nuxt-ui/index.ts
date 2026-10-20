@@ -31,12 +31,42 @@ function primaryVars(hex: string, dark: boolean) {
   return vars;
 }
 
+/** The part of unhead (Nuxt UI's head manager) used below; it isn't a dependency of this project. */
+interface Head {
+  hooks: {
+    hook(
+      name: "tags:resolve",
+      fn: (ctx: { tags: { props: Record<string, unknown>; innerHTML?: string }[] }) => void,
+    ): void;
+  };
+}
+
+/**
+ * Nuxt UI's colors plugin writes `:root, :host { --ui-color-* }` plus `.light` / `.dark`
+ * `{ --ui-<color> }` into a runtime <style> that the build-time scoping never sees: onto the
+ * whole page, and onto other libraries' `.dark` scopes. Same rewrite as scope-library-css.ts.
+ */
+function scopeColors(css: string) {
+  const scope = `[data-lib="nuxt-ui"]`;
+  return css
+    .replaceAll(":root, :host, .light {", `:where(${scope}) {`)
+    .replaceAll(":root, :host {", `:where(${scope}) {`)
+    .replaceAll(".dark {", `:where(${scope}.dark) {`);
+}
+
 export function mount(context: MountContext) {
   const { controls } = context;
   const unmount = mountLibrary(context, Demos, (app) => {
     app.use(ui);
+    // The colors style goes through unhead; rewrite it before it's rendered into <head>.
+    const head = app.config.globalProperties.$unhead as Head;
+    head.hooks.hook("tags:resolve", ({ tags }) => {
+      for (const tag of tags) {
+        if (tag.props.id === "nuxt-ui-colors" && tag.innerHTML) tag.innerHTML = scopeColors(tag.innerHTML);
+      }
+    });
   });
-  // `--ui-primary` resolves on `:root`, so it must be set here too, not just the scale.
+  // `--ui-primary` resolves on the scope element, so it must be set here too, not just the scale.
   const unbind = bindScopeVars(context, () => (controls.color ? primaryVars(controls.color, controls.dark) : null));
   return () => {
     unbind();
