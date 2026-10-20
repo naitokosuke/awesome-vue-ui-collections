@@ -4,6 +4,7 @@ import ui from "@nuxt/ui/vite";
 import { defineConfig } from "@vizejs/vite-plugin/vite-plus";
 import Icons from "unplugin-icons/vite";
 import { lazyPlugins } from "vite-plus";
+import { playwright } from "vite-plus/test/browser-playwright";
 import { naiveUiPreflight } from "./build/naive-ui-preflight.ts";
 import { npmStats } from "./build/npm-stats.ts";
 import { scopeLibraryCss } from "./build/scope-library-css.ts";
@@ -58,7 +59,8 @@ export default defineConfig({
     ui({ colorMode: false, router: false, dts: false, autoImport: false }),
     naiveUiPreflight(),
     scopeLibraryCss(metas.map(({ id, cssMatch }) => ({ id, match: cssMatch }))),
-    npmStats(metas.flatMap((meta) => meta.package ?? [])),
+    // Tests don't hit the npm registry: every package's stats are missing, as if the fetch had failed.
+    npmStats(process.env.VITEST ? [] : metas.flatMap((meta) => meta.package ?? [])),
     {
       // `metas` is read once at startup (CSS scoping, npm stats), so adding, editing or
       // removing a library's meta.ts needs a dev-server restart to take effect.
@@ -81,9 +83,24 @@ export default defineConfig({
     // Adapters are lazy-loaded; scan them up front so the dev server doesn't
     // re-optimize mid-load and end up with two copies of Vue.
     entries: ["index.html", "src/libs/*/index.ts"],
+    // A pre-bundled copy of Vitest's API wouldn't share the browser runner's state.
+    exclude: ["vite-plus/test"],
   },
   css: {
     transformer: "lightningcss",
+  },
+  test: {
+    include: ["src/**/*.test.ts"],
+    // In a real browser: what's tested is how every library's CSS and DOM side effects play out on one page.
+    browser: {
+      enabled: true,
+      provider: playwright(),
+      headless: true,
+      instances: [{ browser: "chromium" }],
+    },
+    // Loading every library on a cold dev server takes a while.
+    testTimeout: 120_000,
+    hookTimeout: 120_000,
   },
 }).withVue({
   // Upstream markup such as Inspira UI's <div> inside <button>; Vize lints it but can't skip it entirely.
