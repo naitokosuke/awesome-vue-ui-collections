@@ -1,0 +1,4 @@
+# Vize releases several times a day; let its packages skip pnpm's minimum release age.
+minimumReleaseAgeExclude:
+  - vize
+  - '@vizejs/*'

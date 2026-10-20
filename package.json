@@ -4,7 +4,8 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "vue-tsc --noEmit && vite build",
+    "typecheck": "vize check",
+    "build": "vize check && vite build",
     "preview": "vite preview"
   },
   "dependencies": {
@@ -42,12 +43,12 @@
   "devDependencies": {
     "@iconify-json/lucide": "^1.2.145",
     "@types/node": "^26.6.5",
-    "@vitejs/plugin-vue": "^6.0.10",
+    "@vizejs/vite-plugin": "^0.491.0",
     "lightningcss": "^1.33.0",
     "shadcn-vue": "^2.8.2",
-    "typescript": "^6.0.3",
+    "typescript": "^7.0.2",
     "unplugin-icons": "^24.0.0",
     "vite": "^8.3.4",
-    "vue-tsc": "^3.3.13"
+    "vize": "^0.491.0"
   }
 }

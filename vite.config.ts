@@ -1,7 +1,7 @@
 import { globSync } from 'node:fs'
 import { pathToFileURL } from 'node:url'
 import ui from '@nuxt/ui/vite'
-import vue from '@vitejs/plugin-vue'
+import vize from '@vizejs/vite-plugin'
 import Icons from 'unplugin-icons/vite'
 import { defineConfig } from 'vite'
 import { npmStats } from './build/npm-stats.ts'
@@ -14,7 +14,9 @@ const metas: LibraryMeta[] = await Promise.all(
 
 export default defineConfig({
   plugins: [
-    vue(),
+    // Vue SFCs, compiled by Vize's native compiler. Nuxt UI ships its components as `.vue` files,
+    // so node_modules isn't excluded.
+    vize({ exclude: [] }),
     // Iconify icons as Vue components (`~icons/<set>/<name>`), inlined at build time.
     Icons({ compiler: 'vue3' }),
     // Nuxt UI (Tailwind CSS v4 + auto-imported `U*` components). Its CSS is scoped like any other library.
