@@ -34,9 +34,9 @@ const idPrefix = useId();
 <style scoped>
 /* Uses the shell's --avc-* tokens (../tokens.css). */
 
+/* One row; a container too narrow for it scrolls instead of wrapping. */
 .radio-group {
   display: flex;
-  flex-wrap: wrap;
   gap: var(--avc-space-2);
   margin: 0;
   padding: 0;
@@ -47,6 +47,7 @@ const idPrefix = useId();
 label {
   position: relative;
   display: inline-flex;
+  flex-shrink: 0;
   align-items: center;
   justify-content: center;
   box-sizing: border-box;

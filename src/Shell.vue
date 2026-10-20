@@ -410,6 +410,17 @@ onBeforeUnmount(() => unmounts.forEach((unmount) => unmount()));
   color: var(--avc-color-text-muted);
 }
 
+/* Options stay on one row and scroll sideways when the window is narrower. The padding (offset by
+   the negative margin) keeps the selected ring and the focus outline from being clipped. */
+.options {
+  --ring-room: 6px;
+
+  min-inline-size: 0;
+  margin: calc(-1 * var(--ring-room));
+  padding: var(--ring-room);
+  overflow-x: auto;
+}
+
 /* A color option: fills its RadioGroup chip edge to edge (the chip clips it to its shape). */
 .swatch {
   position: absolute;
