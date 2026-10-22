@@ -38,6 +38,8 @@ export default defineConfig({
   lint: {
     vue: {
       preset: "happy-path",
+      // Also check how components relate: provide/inject, reactivity passed between files, races.
+      crossFile: true,
       // Flags component props such as `<n-space align>` as deprecated HTML attributes.
       rules: { "html/deprecated-attr": "off" },
     },
@@ -147,6 +149,11 @@ export default defineConfig({
           "a11y/interactive-supports-focus": "off",
           "a11y/mouse-events-have-key-events": "off",
           "a11y/no-static-element-interactions": "off",
+          // Cross-file: props read once as initial values (`defaultValue`, `defaultSelected`) on
+          // purpose, state set after an await, and browser APIs in components that never run on a server.
+          "croquis/cf/value-extraction-breaks-reactivity": "off",
+          "croquis/cf/async-boundary": "off",
+          "croquis/cf/browser-api-ssr": "off",
         },
       },
     },

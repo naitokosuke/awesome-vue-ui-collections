@@ -112,7 +112,7 @@ function scopeAttrs(lib: Library) {
       </section>
 
       <!-- One table per kind; all stay mounted (v-show), so a library mounted once keeps its cells. -->
-      <section v-for="group in groups" v-show="controls.kind === group.kind" :key="group.kind" class="table">
+      <section v-for="(group, index) in groups" v-show="controls.kind === group.kind" :key="group.kind" class="table">
         <!-- A table to assistive tech: each row wrapper is `display: contents`, so the grid lays out its cells. -->
         <div
           class="grid"
@@ -124,19 +124,10 @@ function scopeAttrs(lib: Library) {
             <!-- The stats live in the column headers, so their switch sits at the start of that row. -->
             <div class="head sticky corner" role="columnheader">
               <label class="switch">
-                <input
-                  v-model="controls.stats"
-                  role="switch"
-                  type="checkbox"
-                  :aria-describedby="`stats-date-${group.kind}`"
-                >
+                <input v-model="controls.stats" role="switch" type="checkbox" :aria-describedby="`stats-date-${index}`">
                 stats
               </label>
-              <span
-                :id="`stats-date-${group.kind}`"
-                class="stats-date"
-                title="npm data; downloads cover the last 7 days"
-              >
+              <span :id="`stats-date-${index}`" class="stats-date" title="npm data; downloads cover the last 7 days">
                 {{ npmFetchedAt ? `(as of ${npmFetchedAt})` : "(npm data unavailable)" }}
               </span>
             </div>

@@ -22,9 +22,10 @@ const idPrefix = useId();
   <fieldset class="radio-group">
     <legend class="visually-hidden">{{ legend }}</legend>
 
-    <template v-for="option in options" :key="option">
-      <input :id="`${idPrefix}-${option}`" v-model="model" class="visually-hidden" type="radio" :name :value="option">
-      <label :for="`${idPrefix}-${option}`">
+    <!-- Ids by position: option values may hold characters such as `#`. -->
+    <template v-for="(option, index) in options" :key="option">
+      <input :id="`${idPrefix}-${index}`" v-model="model" class="visually-hidden" type="radio" :name :value="option">
+      <label :for="`${idPrefix}-${index}`">
         <slot name="option" :option>{{ option }}</slot>
       </label>
     </template>
