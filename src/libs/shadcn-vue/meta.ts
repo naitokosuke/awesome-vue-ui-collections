@@ -7,7 +7,6 @@ export const meta: LibraryMeta = {
   // so its npm stats stand in for the library's.
   package: "shadcn-vue",
   kind: "copy-paste",
-  // The Tailwind entry compiled by @tailwindcss/vite
   components: {
     button: { name: "Button", docs: "https://www.shadcn-vue.com/docs/components/button" },
     input: { name: "Input", docs: "https://www.shadcn-vue.com/docs/components/input" },
@@ -15,6 +14,7 @@ export const meta: LibraryMeta = {
     switch: { name: "Switch", docs: "https://www.shadcn-vue.com/docs/components/switch" },
     dialog: { name: "Dialog", docs: "https://www.shadcn-vue.com/docs/components/dialog" },
   },
+  // The Tailwind entry compiled by @tailwindcss/vite
   cssMatch: ["/src/libs/shadcn-vue/style.css"],
   // shadcn's `.dark { --* }` tokens and the `dark:` variant
   darkAttrs: { class: "dark" },

@@ -10,7 +10,6 @@ export const meta: LibraryMeta = {
   kind: "copy-paste",
   // `@inspira-ui/plugins` points at its own repo; the components live here.
   repository: "unovue/inspira-ui",
-  // The Tailwind entry compiled by @tailwindcss/vite
   components: {
     button: {
       name: "InteractiveHoverButton",
@@ -19,6 +18,7 @@ export const meta: LibraryMeta = {
     input: { name: "IInput", docs: "https://inspira-ui.com/docs/en/components/input-and-forms/input" },
     dialog: { name: "AnimatedModal", docs: "https://inspira-ui.com/docs/en/components/miscellaneous/animated-modal" },
   },
+  // The Tailwind entry compiled by @tailwindcss/vite
   cssMatch: ["/src/libs/inspira-ui/style.css"],
   // Inspira's `.dark { --* }` tokens and the `dark:` variant
   darkAttrs: { class: "dark" },
