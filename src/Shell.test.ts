@@ -9,6 +9,7 @@
 import "./tokens.css";
 import { afterAll, beforeAll, describe, expect, test, vi } from "vite-plus/test";
 import { type App, createApp, nextTick } from "vue";
+import { KIND_LABELS } from "./board";
 import { libraries } from "./libs";
 import { COLORS, type DemoKey, DEMOS, type Kind, KINDS, type Library } from "./libs/types";
 import Shell from "./Shell.vue";
@@ -286,9 +287,20 @@ function cellOf(lib: Library, demo: DemoKey) {
   return document.querySelectorAll<HTMLElement>(`.cell[data-lib="${lib.id}"]`)[DEMO_ORDER.indexOf(demo)]!;
 }
 
+/**
+ * A library's column header, which shows why it failed to load. Headers carry no `data-lib` (it
+ * would scope library CSS onto them), so it's found by position.
+ */
+function headOf(lib: Library) {
+  const table = document.querySelector(`.table[aria-label="${KIND_LABELS[lib.kind].name}"]`)!;
+  const column = libraries.filter((other) => other.kind === lib.kind).indexOf(lib);
+  return table.querySelectorAll(".head:not(.corner)")[column]!;
+}
+
+/** Mounted, or failed to: waiting on another library's failure would cut this one's wait short. */
 function libraryReady(lib: Library) {
   const frames = document.querySelectorAll(`.cell[data-lib="${lib.id}"] > .demo`).length;
-  return frames === DEMO_ORDER.length || document.querySelector(".head .error") !== null;
+  return frames === DEMO_ORDER.length || headOf(lib).querySelector(".error") !== null;
 }
 
 /** Shows a kind's tab and waits until its libraries have mounted (or reported why they couldn't). */
