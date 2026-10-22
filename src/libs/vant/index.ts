@@ -13,14 +13,10 @@ export { version } from "vant";
 
 export function mount(context: MountContext) {
   const { controls } = context;
-  const unmount = mountLibrary(context, Demos, (app) => {
+  mountLibrary(context, Demos, (app) => {
     app.use(Vant);
   });
   // Vant has no shades: button, switch, dropdown and dialog all derive from this one
   // variable (also in dark mode), and pressed states are an opacity overlay.
-  const unbind = bindScopeVars(context, () => (controls.color ? { "--van-primary-color": controls.color } : null));
-  return () => {
-    unbind();
-    unmount();
-  };
+  bindScopeVars(context, () => (controls.color ? { "--van-primary-color": controls.color } : null));
 }

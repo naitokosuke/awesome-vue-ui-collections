@@ -1,4 +1,5 @@
 import "@astryx-vue/themes/neutral.css";
+import { onScopeDispose } from "vue";
 import { tint } from "../color";
 import { bindScopeVars, mountLibrary } from "../mount";
 import type { MountContext } from "../types";
@@ -19,14 +20,9 @@ function accentVars(hex: string) {
 
 export function mount(context: MountContext) {
   const { controls } = context;
-  const stopColor = bindScopeVars(context, () => (controls.color ? accentVars(controls.color) : null));
-  const stopAdopting = adoptListboxes(context);
-  const unmount = mountLibrary(context, Demos);
-  return () => {
-    unmount();
-    stopAdopting();
-    stopColor();
-  };
+  bindScopeVars(context, () => (controls.color ? accentVars(controls.color) : null));
+  adoptListboxes(context);
+  mountLibrary(context, Demos);
 }
 
 /**
@@ -40,5 +36,5 @@ function adoptListboxes(context: MountContext) {
   };
   const observer = new MutationObserver((records) => records.forEach((record) => record.addedNodes.forEach(adopt)));
   observer.observe(document.body, { childList: true });
-  return () => observer.disconnect();
+  onScopeDispose(() => observer.disconnect());
 }

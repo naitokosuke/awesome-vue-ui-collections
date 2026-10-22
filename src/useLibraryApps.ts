@@ -1,4 +1,4 @@
-import { onBeforeUnmount, onMounted, reactive, readonly, watch } from "vue";
+import { type EffectScope, effectScope, onBeforeUnmount, onMounted, reactive, readonly, watch } from "vue";
 import { libraries } from "./libs";
 import type { DemoKey, Kind, Library, LibraryModule } from "./libs/types";
 import { controls } from "./store";
@@ -17,7 +17,8 @@ export function useLibraryApps(activeKind: () => Kind) {
   const cells: Record<string, Partial<Record<DemoKey, HTMLElement>>> = {};
   const overlays: Record<string, HTMLElement> = {};
   const started = new Set<string>();
-  const unmounts: (() => void)[] = [];
+  /** One per mounted library; stopping it unmounts the library. */
+  const scopes: EffectScope[] = [];
   let disposed = false;
 
   function setCell(libId: string, demo: DemoKey, el: unknown) {
@@ -34,13 +35,22 @@ export function useLibraryApps(activeKind: () => Kind) {
       const mod = await load();
       // The shell went away while the module was loading (e.g. hot reload): its cells are gone too.
       if (disposed) return;
-      unmounts.push(
-        mod.mount({
-          cells: cells[lib.id] as Record<DemoKey, HTMLElement>,
-          overlay: overlays[lib.id]!,
-          controls: readonly(controls),
-        }),
-      );
+      // Detached: the library's watchers belong to it, not to whatever scope is active.
+      const scope = effectScope(true);
+      try {
+        scope.run(() =>
+          mod.mount({
+            cells: cells[lib.id] as Record<DemoKey, HTMLElement>,
+            overlay: overlays[lib.id]!,
+            controls: readonly(controls),
+          }),
+        );
+      } catch (error) {
+        // Undo whatever it got through before failing.
+        scope.stop();
+        throw error;
+      }
+      scopes.push(scope);
       versions[lib.id] = mod.version;
     } catch (error) {
       errors[lib.id] = String(error);
@@ -63,7 +73,7 @@ export function useLibraryApps(activeKind: () => Kind) {
 
   onBeforeUnmount(() => {
     disposed = true;
-    unmounts.forEach((unmount) => unmount());
+    scopes.forEach((scope) => scope.stop());
   });
 
   return { versions: readonly(versions), errors: readonly(errors), setCell, setOverlay };

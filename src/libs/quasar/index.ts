@@ -1,6 +1,7 @@
 import "quasar/dist/quasar.css";
 import "@quasar/extras/material-icons/material-icons.css";
 import { Quasar } from "quasar";
+import { onScopeDispose } from "vue";
 import { bindScopeVars, mountLibrary } from "../mount";
 import type { MountContext } from "../types";
 import Demos from "./Demos.vue";
@@ -14,7 +15,7 @@ export function mount(context: MountContext) {
   // on them (dark mode comes from `darkAttrs` + the `dark` prop), so undo them.
   const bodyClass = document.body.getAttribute("class");
 
-  const unmount = mountLibrary(context, Demos, (app) => {
+  mountLibrary(context, Demos, (app) => {
     app.use(Quasar, {
       config: {
         dark: false,
@@ -38,14 +39,9 @@ export function mount(context: MountContext) {
     for (const record of records) record.addedNodes.forEach(adopt);
   });
   observer.observe(document.body, { childList: true });
+  onScopeDispose(() => observer.disconnect());
 
   // quasar.css reads `--q-primary` everywhere (bg/text-primary, toggle, focused field,
   // active item); its `:root` default is scoped onto these same elements.
-  const unbind = bindScopeVars(context, () => (controls.color ? { "--q-primary": controls.color } : null));
-
-  return () => {
-    unbind();
-    observer.disconnect();
-    unmount();
-  };
+  bindScopeVars(context, () => (controls.color ? { "--q-primary": controls.color } : null));
 }

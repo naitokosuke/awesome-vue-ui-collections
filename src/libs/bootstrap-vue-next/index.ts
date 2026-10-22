@@ -37,8 +37,8 @@ function primaryVars(hex: string, dark: boolean) {
 
 export function mount(context: MountContext) {
   const { controls } = context;
-  const stopColor = bindScopeVars(context, () => (controls.color ? primaryVars(controls.color, controls.dark) : null));
-  const unmount = mountLibrary(context, Demos, (app) => {
+  bindScopeVars(context, () => (controls.color ? primaryVars(controls.color, controls.dark) : null));
+  mountLibrary(context, Demos, (app) => {
     app.use(
       createBootstrap({
         // The registries plugin provides the modal manager, which toggles `modal-open` on <body>.
@@ -51,8 +51,4 @@ export function mount(context: MountContext) {
       }),
     );
   });
-  return () => {
-    unmount();
-    stopColor();
-  };
 }

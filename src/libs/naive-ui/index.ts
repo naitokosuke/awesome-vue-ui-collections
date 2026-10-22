@@ -7,7 +7,7 @@ import Demos from "./Demos.vue";
 export { version } from "naive-ui";
 
 export function mount(context: MountContext) {
-  return mountLibrary(context, Demos, (app) => {
+  mountLibrary(context, Demos, (app) => {
     app.use(naive);
   });
 }

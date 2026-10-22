@@ -56,7 +56,7 @@ function scopeColors(css: string) {
 
 export function mount(context: MountContext) {
   const { controls } = context;
-  const unmount = mountLibrary(context, Demos, (app) => {
+  mountLibrary(context, Demos, (app) => {
     app.use(ui);
     // The colors style goes through unhead; rewrite it before it's rendered into <head>.
     const head = app.config.globalProperties.$unhead as Head;
@@ -67,9 +67,5 @@ export function mount(context: MountContext) {
     });
   });
   // `--ui-primary` resolves on the scope element, so it must be set here too, not just the scale.
-  const unbind = bindScopeVars(context, () => (controls.color ? primaryVars(controls.color, controls.dark) : null));
-  return () => {
-    unbind();
-    unmount();
-  };
+  bindScopeVars(context, () => (controls.color ? primaryVars(controls.color, controls.dark) : null));
 }

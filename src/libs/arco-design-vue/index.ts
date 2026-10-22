@@ -25,12 +25,8 @@ function palette(base: string, dark: boolean): Record<string, string> {
 
 export function mount(context: MountContext) {
   const { controls } = context;
-  const unmount = mountLibrary(context, Demos, (app) => {
+  mountLibrary(context, Demos, (app) => {
     app.use(ArcoVue);
   });
-  const unbind = bindScopeVars(context, () => (controls.color ? palette(controls.color, controls.dark) : null));
-  return () => {
-    unbind();
-    unmount();
-  };
+  bindScopeVars(context, () => (controls.color ? palette(controls.color, controls.dark) : null));
 }

@@ -7,5 +7,5 @@ import Demos from "./Demos.vue";
 export const version = "not on npm";
 
 export function mount(context: MountContext) {
-  return mountLibrary(context, Demos);
+  mountLibrary(context, Demos);
 }

@@ -23,8 +23,8 @@ function primaryVars(hex: string) {
 export function mount(context: MountContext) {
   const { controls } = context;
   // Inline on the scope elements, so it also beats ./dark.css in dark mode.
-  const stopColor = bindScopeVars(context, () => (controls.color ? primaryVars(controls.color) : null));
-  const unmount = mountLibrary(context, Demos, (app) => {
+  bindScopeVars(context, () => (controls.color ? primaryVars(controls.color) : null));
+  mountLibrary(context, Demos, (app) => {
     app.use(
       createOruga({
         // Every teleported component (dialog, dropdown, …) goes to the overlay host.
@@ -40,8 +40,4 @@ export function mount(context: MountContext) {
       }),
     );
   });
-  return () => {
-    unmount();
-    stopColor();
-  };
 }

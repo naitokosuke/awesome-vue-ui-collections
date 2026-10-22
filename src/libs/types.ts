@@ -87,7 +87,12 @@ export interface LibraryMeta {
 
 export interface LibraryModule {
   version: string;
-  mount: (context: MountContext) => () => void;
+  /**
+   * Runs inside an effect scope of its own, which the shell stops to unmount the library: watchers
+   * stop with it, and anything else is undone with `onScopeDispose()` (mountLibrary and
+   * bindScopeVars already do).
+   */
+  mount: (context: MountContext) => void;
 }
 
 export interface Library extends LibraryMeta {

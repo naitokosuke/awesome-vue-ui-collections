@@ -43,16 +43,12 @@ export function mount(context: MountContext) {
   // `StyleProvider(vars)` would write the theme to `:root`; instead the dark theme and the
   // chosen primary go inline on the scope elements (cells + overlay host), where Varlet's
   // `:root` vars are declared, so derived vars like `--color-primary` pick them up.
-  const stopTheme = bindScopeVars(context, () => {
+  bindScopeVars(context, () => {
     const vars = { ...(controls.dark ? darkVars : {}), ...(controls.color ? primaryVars(controls.color) : {}) };
     return Object.keys(vars).length ? vars : null;
   });
 
-  const unmount = mountLibrary(context, Demos, (app) => {
+  mountLibrary(context, Demos, (app) => {
     app.use(Varlet);
   });
-  return () => {
-    unmount();
-    stopTheme();
-  };
 }

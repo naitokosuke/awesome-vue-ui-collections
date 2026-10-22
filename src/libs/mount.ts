@@ -1,4 +1,4 @@
-import { type App, type Component, createApp, inject, type InjectionKey, watchEffect } from "vue";
+import { type App, type Component, createApp, inject, type InjectionKey, onScopeDispose, watchEffect } from "vue";
 import type { MountContext } from "./types";
 
 const contextKey: InjectionKey<MountContext> = Symbol("mount-context");
@@ -16,6 +16,7 @@ let appCount = 0;
  * Creates the Vue app of one UI library, so plugins installed via `install` stay inside it.
  * `Demos` renders every row at once through DemoCells.vue, which teleports each one into its
  * grid cell after the shell's own content, so all libraries line up row by row.
+ * The app is unmounted when the library's effect scope (see LibraryModule) stops.
  */
 export function mountLibrary(context: MountContext, Demos: Component, install: (app: App) => void = () => {}) {
   const app = createApp(Demos);
@@ -28,16 +29,16 @@ export function mountLibrary(context: MountContext, Demos: Component, install: (
   const host = document.createElement("div");
   context.overlay.append(host);
   app.mount(host);
-  return () => {
+  onScopeDispose(() => {
     app.unmount();
     host.remove();
-  };
+  });
 }
 
 /**
  * Reactively sets CSS custom properties on a library's scope elements (its demo cells and
  * overlay host), e.g. to push the selected primary color into a CSS-variable-themed library.
- * `vars` returning null removes them again. Returns a function that stops and cleans up.
+ * `vars` returning null removes them again, as does stopping the library's effect scope.
  */
 export function bindScopeVars(context: MountContext, vars: () => Record<string, string> | null) {
   const elements = [...Object.values(context.cells), context.overlay];
@@ -45,14 +46,11 @@ export function bindScopeVars(context: MountContext, vars: () => Record<string, 
   const clear = (keep: Record<string, string> = {}) => {
     for (const el of elements) for (const name of applied) if (!(name in keep)) el.style.removeProperty(name);
   };
-  const stop = watchEffect(() => {
+  watchEffect(() => {
     const next = vars() ?? {};
     clear(next);
     for (const el of elements) for (const [name, value] of Object.entries(next)) el.style.setProperty(name, value);
     applied = Object.keys(next);
   });
-  return () => {
-    stop();
-    clear();
-  };
+  onScopeDispose(() => clear());
 }

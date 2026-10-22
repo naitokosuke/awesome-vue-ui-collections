@@ -18,5 +18,5 @@ export { version } from "../../../node_modules/@vizejs/ui/package.json";
 
 export function mount(context: MountContext) {
   // No plugin: components are imported locally in Demos.vue.
-  return mountLibrary(context, Demos);
+  mountLibrary(context, Demos);
 }

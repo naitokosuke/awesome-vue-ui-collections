@@ -20,23 +20,18 @@ export function mount(context: MountContext) {
     // The runtime theme stylesheet targets `:root` unless scoped.
     theme: { defaultTheme: "light", scope: '[data-lib="vuetify"]' },
   });
-  const unmount = mountLibrary(context, Demos, (app) => {
+  mountLibrary(context, Demos, (app) => {
     app.use(vuetify);
   });
 
   // Push the shared primary color into both themes; `on-primary` is derived by Vuetify.
   const themes = vuetify.theme.themes.value;
   const defaults = Object.fromEntries(Object.entries(themes).map(([name, { colors }]) => [name, { ...colors }]));
-  const stop = watchEffect(() => {
+  watchEffect(() => {
     for (const [name, { colors }] of Object.entries(themes)) {
       const original = defaults[name]!;
       colors.primary = controls.color ?? original.primary!;
       colors["primary-darken-1"] = controls.color ? shade(controls.color, 0.2) : original["primary-darken-1"]!;
     }
   });
-
-  return () => {
-    stop();
-    unmount();
-  };
 }

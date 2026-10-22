@@ -14,15 +14,11 @@ function foreground(hex: string) {
 
 export function mount(context: MountContext) {
   const { controls } = context;
-  const unmount = mountLibrary(context, Demos);
+  mountLibrary(context, Demos);
   // Inline vars on the scope elements win over both the `:root` and `.dark` token rules.
-  const unbind = bindScopeVars(context, () => {
+  bindScopeVars(context, () => {
     const hex = controls.color;
     if (!hex) return null;
     return { "--primary": hex, "--primary-foreground": foreground(hex), "--ring": hex };
   });
-  return () => {
-    unbind();
-    unmount();
-  };
 }
