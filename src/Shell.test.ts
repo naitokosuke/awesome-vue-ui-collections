@@ -11,7 +11,7 @@ import { afterAll, beforeAll, describe, expect, test, vi } from "vite-plus/test"
 import { type App, createApp, nextTick } from "vue";
 import { KIND_LABELS } from "./board";
 import { libraries } from "./libs";
-import { COLORS, type DemoKey, DEMOS, type Kind, KINDS, type Library } from "./libs/types";
+import { COLORS, type DemoKey, DEMOS, type Kind, KINDS, type Library, SIZES } from "./libs/types";
 import Shell from "./Shell.vue";
 import { controls } from "./store";
 
@@ -68,6 +68,14 @@ function allRules(): CSSRule[] {
   };
   for (const sheet of document.styleSheets) walk(sheet.cssRules);
   return rules;
+}
+
+/** Where a rule comes from, for failure messages: the module Vite injected it from, or its <style> id. */
+function sourceOf(rule: CSSRule): string {
+  let sheet = rule.parentStyleSheet;
+  while (sheet?.ownerRule) sheet = sheet.ownerRule.parentStyleSheet;
+  const owner = sheet?.ownerNode as HTMLElement | null;
+  return owner?.dataset.viteDevId?.replace(/^.*\/node_modules\//, "") ?? (owner?.id || "runtime <style>");
 }
 
 /**
@@ -270,6 +278,12 @@ const OPEN_DIALOG_BODY_ATTRIBUTES: Record<string, { attributes: Record<string, s
   },
 };
 
+/** `@keyframes` / `@font-face` that two libraries define differently, and why that's tolerated. */
+const KNOWN_CLASHES: Record<string, string> = {
+  "@keyframes fadeOut":
+    "TDesign's ends with `display: none`, Oruga's doesn't; only TDesign's Anchor (not demoed) animates with it, no Oruga component does",
+};
+
 /** Prefixes of custom properties libraries register with `@property`, which can't be scoped. */
 const REGISTERED_PREFIXES: Record<string, string> = {
   "--tw-": "Tailwind CSS (Nuxt UI, shadcn-vue, Inspira UI)",
@@ -320,7 +334,17 @@ async function showKind(kind: Kind) {
 /** Lets libraries finish what they do after a change (transitions, measured layouts, runtime styles). */
 const settle = () => new Promise((resolve) => setTimeout(resolve, 500));
 
-let app: App;
+/** Each demo row's height in the shown table, in px. */
+function rowHeights(): Record<DemoKey, number> {
+  const table = [...document.querySelectorAll(".table")].find((el) => el.checkVisibility())!;
+  const headers = table.querySelectorAll(".table-row > .label");
+  return Object.fromEntries(
+    DEMO_ORDER.map((demo, i) => [demo, Math.round(headers[i]!.getBoundingClientRect().height)]),
+  ) as Record<DemoKey, number>;
+}
+
+let app: App | null;
+let host: HTMLElement;
 let probe: HTMLElement;
 let before: {
   document: ReturnType<typeof documentSnapshot>;
@@ -337,7 +361,7 @@ beforeAll(async () => {
   probe.innerHTML = PROBE_HTML;
   document.body.append(probe);
 
-  const host = document.createElement("div");
+  host = document.createElement("div");
   document.body.append(host);
   app = createApp(Shell);
   app.mount(host);
@@ -356,7 +380,9 @@ beforeAll(async () => {
 });
 
 afterAll(() => {
-  app.unmount();
+  // The last test unmounts it; this is for a run that stopped before.
+  app?.unmount();
+  host.remove();
   probe.remove();
 });
 
@@ -516,5 +542,81 @@ describe("Shell with every library loaded", () => {
       .filter((el) => el.getBoundingClientRect().width * el.getBoundingClientRect().height > 0)
       .map((el) => el.outerHTML.slice(0, 120));
     expect(visibleStrays).toEqual([]);
+  });
+
+  test("switching size never changes a row's height (ROW_HEIGHTS in Shell.vue covers every library)", async () => {
+    try {
+      for (const kind of KINDS) {
+        await showKind(kind);
+        const heights: Partial<Record<string, Record<DemoKey, number>>> = {};
+        for (const size of SIZES) {
+          controls.size = size;
+          await settle();
+          heights[size] = rowHeights();
+        }
+        // A row that grows at some size has a demo taller than its ROW_HEIGHTS entry: raise that.
+        for (const size of SIZES) expect(heights[size], `${kind} at ${size}`).toEqual(heights.medium);
+      }
+    } finally {
+      Object.assign(controls, { kind: "styled", size: "medium" });
+      await settle();
+    }
+  });
+
+  test("no two stylesheets define the same @keyframes or @font-face differently", () => {
+    // Neither can be scoped: a later definition under the same name replaces the earlier one page-wide.
+    const definitions = new Map<string, Map<string, string>>();
+    const define = (key: string, text: string, rule: CSSRule) => {
+      if (!definitions.has(key)) definitions.set(key, new Map());
+      definitions.get(key)!.set(text, sourceOf(rule));
+    };
+    for (const rule of allRules()) {
+      if (rule instanceof CSSKeyframesRule) define(`@keyframes ${rule.name}`, rule.cssText, rule);
+      if (rule instanceof CSSFontFaceRule) {
+        const { style } = rule;
+        const face = ["font-family", "font-weight", "font-style"].map((name) => style.getPropertyValue(name));
+        define(`@font-face ${face.join(" ")}`, style.getPropertyValue("src"), rule);
+      }
+    }
+    // Redefinitions within one stylesheet behave as they do with the library on its own page.
+    const clashing = [...definitions]
+      .map(([key, texts]) => [key, [...new Set(texts.values())]] as const)
+      .filter(([key, sources]) => sources.length > 1 && !(key in KNOWN_CLASHES))
+      .map(([key, sources]) => `${key}: ${sources.join(" vs ")}`);
+    expect(clashing).toEqual([]);
+  });
+
+  // Last: it takes the shell down.
+  test("unmounting the shell undoes every library's mount", async () => {
+    app!.unmount();
+    app = null;
+    await settle();
+
+    expect(document.querySelectorAll("[data-lib]")).toHaveLength(0);
+    expect(documentSnapshot().attributes).toEqual(before.document.attributes);
+    const strays = [...document.body.children]
+      .filter((el) => !before.bodyChildren.has(el))
+      .map((el) => el.outerHTML.slice(0, 120));
+    expect(strays).toEqual([]);
+
+    // The observers that adopt portals into an overlay host (Quasar, Astryx Vue) are disconnected.
+    const portals = [
+      Object.assign(document.createElement("div"), { id: "q-portal--dialog--99" }),
+      Object.assign(document.createElement("div"), { className: "astryx-selector-listbox" }),
+    ];
+    document.body.append(...portals);
+    await settle();
+    expect(portals.map((el) => el.parentElement)).toEqual([document.body, document.body]);
+    portals.forEach((el) => el.remove());
+
+    // Component defaults changed for the demos are back to the libraries' own.
+    const { Popup } = await import("vant");
+    const { Dialog, Menu } = await import("@varlet/ui");
+    const defaultOf = (component: unknown, prop: string) =>
+      ((component as { props: Record<string, { default: unknown }> }).props[prop] as { default: unknown }).default;
+    expect(defaultOf(Popup, "lockScroll")).toBe(true);
+    expect(defaultOf(Menu, "teleport")).toBe("body");
+    expect(defaultOf(Dialog.Component, "teleport")).toBe("body");
+    expect(defaultOf(Dialog.Component, "lockScroll")).toBe(true);
   });
 });

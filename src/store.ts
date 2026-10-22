@@ -22,14 +22,16 @@ watch(controls, (value) => {
   } catch {}
 });
 
-/** The saved controls, field by field; anything missing, outdated or invalid keeps its default. */
 function restore(): Partial<Controls> {
-  let saved: unknown;
   try {
-    saved = JSON.parse(localStorage.getItem(STORAGE_KEY) ?? "{}");
+    return parseControls(JSON.parse(localStorage.getItem(STORAGE_KEY) ?? "{}"));
   } catch {
     return {};
   }
+}
+
+/** Saved controls, field by field; anything missing, outdated or invalid is left out (keeps its default). */
+export function parseControls(saved: unknown): Partial<Controls> {
   if (typeof saved !== "object" || saved === null) return {};
   const { size, disabled, dark, stats, label, kind, color } = saved as Record<string, unknown>;
   const restored: Partial<Controls> = {};

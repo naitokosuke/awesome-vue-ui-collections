@@ -38,13 +38,13 @@ const colorChoice = computed<(typeof COLOR_OPTIONS)[number]>({
 });
 
 /**
- * Minimum height of each demo row: the tallest any library gets at any size (measured at
- * sm/md/lg in both tables), so switching size never changes row heights. Re-measure when
- * adding a library or changing a demo.
+ * Minimum height of each demo row: the tallest any library gets at any size, so switching size
+ * never changes row heights. Shell.test.ts fails when a demo outgrows its entry at some size.
  */
 const ROW_HEIGHTS: Record<DemoKey, number> = {
   button: 88,
-  input: 100,
+  // The headless inputs, label above the field, at lg.
+  input: 101,
   select: 88,
   switch: 88,
   dialog: 88,

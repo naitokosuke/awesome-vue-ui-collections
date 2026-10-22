@@ -92,17 +92,44 @@ export default defineConfig({
     transformer: "lightningcss",
   },
   test: {
-    include: ["src/**/*.test.ts"],
-    // In a real browser: what's tested is how every library's CSS and DOM side effects play out on one page.
-    browser: {
-      enabled: true,
-      provider: playwright(),
-      headless: true,
-      instances: [{ browser: "chromium" }],
-    },
-    // Loading every library on a cold dev server takes a while.
-    testTimeout: 120_000,
-    hookTimeout: 120_000,
+    projects: [
+      {
+        extends: true,
+        test: {
+          name: "unit",
+          include: ["{build,src}/**/*.test.ts"],
+          exclude: ["src/Shell.test.ts", "build/production-css.test.ts"],
+          // Without a backing file, Node's localStorage only warns; store.ts copes with none at all.
+          execArgv: ["--no-experimental-webstorage"],
+        },
+      },
+      {
+        extends: true,
+        test: {
+          // Builds the site for production, so it checks what is actually shipped.
+          name: "build",
+          include: ["build/production-css.test.ts"],
+          hookTimeout: 300_000,
+        },
+      },
+      {
+        extends: true,
+        test: {
+          name: "browser",
+          include: ["src/Shell.test.ts"],
+          // In a real browser: what's tested is how every library's CSS and DOM side effects play out on one page.
+          browser: {
+            enabled: true,
+            provider: playwright(),
+            headless: true,
+            instances: [{ browser: "chromium" }],
+          },
+          // Loading every library on a cold dev server takes a while.
+          testTimeout: 120_000,
+          hookTimeout: 120_000,
+        },
+      },
+    ],
   },
 }).withVue({
   entries: [
