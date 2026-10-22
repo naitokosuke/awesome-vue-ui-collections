@@ -1,5 +1,5 @@
 import "./style.css";
-import { hexToRgb } from "../color";
+import { luminance } from "../color";
 import { bindScopeVars, mountLibrary } from "../mount";
 import type { MountContext } from "../types";
 import Demos from "./Demos.vue";
@@ -9,12 +9,7 @@ export { version } from "../../../node_modules/shadcn-vue/package.json";
 
 /** Black or white, whichever reads better on `hex` (WCAG relative luminance). */
 function foreground(hex: string) {
-  const [r, g, b] = hexToRgb(hex).map((channel) => {
-    const c = channel / 255;
-    return c <= 0.03928 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4;
-  }) as [number, number, number];
-  const luminance = 0.2126 * r + 0.7152 * g + 0.0722 * b;
-  return luminance > 0.179 ? "oklch(0.145 0 0)" : "oklch(0.985 0 0)";
+  return luminance(hex) > 0.179 ? "oklch(0.145 0 0)" : "oklch(0.985 0 0)";
 }
 
 export function mount(context: MountContext) {
