@@ -122,11 +122,9 @@ const open = ref(false);
 [data-lib='vuetify0'] .v0-dialog::backdrop {
   background: rgb(0 0 0 / 0.4);
 }
-</style>
 
-<style>
 /*
- * Not `scoped`: v0 roots such as Button.Root and Switch.Root render a fragment
+ * Not `scoped` either: v0 roots such as Button.Root and Switch.Root render a fragment
  * (element + comment), so they never receive the scoped data-v attribute.
  */
 [data-lib='vuetify0'] {

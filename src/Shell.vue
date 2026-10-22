@@ -171,7 +171,7 @@ function scopeAttrs(lib: Library) {
                   <a
                     v-if="lib.package"
                     :href="`https://npmx.dev/package/${lib.package}`"
-                    rel="noopener"
+                    rel="noopener noreferrer"
                     target="_blank"
                     :title="`${lib.package} on npmx.dev (opens in a new tab)`"
                     :aria-label="`${lib.package} on npmx.dev (opens in a new tab)`"
@@ -181,7 +181,7 @@ function scopeAttrs(lib: Library) {
                   <a
                     v-if="lib.github"
                     :href="lib.github.url"
-                    rel="noopener"
+                    rel="noopener noreferrer"
                     target="_blank"
                     :title="`${lib.github.slug} on GitHub (opens in a new tab)`"
                     :aria-label="`${lib.github.slug} on GitHub (opens in a new tab)`"
@@ -240,7 +240,7 @@ function scopeAttrs(lib: Library) {
                     v-if="lib.components[demo].docs"
                     class="component-ref"
                     :href="lib.components[demo].docs"
-                    rel="noopener"
+                    rel="noopener noreferrer"
                     target="_blank"
                     :title="`${lib.name} ${lib.components[demo].name} docs (opens in a new tab)`"
                   >
@@ -260,8 +260,8 @@ function scopeAttrs(lib: Library) {
     <div class="overlays">
       <div
         v-for="lib in mountedLibraries"
-        :key="lib.id"
         :id="`overlay-${lib.id}`"
+        :key="lib.id"
         :ref="(el) => setOverlay(lib.id, el)"
         class="overlay"
         v-bind="scopeAttrs(lib)"

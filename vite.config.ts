@@ -105,6 +105,34 @@ export default defineConfig({
     hookTimeout: 120_000,
   },
 }).withVue({
-  // Upstream markup such as Inspira UI's <div> inside <button>; Vize lints it but can't skip it entirely.
-  entries: [{ files: [vendored], linter: { rules: { "vue/permitted-contents": "off" } } }],
+  entries: [
+    {
+      // Vize lints vendored components but can't skip them entirely; what it flags there is upstream's
+      // to fix (Inspira UI's <div> inside <button>, Vue Bits' mouse-only handlers, unscoped styles, …).
+      files: [vendored],
+      linter: {
+        rules: {
+          "vue/permitted-contents": "off",
+          "vue/attribute-order": "off",
+          "vue/require-scoped-style": "off",
+          "a11y/click-events-have-key-events": "off",
+          "a11y/form-control-has-label": "off",
+          "a11y/interactive-supports-focus": "off",
+          "a11y/mouse-events-have-key-events": "off",
+          "a11y/no-static-element-interactions": "off",
+        },
+      },
+    },
+    {
+      // Headless demos style elements that never get the scoped attribute (portalled roots, v0's
+      // fragment roots); those rules are written under `[data-lib]` by hand instead (see each file).
+      files: ["src/libs/reka-ui/Demos.vue", "src/libs/vuetify0/Demos.vue"],
+      linter: { rules: { "vue/require-scoped-style": "off" } },
+    },
+    {
+      // Every href is built from meta.ts or from a GitHub slug matched by build/npm-stats.ts; none is user input.
+      files: ["src/Shell.vue"],
+      linter: { rules: { "vue/no-unsafe-url": "off" } },
+    },
+  ],
 });
