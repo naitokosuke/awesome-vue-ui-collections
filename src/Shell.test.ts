@@ -133,7 +133,7 @@ const SHELL_SELECTORS = [
   ".head.corner",
   ".head:not(.corner)",
   ".head .name",
-  ".grid > .label",
+  ".table-row > .label",
   ".row-name",
   ".text-input",
   ".overlays",
@@ -292,7 +292,7 @@ function cellOf(lib: Library, demo: DemoKey) {
  * would scope library CSS onto them), so it's found by position.
  */
 function headOf(lib: Library) {
-  const table = document.querySelector(`.table[aria-label="${KIND_LABELS[lib.kind].name}"]`)!;
+  const table = document.querySelector(`[role=table][aria-label="${KIND_LABELS[lib.kind].name}"]`)!;
   const column = libraries.filter((other) => other.kind === lib.kind).indexOf(lib);
   return table.querySelectorAll(".head:not(.corner)")[column]!;
 }

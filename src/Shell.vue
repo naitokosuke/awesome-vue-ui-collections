@@ -73,13 +73,13 @@ function scopeAttrs(lib: Library) {
 
     <main class="page">
       <!-- Which libraries to show: a tab row of its own, separate from the demo options below. -->
-      <nav aria-label="Kind" class="tabs">
+      <div aria-label="Library kind" class="tabs" role="radiogroup">
         <label v-for="group in groups" :key="group.kind" class="tab">
           <input v-model="controls.kind" name="kind" type="radio" :value="group.kind">
           {{ KIND_LABELS[group.kind].name.toLowerCase() }}
           <span class="muted">{{ group.columns.length }}</span>
         </label>
-      </nav>
+      </div>
       <p class="kind-description">{{ KIND_LABELS[controls.kind].description }}</p>
 
       <!-- Options for the demos, right above the table they affect. -->
@@ -112,81 +112,90 @@ function scopeAttrs(lib: Library) {
       </section>
 
       <!-- One table per kind; all stay mounted (v-show), so a library mounted once keeps its cells. -->
-      <section
-        v-for="group in groups"
-        v-show="controls.kind === group.kind"
-        :key="group.kind"
-        class="table"
-        :aria-label="KIND_LABELS[group.kind].name"
-      >
-        <div class="grid" :style="{ '--libs': group.columns.length }">
-          <!-- The stats live in the column headers, so their switch sits at the start of that row. -->
-          <div class="head sticky corner">
-            <label class="switch">
-              <input
-                v-model="controls.stats"
-                role="switch"
-                type="checkbox"
-                :aria-describedby="`stats-date-${group.kind}`"
-              >
-              stats
-            </label>
-            <span :id="`stats-date-${group.kind}`" class="stats-date" title="npm data; downloads cover the last 7 days">
-              {{ npmFetchedAt ? `(as of ${npmFetchedAt})` : "(npm data unavailable)" }}
-            </span>
-          </div>
-          <!-- Two lines per column: name and downloads, then version, release age and links. -->
-          <div v-for="lib in group.columns" :key="lib.id" class="head">
-            <div class="line">
-              <span class="name">{{ lib.name }}</span>
+      <section v-for="group in groups" v-show="controls.kind === group.kind" :key="group.kind" class="table">
+        <!-- A table to assistive tech: each row wrapper is `display: contents`, so the grid lays out its cells. -->
+        <div
+          class="grid"
+          role="table"
+          :aria-label="KIND_LABELS[group.kind].name"
+          :style="{ '--libs': group.columns.length }"
+        >
+          <div class="table-row" role="row">
+            <!-- The stats live in the column headers, so their switch sits at the start of that row. -->
+            <div class="head sticky corner" role="columnheader">
+              <label class="switch">
+                <input
+                  v-model="controls.stats"
+                  role="switch"
+                  type="checkbox"
+                  :aria-describedby="`stats-date-${group.kind}`"
+                >
+                stats
+              </label>
               <span
-                v-if="controls.stats"
-                class="muted"
-                :title="`npm downloads, last 7 days as of ${npmFetchedAt ?? '—'}`"
+                :id="`stats-date-${group.kind}`"
+                class="stats-date"
+                title="npm data; downloads cover the last 7 days"
               >
-                {{ lib.downloads ?? "—" }} / week
+                {{ npmFetchedAt ? `(as of ${npmFetchedAt})` : "(npm data unavailable)" }}
               </span>
             </div>
-
-            <div class="line meta">
-              <span>
-                <span v-if="errors[lib.id]" class="error" :title="errors[lib.id]">failed to load</span>
-                <template v-else>{{ lib.version ?? "—" }}</template>
+            <!-- Two lines per column: name and downloads, then version, release age and links. -->
+            <div v-for="lib in group.columns" :key="lib.id" class="head" role="columnheader">
+              <div class="line">
+                <span class="name">{{ lib.name }}</span>
                 <span
-                  v-if="controls.stats && lib.release"
-                  :class="{ stale: lib.release.stale }"
-                  :title="`latest release ${lib.release.date}${lib.release.stale ? ', over a year ago' : ''}`"
-                > · {{ lib.release.ago }}</span>
-              </span>
-              <!-- Links leave the page: the icons say where to, the tooltip says it opens a new tab. -->
-              <span v-if="controls.stats" class="links">
-                <a
-                  v-if="lib.package"
-                  :href="`https://npmx.dev/package/${lib.package}`"
-                  rel="noopener"
-                  target="_blank"
-                  :title="`${lib.package} on npmx.dev (opens in a new tab)`"
-                  :aria-label="`${lib.package} on npmx.dev (opens in a new tab)`"
+                  v-if="controls.stats"
+                  class="muted"
+                  :title="`npm downloads, last 7 days as of ${npmFetchedAt ?? '—'}`"
                 >
-                  <IconPackage aria-hidden="true" />
-                </a>
-                <a
-                  v-if="lib.github"
-                  :href="lib.github.url"
-                  rel="noopener"
-                  target="_blank"
-                  :title="`${lib.github.slug} on GitHub (opens in a new tab)`"
-                  :aria-label="`${lib.github.slug} on GitHub (opens in a new tab)`"
-                >
-                  <IconGithub aria-hidden="true" />
-                </a>
-              </span>
+                  {{ lib.downloads ?? "—" }} / week
+                </span>
+              </div>
+
+              <div class="line meta">
+                <span>
+                  <!-- The reason is spelled out for screen readers; sighted users get it as a tooltip. -->
+                  <span v-if="errors[lib.id]" class="error" :title="errors[lib.id]">
+                    failed to load<span class="visually-hidden">: {{ errors[lib.id] }}</span>
+                  </span>
+                  <template v-else>{{ lib.version ?? "—" }}</template>
+                  <span
+                    v-if="controls.stats && lib.release"
+                    :class="{ stale: lib.release.stale }"
+                    :title="`latest release ${lib.release.date}${lib.release.stale ? ', over a year ago' : ''}`"
+                  > · {{ lib.release.ago }}</span>
+                </span>
+                <!-- Links leave the page: the icons say where to, the tooltip says it opens a new tab. -->
+                <span v-if="controls.stats" class="links">
+                  <a
+                    v-if="lib.package"
+                    :href="`https://npmx.dev/package/${lib.package}`"
+                    rel="noopener"
+                    target="_blank"
+                    :title="`${lib.package} on npmx.dev (opens in a new tab)`"
+                    :aria-label="`${lib.package} on npmx.dev (opens in a new tab)`"
+                  >
+                    <IconPackage aria-hidden="true" />
+                  </a>
+                  <a
+                    v-if="lib.github"
+                    :href="lib.github.url"
+                    rel="noopener"
+                    target="_blank"
+                    :title="`${lib.github.slug} on GitHub (opens in a new tab)`"
+                    :aria-label="`${lib.github.slug} on GitHub (opens in a new tab)`"
+                  >
+                    <IconGithub aria-hidden="true" />
+                  </a>
+                </span>
+              </div>
             </div>
           </div>
 
-          <template v-for="demo in DEMOS" :key="demo">
+          <div v-for="demo in DEMOS" :key="demo" class="table-row" role="row">
             <!-- Row header: the component's name, then the options that only affect this row. -->
-            <div class="label sticky demo">
+            <div class="label sticky demo" role="rowheader">
               <span class="row-name">{{ DEMO_LABELS[demo] }}</span>
               <div class="row-options">
                 <input
@@ -209,13 +218,19 @@ function scopeAttrs(lib: Library) {
               </div>
             </div>
             <template v-for="lib in group.columns" :key="lib.id">
-              <div v-if="lib.withoutDemos" class="cell empty" :style="{ minBlockSize: `${ROW_HEIGHTS[demo]}px` }">
+              <div
+                v-if="lib.withoutDemos"
+                class="cell empty"
+                role="cell"
+                :style="{ minBlockSize: `${ROW_HEIGHTS[demo]}px` }"
+              >
                 {{ demo === DEMOS[0] ? `— ${lib.withoutDemos}` : "—" }}
               </div>
               <div
                 v-else
                 :ref="(el) => setCell(lib.id, demo, el)"
                 class="cell"
+                role="cell"
                 :style="{ minBlockSize: `${ROW_HEIGHTS[demo]}px` }"
                 v-bind="scopeAttrs(lib)"
               >
@@ -237,9 +252,10 @@ function scopeAttrs(lib: Library) {
                 <!-- The library's demo for this row is teleported in after this. -->
               </div>
             </template>
-          </template>
+          </div>
         </div>
-      </section> </main>
+      </section>
+    </main>
 
     <div class="overlays">
       <div
@@ -273,6 +289,15 @@ function scopeAttrs(lib: Library) {
 
 .muted {
   color: var(--avc-color-text-muted);
+}
+
+.visually-hidden {
+  position: absolute;
+  inline-size: 1px;
+  block-size: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
 }
 
 /* ---- top bar ---- */
@@ -595,7 +620,12 @@ function scopeAttrs(lib: Library) {
   }
 }
 
-.grid > .label {
+/* Rows exist for assistive tech only: their cells are the grid's items. */
+.table-row {
+  display: contents;
+}
+
+.table-row > .label {
   display: flex;
   flex-direction: column;
   justify-content: center;
