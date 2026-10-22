@@ -6,9 +6,9 @@ import IconPackage from "~icons/lucide/package";
 import { DEMO_LABELS, groups, KIND_LABELS, npmFetchedAt } from "./board";
 import { libraries } from "./libs";
 import { readableOn } from "./libs/color";
-import { DEMOS, type DemoKey, type Library } from "./libs/types";
+import { type Color, COLORS, DEMOS, type DemoKey, type Library, SIZES } from "./libs/types";
 import RadioGroup from "./RadioGroup.vue";
-import { type Color, COLORS, controls, SIZES } from "./store";
+import { controls } from "./store";
 import { useLibraryApps } from "./useLibraryApps";
 
 const SIZE_LABELS = { small: "sm", medium: "md", large: "lg" } as const;

@@ -10,9 +10,9 @@ import "./tokens.css";
 import { afterAll, beforeAll, describe, expect, test, vi } from "vite-plus/test";
 import { type App, createApp, nextTick } from "vue";
 import { libraries } from "./libs";
-import { type DemoKey, DEMOS, type Kind, KINDS, type Library } from "./libs/types";
+import { COLORS, type DemoKey, DEMOS, type Kind, KINDS, type Library } from "./libs/types";
 import Shell from "./Shell.vue";
-import { COLORS, controls } from "./store";
+import { controls } from "./store";
 
 // ---- snapshots -------------------------------------------------------------------
 

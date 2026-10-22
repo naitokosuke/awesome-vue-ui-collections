@@ -1,37 +1,7 @@
 import { reactive, watch } from "vue";
-import { DEMOS, type DemoKey, type Kind, KINDS } from "./libs/types";
-
-export const SIZES = ["small", "medium", "large"] as const;
-
-export type Size = (typeof SIZES)[number];
-
-/** Primary colors the styled libraries can be switched to (hex, so every library API accepts them). */
-export const COLORS = {
-  black: "#18181b",
-  blue: "#2563eb",
-  violet: "#7c3aed",
-  green: "#16a34a",
-  orange: "#ea580c",
-  rose: "#e11d48",
-} as const;
-
-export type Color = (typeof COLORS)[keyof typeof COLORS];
+import { COLORS, type Controls, DEMOS, type DemoKey, KINDS, SIZES } from "./libs/types";
 
 const STORAGE_KEY = "awesome-vue-ui-collections:controls";
-
-export interface Controls {
-  size: Size;
-  /** Per demo row, so each component can be compared enabled and disabled on its own. */
-  disabled: Record<DemoKey, boolean>;
-  dark: boolean;
-  /** Show the package / repository / release / downloads rows. */
-  stats: boolean;
-  label: string;
-  /** Which table (tab) is shown. */
-  kind: Kind;
-  /** Primary color forced on every styled and copy-paste library, or null for each library's own default. */
-  color: Color | null;
-}
 
 /** Owned by the shell; library apps get it read-only through their mount context. */
 export const controls = reactive<Controls>({

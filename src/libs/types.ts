@@ -1,5 +1,4 @@
 import type { DeepReadonly } from "vue";
-import type { Controls } from "../store";
 
 export const DEMOS = ["button", "input", "select", "switch", "dialog"] as const;
 export type DemoKey = (typeof DEMOS)[number];
@@ -13,6 +12,37 @@ export type DemoKey = (typeof DEMOS)[number];
  */
 export const KINDS = ["styled", "copy-paste", "headless", "fancy"] as const;
 export type Kind = (typeof KINDS)[number];
+
+export const SIZES = ["small", "medium", "large"] as const;
+
+export type Size = (typeof SIZES)[number];
+
+/** Primary colors the styled libraries can be switched to (hex, so every library API accepts them). */
+export const COLORS = {
+  black: "#18181b",
+  blue: "#2563eb",
+  violet: "#7c3aed",
+  green: "#16a34a",
+  orange: "#ea580c",
+  rose: "#e11d48",
+} as const;
+
+export type Color = (typeof COLORS)[keyof typeof COLORS];
+
+/** The demo options: the shell owns and changes them (store.ts), libraries only read them. */
+export interface Controls {
+  size: Size;
+  /** Per demo row, so each component can be compared enabled and disabled on its own. */
+  disabled: Record<DemoKey, boolean>;
+  dark: boolean;
+  /** Show the package / repository / release / downloads rows. */
+  stats: boolean;
+  label: string;
+  /** Which table (tab) is shown. */
+  kind: Kind;
+  /** Primary color forced on every styled and copy-paste library, or null for each library's own default. */
+  color: Color | null;
+}
 
 /** What the shell hands a library: where to render, and the options to render with. */
 export interface MountContext {
