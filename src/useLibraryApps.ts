@@ -9,8 +9,6 @@ import { controls } from "./store";
  * Bind `setCell` / `setOverlay` as function refs on those elements.
  */
 export function useLibraryApps(activeKind: () => Kind) {
-  /** Version of each mounted library, by id. */
-  const versions = reactive<Record<string, string>>({});
   /** Why a library failed to load or mount, by id. */
   const errors = reactive<Record<string, string>>({});
 
@@ -51,7 +49,6 @@ export function useLibraryApps(activeKind: () => Kind) {
         throw error;
       }
       scopes.push(scope);
-      versions[lib.id] = mod.version;
     } catch (error) {
       errors[lib.id] = String(error);
       console.error(`[${lib.id}]`, error);
@@ -76,5 +73,5 @@ export function useLibraryApps(activeKind: () => Kind) {
     scopes.forEach((scope) => scope.stop());
   });
 
-  return { versions: readonly(versions), errors: readonly(errors), setCell, setOverlay };
+  return { errors: readonly(errors), setCell, setOverlay };
 }

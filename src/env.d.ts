@@ -10,4 +10,10 @@ declare module "virtual:npm-stats" {
   export default stats;
 }
 
+declare module "virtual:installed-versions" {
+  /** Installed version by package name; packages that aren't installed are missing. */
+  const versions: Record<string, string>;
+  export default versions;
+}
+
 declare module "virtual:naive-ui-preflight.css";

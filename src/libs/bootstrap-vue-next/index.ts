@@ -7,9 +7,6 @@ import { bindScopeVars, mountLibrary } from "../mount";
 import type { MountContext } from "../types";
 import Demos from "./Demos.vue";
 
-// bootstrap-vue-next doesn't export its version or expose its package.json through `exports`.
-export { version } from "../../../node_modules/bootstrap-vue-next/package.json";
-
 /** The `--bvn-*` vars read by primary.css, with Bootstrap's own tint/shade amounts. */
 function primaryVars(hex: string, dark: boolean) {
   const link = dark ? tint(hex, 0.4) : hex;

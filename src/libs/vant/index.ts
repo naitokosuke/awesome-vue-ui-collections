@@ -4,8 +4,6 @@ import { bindScopeVars, mountLibrary } from "../mount";
 import type { MountContext } from "../types";
 import Demos from "./Demos.vue";
 
-export { version } from "vant";
-
 // Workaround: DropdownItem renders a Popup without forwarding `lock-scroll`, and the
 // lock adds `van-overflow-hidden` to <body>. Flip Popup's default before any app
 // normalizes its props; Dialog still receives `:lock-scroll="false"` explicitly.

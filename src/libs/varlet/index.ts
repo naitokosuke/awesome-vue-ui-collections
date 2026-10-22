@@ -6,8 +6,6 @@ import { bindScopeVars, mountLibrary } from "../mount";
 import type { MountContext } from "../types";
 import Demos from "./Demos.vue";
 
-export { version } from "@varlet/ui";
-
 const darkVars = Object.fromEntries(
   Object.entries(Themes.dark).map(([key, value]) => [
     key.startsWith("--") ? key : `--${key.replace(/[A-Z]/g, (c) => `-${c.toLowerCase()}`)}`,

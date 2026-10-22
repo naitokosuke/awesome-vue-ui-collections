@@ -1,13 +1,9 @@
 import "@arco-design/web-vue/dist/arco.css";
 import ArcoVue from "@arco-design/web-vue";
-import pkg from "@arco-design/web-vue/package.json";
 import { mix, rgbChannels, shade, tint } from "../color";
 import { bindScopeVars, mountLibrary } from "../mount";
 import type { MountContext } from "../types";
 import Demos from "./Demos.vue";
-
-// Arco does not export its version, so read it from its package.json.
-export const version: string = pkg.version;
 
 // Components read `rgb(var(--primary-N))`, an "r, g, b" triplet. Step 6 is the base:
 // light mode lightens 1-5 and darkens 7-10; dark mode fades 1-5 into the dark background

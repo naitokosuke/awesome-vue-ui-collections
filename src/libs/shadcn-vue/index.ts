@@ -4,9 +4,6 @@ import { bindScopeVars, mountLibrary } from "../mount";
 import type { MountContext } from "../types";
 import Demos from "./Demos.vue";
 
-// Version of the shadcn-vue CLI that generated ./ui (its package.json isn't in `exports`).
-export { version } from "../../../node_modules/shadcn-vue/package.json";
-
 /** Black or white, whichever reads better on `hex` (WCAG relative luminance). */
 function foreground(hex: string) {
   return luminance(hex) > 0.179 ? "oklch(0.145 0 0)" : "oklch(0.985 0 0)";

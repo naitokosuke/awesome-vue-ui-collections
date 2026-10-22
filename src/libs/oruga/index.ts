@@ -6,9 +6,6 @@ import { bindScopeVars, mountLibrary } from "../mount";
 import type { MountContext } from "../types";
 import Demos from "./Demos.vue";
 
-// oruga-next exports no version constant and its `exports` map hides package.json.
-export { version } from "../../../node_modules/@oruga-ui/oruga-next/package.json";
-
 /** theme-oruga's primary tokens; component tokens (button, switch, …) derive from them. */
 function primaryVars(hex: string) {
   return {

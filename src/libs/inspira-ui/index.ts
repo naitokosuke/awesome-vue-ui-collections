@@ -4,9 +4,6 @@ import { bindScopeVars, mountLibrary } from "../mount";
 import type { MountContext } from "../types";
 import Demos from "./Demos.vue";
 
-// Inspira UI itself isn't versioned on npm; this is the `@inspira-ui/plugins` runtime the components import.
-export { version } from "@inspira-ui/plugins/package.json";
-
 /** Black or white, whichever reads better on `hex` (WCAG relative luminance). */
 function foreground(hex: string) {
   return luminance(hex) > 0.179 ? "oklch(0.141 0.005 285.823)" : "oklch(0.985 0 0)";

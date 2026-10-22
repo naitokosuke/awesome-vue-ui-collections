@@ -13,9 +13,6 @@ import { mountLibrary } from "../mount";
 import type { MountContext } from "../types";
 import Demos from "./Demos.vue";
 
-// @vizejs/ui exports no version and doesn't expose its package.json through `exports`.
-export { version } from "../../../node_modules/@vizejs/ui/package.json";
-
 export function mount(context: MountContext) {
   // No plugin: components are imported locally in Demos.vue.
   mountLibrary(context, Demos);

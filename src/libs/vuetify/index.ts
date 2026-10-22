@@ -9,8 +9,6 @@ import { mountLibrary } from "../mount";
 import type { MountContext } from "../types";
 import Demos from "./Demos.vue";
 
-export { version } from "vuetify";
-
 export function mount(context: MountContext) {
   const { controls } = context;
   const vuetify = createVuetify({

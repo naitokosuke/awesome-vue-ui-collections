@@ -6,8 +6,6 @@ import { bindScopeVars, mountLibrary } from "../mount";
 import type { MountContext } from "../types";
 import Demos from "./Demos.vue";
 
-export { version } from "element-plus";
-
 // Same mixing as theme-chalk: light-N mixes N0% of the background in (#141414 in dark mode),
 // dark-2 mixes 20% black (20% white in dark mode).
 function palette(hex: string, dark: boolean): Record<string, string> {

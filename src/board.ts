@@ -1,4 +1,5 @@
 import { Temporal } from "temporal-polyfill-lite";
+import installed from "virtual:installed-versions";
 import npm from "virtual:npm-stats";
 import { libraries } from "./libs";
 import { type DemoKey, type Kind, KINDS, type Library } from "./libs/types";
@@ -87,10 +88,20 @@ function github(lib: Library) {
   return statsOf(lib)?.github ?? null;
 }
 
+/**
+ * The version shown: the installed one, or npm's latest for a library that isn't installed
+ * (stats-only); copied-in components without a package have none to show.
+ */
+function version(lib: Library) {
+  if (!lib.package) return "not on npm";
+  return installed[lib.package] ?? statsOf(lib)?.latest ?? null;
+}
+
 // ---- table --------------------------------------------------------------------
 
 /** A library as its table column shows it: the npm data is static, so it's derived once here. */
 export interface Column extends Library {
+  version: string | null;
   release: Release | null;
   downloads: Downloads | null;
   github: { slug: string; url: string } | null;
@@ -101,5 +112,11 @@ export const groups = KINDS.map((kind) => ({
   kind,
   columns: libraries
     .filter((lib) => lib.kind === kind)
-    .map((lib): Column => ({ ...lib, release: release(lib), downloads: downloads(lib), github: github(lib) })),
+    .map((lib): Column => ({
+      ...lib,
+      version: version(lib),
+      release: release(lib),
+      downloads: downloads(lib),
+      github: github(lib),
+    })),
 })).filter((group) => group.columns.length > 0);

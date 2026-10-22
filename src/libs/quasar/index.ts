@@ -6,8 +6,6 @@ import { bindScopeVars, mountLibrary } from "../mount";
 import type { MountContext } from "../types";
 import Demos from "./Demos.vue";
 
-export const version: string = Quasar.version;
-
 export function mount(context: MountContext) {
   const { controls } = context;
   // Workaround: Quasar's Platform/Dark plugins unconditionally add classes to <body>

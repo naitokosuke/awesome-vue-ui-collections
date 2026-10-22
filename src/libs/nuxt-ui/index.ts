@@ -5,9 +5,6 @@ import { bindScopeVars, mountLibrary } from "../mount";
 import type { MountContext } from "../types";
 import Demos from "./Demos.vue";
 
-// `@nuxt/ui` doesn't expose its package.json through `exports`.
-export { version } from "../../../node_modules/@nuxt/ui/package.json";
-
 // Shade scale around the chosen color (= 500), like the Tailwind palettes Nuxt UI maps.
 const SCALE: Record<number, (hex: string) => string> = {
   50: (hex) => tint(hex, 0.95),

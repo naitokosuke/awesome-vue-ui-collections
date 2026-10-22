@@ -5,6 +5,7 @@ import { defineConfig } from "@vizejs/vite-plugin/vite-plus";
 import Icons from "unplugin-icons/vite";
 import { lazyPlugins } from "vite-plus";
 import { playwright } from "vite-plus/test/browser-playwright";
+import { installedVersions } from "./build/installed-versions.ts";
 import { naiveUiPreflight } from "./build/naive-ui-preflight.ts";
 import { npmStats } from "./build/npm-stats.ts";
 import { scopeLibraryCss } from "./build/scope-library-css.ts";
@@ -61,6 +62,7 @@ export default defineConfig({
     scopeLibraryCss(metas.map(({ id, cssMatch }) => ({ id, match: cssMatch }))),
     // Tests don't hit the npm registry: every package's stats are missing, as if the fetch had failed.
     npmStats(process.env.VITEST ? [] : metas.flatMap((meta) => meta.package ?? [])),
+    installedVersions(metas.flatMap((meta) => meta.package ?? [])),
     {
       // `metas` is read once at startup (CSS scoping, npm stats), so adding, editing or
       // removing a library's meta.ts needs a dev-server restart to take effect.

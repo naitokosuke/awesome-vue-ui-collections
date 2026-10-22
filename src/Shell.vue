@@ -50,7 +50,7 @@ const ROW_HEIGHTS: Record<DemoKey, number> = {
   dialog: 88,
 };
 
-const { versions, errors, setCell, setOverlay } = useLibraryApps(() => controls.kind);
+const { errors, setCell, setOverlay } = useLibraryApps(() => controls.kind);
 
 /** Libraries with an app of their own (not stats-only), each of which gets an overlay host. */
 const mountedLibraries = libraries.filter((lib) => lib.load);
@@ -145,8 +145,7 @@ function scopeAttrs(lib: Library) {
             <div class="line meta">
               <span>
                 <span v-if="errors[lib.id]" class="error" :title="errors[lib.id]">failed to load</span>
-                <!-- A stats-only library (no app to report its version) shows npm's latest. -->
-                <template v-else>{{ (lib.load ? versions[lib.id] : lib.release?.latest) ?? "…" }}</template>
+                <template v-else>{{ lib.version ?? "—" }}</template>
                 <span
                   v-if="controls.stats && lib.release"
                   :class="{ stale: lib.release.stale }"

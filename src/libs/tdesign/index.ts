@@ -5,8 +5,6 @@ import { bindScopeVars, mountLibrary } from "../mount";
 import type { MountContext } from "../types";
 import Demos from "./Demos.vue";
 
-export const version: string = TDesign.version;
-
 // TDesign's 10-step palette: light mode puts the brand at step 7 (lighter below, darker above);
 // dark mode puts it at step 8 on #242424, with steps 1-5 faded into the background.
 function palette(hex: string, dark: boolean): Record<string, string> {

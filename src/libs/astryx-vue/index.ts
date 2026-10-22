@@ -5,8 +5,6 @@ import { bindScopeVars, mountLibrary } from "../mount";
 import type { MountContext } from "../types";
 import Demos from "./Demos.vue";
 
-export { version } from "@astryx-vue/core/package.json";
-
 /** The neutral theme's accent tokens (primary button, switch, focus ring) as one color. */
 function accentVars(hex: string) {
   return {
