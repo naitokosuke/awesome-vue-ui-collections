@@ -1,0 +1,26 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  ci:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7.0.1
+      # Installs Vite+ (the version in pnpm-workspace.yaml's catalog), Node.js and pnpm, then the dependencies.
+      - uses: voidzero-dev/setup-vp@v1.21.2
+        with:
+          node-version: "26"
+          cache: true
+      # The browser tests run in headless Chromium.
+      - run: vp exec playwright install --with-deps chromium
+      - run: vp run check
+      - run: vp test run
+      # Fetches npm stats, and fails if any package's can't be fetched.
+      - run: vp run build
