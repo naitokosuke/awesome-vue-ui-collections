@@ -31,10 +31,16 @@ export const rgbChannels = (hex: string) => hexToRgb(hex).join(", ");
 export function luminance(hex: string): number {
   const [r, g, b] = hexToRgb(hex).map((channel) => {
     const c = channel / 255;
-    return c <= 0.03928 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4;
+    return c <= 0.04045 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4;
   }) as Rgb;
   return 0.2126 * r + 0.7152 * g + 0.0722 * b;
 }
+
+/**
+ * Whether black text reads better than white on `hex`: above this luminance, contrast with
+ * black wins ((L + 0.05) / 0.05 > 1.05 / (L + 0.05)).
+ */
+export const isLight = (hex: string) => luminance(hex) > 0.179;
 
 /** WCAG contrast ratio between two colors (1–21). */
 export function contrast(a: string, b: string): number {
