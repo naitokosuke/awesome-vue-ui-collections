@@ -131,14 +131,20 @@ function scopeAttrs(lib: Library) {
               >
               stats
             </label>
-            <span :id="`stats-date-${group.kind}`" class="stats-date" title="npm data; downloads cover the last 7 days">(as of {{ npmFetchedAt }})</span>
+            <span :id="`stats-date-${group.kind}`" class="stats-date" title="npm data; downloads cover the last 7 days">
+              {{ npmFetchedAt ? `(as of ${npmFetchedAt})` : "(npm data unavailable)" }}
+            </span>
           </div>
           <!-- Two lines per column: name and downloads, then version, release age and links. -->
           <div v-for="lib in group.columns" :key="lib.id" class="head">
             <div class="line">
               <span class="name">{{ lib.name }}</span>
-              <span v-if="controls.stats" class="muted" :title="`npm downloads, last 7 days as of ${npmFetchedAt}`">
-                {{ lib.downloads?.label ?? "—" }} / week
+              <span
+                v-if="controls.stats"
+                class="muted"
+                :title="`npm downloads, last 7 days as of ${npmFetchedAt ?? '—'}`"
+              >
+                {{ lib.downloads ?? "—" }} / week
               </span>
             </div>
 

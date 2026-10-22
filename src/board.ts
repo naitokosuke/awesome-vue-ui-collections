@@ -25,9 +25,11 @@ export const DEMO_LABELS: Record<DemoKey, string> = {
 /** npm timestamps as calendar dates in UTC, so "N days ago" reads the same for every viewer. */
 const toDate = (instant: string) => Temporal.Instant.from(instant).toZonedDateTimeISO("UTC").toPlainDate();
 
-const fetchedOn = toDate(npm.fetchedAt);
+/** The day the npm stats were fetched; null when no package could be. */
+const fetchedOn = npm.fetchedAt ? toDate(npm.fetchedAt) : null;
 
-export const npmFetchedAt = fetchedOn.toString();
+/** `YYYY-MM-DD`, or null when there are no npm stats at all. */
+export const npmFetchedAt = fetchedOn?.toString() ?? null;
 
 // ---- npm stats ----------------------------------------------------------------
 
@@ -38,49 +40,49 @@ export interface Release {
   stale: boolean;
 }
 
-export interface Downloads {
-  label: string;
-  /** 0–1 on a log scale relative to the most downloaded library. */
-  ratio: number;
-}
-
 /** npm stats for the library's package; null when it has none or the fetch failed. */
 const statsOf = (lib: Library) => (lib.package ? (npm.packages[lib.package] ?? null) : null);
 
 const relativeDay = new Intl.RelativeTimeFormat("en", { numeric: "auto" }); // "today", "yesterday"
 const relative = new Intl.RelativeTimeFormat("en"); // "1 month ago", not "last month"
 const compact = new Intl.NumberFormat("en", { notation: "compact", maximumFractionDigits: 1 });
-const maxDownloads = Math.max(1, ...libraries.map((lib) => statsOf(lib)?.weeklyDownloads ?? 0));
 
 function release(lib: Library): Release | null {
   const stats = statsOf(lib);
-  if (!stats) return null;
+  // Any package's stats imply a fetch went through, which sets fetchedOn.
+  if (!stats || !fetchedOn) return null;
   const releasedOn = toDate(stats.released);
   return {
     latest: stats.latest,
     date: releasedOn.toString(),
-    ago: ago(releasedOn),
-    // No release within a year of when the stats were fetched.
-    stale: Temporal.PlainDate.compare(releasedOn.add({ years: 1 }), fetchedOn) < 0,
+    ago: ago(releasedOn, fetchedOn),
+    stale: isStale(releasedOn, fetchedOn),
   };
 }
 
+/** No release within a year of `today`. */
+export function isStale(released: Temporal.PlainDate, today: Temporal.PlainDate) {
+  return Temporal.PlainDate.compare(released.add({ years: 1 }), today) < 0;
+}
+
 /** Days up to a month, months up to two years, then years — counted on the calendar. */
-function ago(date: Temporal.PlainDate) {
-  const { days } = date.until(fetchedOn, { largestUnit: "days" });
+export function ago(date: Temporal.PlainDate, today: Temporal.PlainDate) {
+  const { days } = date.until(today, { largestUnit: "days" });
   if (days < 31) return relativeDay.format(-days, "day");
-  const { years, months } = date.until(fetchedOn, { largestUnit: "years" });
+  const { years, months } = date.until(today, { largestUnit: "years" });
   if (years < 2) return relative.format(-(years * 12 + months), "month");
   return relative.format(-years, "year");
 }
 
-function downloads(lib: Library): Downloads | null {
-  const count = statsOf(lib)?.weeklyDownloads;
-  if (count == null) return null;
-  // Log scale, so an 800/week library is still visible next to a 1M/week one.
+/** A download count as the header shows it: "1.2M", "830k", "950". */
+export function formatDownloads(count: number) {
   // Intl writes thousands as "K"; the SI prefix for kilo is lowercase "k" (M stays uppercase).
-  const label = compact.format(count).replace(/K$/, "k");
-  return { label, ratio: Math.log10(count + 1) / Math.log10(maxDownloads + 1) };
+  return compact.format(count).replace(/K$/, "k");
+}
+
+function downloads(lib: Library) {
+  const count = statsOf(lib)?.weeklyDownloads;
+  return count == null ? null : formatDownloads(count);
 }
 
 function github(lib: Library) {
@@ -103,7 +105,8 @@ function version(lib: Library) {
 export interface Column extends Library {
   version: string | null;
   release: Release | null;
-  downloads: Downloads | null;
+  /** Weekly npm downloads, formatted; null when unknown. */
+  downloads: string | null;
   github: { slug: string; url: string } | null;
 }
 

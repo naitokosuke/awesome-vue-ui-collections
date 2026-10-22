@@ -12,8 +12,6 @@ export interface PackageStats {
   latest: string;
   /** Publish time of `latest`. */
   released: InstantString;
-  /** First publish time of the package. */
-  created: InstantString;
   /** Downloads over the last 7 days, or null if the downloads API failed. */
   weeklyDownloads: number | null;
   /** GitHub repository from the package's `repository` field, if it points to GitHub. */
@@ -21,7 +19,8 @@ export interface PackageStats {
 }
 
 export interface NpmStats {
-  fetchedAt: InstantString;
+  /** When the stats were fetched; null when no package could be fetched, so there is no "as of". */
+  fetchedAt: InstantString | null;
   packages: Record<string, PackageStats | null>;
 }
 
@@ -30,25 +29,39 @@ const MODULE_ID = "virtual:npm-stats";
 /**
  * Exposes npm registry data for the given packages as `virtual:npm-stats`.
  * Fetched once per dev-server start / build; a package that fails to fetch is `null`.
+ * A production build fails instead, so it never ships a table with silently missing stats.
  */
 export function npmStats(packages: string[]): Plugin {
   let stats: Promise<NpmStats> | undefined;
+  let command: "build" | "serve" = "serve";
   return {
     name: "npm-stats",
+    configResolved(config) {
+      command = config.command;
+    },
     resolveId(id) {
       if (id === MODULE_ID) return `\0${MODULE_ID}`;
     },
     async load(id) {
       if (id !== `\0${MODULE_ID}`) return;
       stats ??= fetchStats(packages);
-      return `export default ${JSON.stringify(await stats)}`;
+      const result = await stats;
+      const failed = Object.keys(result.packages).filter((name) => !result.packages[name]);
+      if (command === "build" && failed.length > 0) {
+        this.error(`[npm-stats] Could not fetch ${failed.join(", ")} from npm (see the warnings above).`);
+      }
+      return `export default ${JSON.stringify(result)}`;
     },
   };
 }
 
 async function fetchStats(packages: string[]): Promise<NpmStats> {
   const entries = await Promise.all(packages.map(async (name) => [name, await fetchPackage(name)] as const));
-  return { fetchedAt: Temporal.Now.instant().toString(), packages: Object.fromEntries(entries) };
+  const fetched = entries.some(([, stats]) => stats !== null);
+  return {
+    fetchedAt: fetched ? Temporal.Now.instant().toString() : null,
+    packages: Object.fromEntries(entries),
+  };
 }
 
 async function fetchPackage(name: string): Promise<PackageStats | null> {
@@ -65,7 +78,6 @@ async function fetchPackage(name: string): Promise<PackageStats | null> {
       latest,
       // Parsing validates and normalizes the registry's timestamps.
       released: Temporal.Instant.from(registry.time[latest]).toString(),
-      created: Temporal.Instant.from(registry.time.created).toString(),
       weeklyDownloads: downloads?.downloads ?? null,
       github: githubRepository(registry.repository),
     };
@@ -79,7 +91,7 @@ async function fetchPackage(name: string): Promise<PackageStats | null> {
  * `repository` may be a string ("github:owner/repo", "owner/repo") or `{ url }`
  * ("git+https://github.com/owner/repo.git", "git@github.com:owner/repo.git", ...).
  */
-function githubRepository(repository: unknown): PackageStats["github"] {
+export function githubRepository(repository: unknown): PackageStats["github"] {
   const raw = typeof repository === "string" ? repository : (repository as { url?: string } | undefined)?.url;
   if (!raw) return null;
   const match =
