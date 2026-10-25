@@ -1,4 +1,4 @@
-import { globSync } from "node:fs";
+import { globSync, statSync } from "node:fs";
 import { pathToFileURL } from "node:url";
 import ui from "@nuxt/ui/vite";
 import { defineConfig } from "@vizejs/vite-plugin/vite-plus";
@@ -11,8 +11,12 @@ import { npmStats } from "./build/npm-stats.ts";
 import { scopeLibraryCss } from "./build/scope-library-css.ts";
 import type { LibraryMeta } from "./src/libs/types.ts";
 
+// Node's ESM cache never evicts a module, so the mtime query makes a dev-server restart
+// re-import an edited meta.ts instead of reusing the copy loaded at first start.
 const metas: LibraryMeta[] = await Promise.all(
-  globSync("src/libs/*/meta.ts").map(async (file) => (await import(pathToFileURL(file).href)).meta),
+  globSync("src/libs/*/meta.ts").map(
+    async (file) => (await import(`${pathToFileURL(file).href}?t=${statSync(file).mtimeMs}`)).meta,
+  ),
 );
 
 /** Components a library's CLI copied in (shadcn-vue, Inspira UI, …), kept as upstream wrote them. */
@@ -67,7 +71,7 @@ export default defineConfig({
     installedVersions(metas.flatMap((meta) => meta.package ?? [])),
     {
       // `metas` is read once at startup (CSS scoping, npm stats), so adding, editing or
-      // removing a library's meta.ts needs a dev-server restart to take effect.
+      // removing a library's meta.ts needs a dev-server restart (which re-reads them) to take effect.
       name: "restart-on-library-meta-change",
       configureServer(server) {
         server.watcher.add("src/libs/*/meta.ts");

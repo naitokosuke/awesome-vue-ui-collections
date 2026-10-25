@@ -56,7 +56,7 @@ vp exec playwright install chromium
 ```
 
 `vp run build` type-checks and builds into `dist`
-It fetches npm stats and fails if any package's stats can't be fetched, so a build never ships with silently missing numbers
+It fetches npm stats (retrying failed requests) and fails if any package's stats, weekly downloads included, can't be fetched, so a build never ships with silently missing numbers
 
 ```bash
 vp run build

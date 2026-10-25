@@ -4,6 +4,10 @@ on:
   push:
     branches: [main]
   pull_request:
+  # Weekly, so a failing npm stats fetch or a library release that breaks a demo shows up without a push.
+  schedule:
+    - cron: "0 3 * * 1"
+  workflow_dispatch:
 
 permissions:
   contents: read
@@ -18,7 +22,12 @@ jobs:
         with:
           node-version: "26"
           cache: true
-      # The browser tests run in headless Chromium.
+      # The browser tests run in headless Chromium. Its download is cached per lockfile;
+      # `install --with-deps` still installs the OS packages and skips a browser that's already there.
+      - uses: actions/cache@v4.3.0
+        with:
+          path: ~/.cache/ms-playwright
+          key: playwright-${{ runner.os }}-${{ hashFiles('pnpm-lock.yaml') }}
       - run: vp exec playwright install --with-deps chromium
       - run: vp run check
       - run: vp test run

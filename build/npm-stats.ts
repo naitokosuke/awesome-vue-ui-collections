@@ -28,8 +28,9 @@ const MODULE_ID = "virtual:npm-stats";
 
 /**
  * Exposes npm registry data for the given packages as `virtual:npm-stats`.
- * Fetched once per dev-server start / build; a package that fails to fetch is `null`.
- * A production build fails instead, so it never ships a table with silently missing stats.
+ * Fetched once per dev-server start / build, 6 packages at a time, each request retried twice;
+ * a package that fails to fetch is `null` (or has `weeklyDownloads: null`).
+ * A production build fails on either instead, so it never ships a table with silently missing stats.
  */
 export function npmStats(packages: string[]): Plugin {
   let stats: Promise<NpmStats> | undefined;
@@ -46,7 +47,10 @@ export function npmStats(packages: string[]): Plugin {
       if (id !== `\0${MODULE_ID}`) return;
       stats ??= fetchStats(packages);
       const result = await stats;
-      const failed = Object.keys(result.packages).filter((name) => !result.packages[name]);
+      // A missing downloads count is a failure too: `weeklyDownloads` is only null when that request failed.
+      const failed = Object.entries(result.packages)
+        .filter(([, stats]) => stats?.weeklyDownloads == null)
+        .map(([name]) => name);
       if (command === "build" && failed.length > 0) {
         this.error(`[npm-stats] Could not fetch ${failed.join(", ")} from npm (see the warnings above).`);
       }
@@ -56,7 +60,7 @@ export function npmStats(packages: string[]): Plugin {
 }
 
 async function fetchStats(packages: string[]): Promise<NpmStats> {
-  const entries = await Promise.all(packages.map(async (name) => [name, await fetchPackage(name)] as const));
+  const entries = await mapLimit(packages, 6, async (name) => [name, await fetchPackage(name)] as const);
   const fetched = entries.some(([, stats]) => stats !== null);
   return {
     fetchedAt: fetched ? Temporal.Now.instant().toString() : null,
@@ -95,15 +99,42 @@ export function githubRepository(repository: unknown): PackageStats["github"] {
   const raw = typeof repository === "string" ? repository : (repository as { url?: string } | undefined)?.url;
   if (!raw) return null;
   const match =
-    /github\.com[/:]([\w.-]+)\/([\w.-]+?)(?:\.git)?(?:[/#].*)?$/.exec(raw) ??
-    /^(?:github:)?([\w.-]+)\/([\w.-]+)$/.exec(raw);
+    // Optional scheme and user, then exactly github.com: "notgithub.com" isn't GitHub.
+    /^(?:[\w+]+:\/\/)?(?:[^@/]+@)?(?:www\.)?github\.com[/:]([\w.-]+)\/([\w.-]+?)(?:\.git)?(?:[/#?].*)?$/i.exec(raw) ??
+    /^(?:github:)?([\w.-]+)\/([\w.-]+?)(?:\.git)?(?:#.*)?$/i.exec(raw);
   if (!match) return null;
   const slug = `${match[1]}/${match[2]}`;
   return { slug, url: `https://github.com/${slug}` };
 }
 
-async function getJson(url: string) {
-  const response = await fetch(url, { signal: AbortSignal.timeout(15_000) });
-  if (!response.ok) throw new Error(`${response.status} ${url}`);
-  return response.json();
+/** Runs `fn` over `items` with at most `limit` calls in flight; results keep the order of `items`. */
+export async function mapLimit<T, R>(items: T[], limit: number, fn: (item: T) => Promise<R>): Promise<R[]> {
+  const results: R[] = [];
+  let next = 0;
+  const worker = async () => {
+    while (next < items.length) {
+      const index = next++;
+      results[index] = await fn(items[index]!);
+    }
+  };
+  await Promise.all(Array.from({ length: Math.min(limit, items.length) }, worker));
+  return results;
+}
+
+/** GETs JSON, retrying twice with backoff on network errors, timeouts, 429 and 5xx; other statuses (404) throw at once. */
+export async function getJson(url: string, retryDelayMs = 1_000) {
+  for (let attempt = 0; ; attempt++) {
+    let error: unknown;
+    let retryable = true;
+    try {
+      const response = await fetch(url, { signal: AbortSignal.timeout(15_000) });
+      if (response.ok) return await response.json();
+      error = new Error(`${response.status} ${url}`);
+      retryable = response.status === 429 || response.status >= 500;
+    } catch (caught) {
+      error = caught;
+    }
+    if (!retryable || attempt >= 2) throw error;
+    await new Promise((resolve) => setTimeout(resolve, retryDelayMs * 2 ** attempt));
+  }
 }

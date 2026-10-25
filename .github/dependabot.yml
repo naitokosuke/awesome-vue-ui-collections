@@ -5,3 +5,21 @@ updates:
     directory: /
     schedule:
       interval: weekly
+  # pnpm is detected from pnpm-lock.yaml; the `catalog:` versions in pnpm-workspace.yaml are updated too.
+  # A dependency joins the first group that matches it; majors outside the first two groups get a PR each.
+  - package-ecosystem: npm
+    directory: /
+    schedule:
+      interval: weekly
+    groups:
+      # Vite+ (the catalog's `vite-plus` and its `vite` alias of @voidzero-dev/vite-plus-core) bundles
+      # Vitest, so @vitest/browser-playwright has to move with it, majors included.
+      vite-plus:
+        patterns: ["vite", "vite-plus", "@voidzero-dev/*", "@vitest/*"]
+      # Vize's packages are pinned to one version and release together.
+      vize:
+        patterns: ["vize", "@vizejs/*", "oxlint-plugin-vize"]
+      # One PR for every other minor and patch update, rather than one per library.
+      minor-and-patch:
+        patterns: ["*"]
+        update-types: [minor, patch]
