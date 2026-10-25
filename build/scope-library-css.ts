@@ -13,8 +13,8 @@ export interface ScopeRule {
  * so several libraries can live on one page without their resets colliding.
  *
  * - bare `:root` / `html` / `body` are replaced by the scope itself
- * - qualified ones (`html.dark`, `body[arco-theme=dark]`) match either on the
- *   scope element or as an ancestor of it, so theme switches work both ways
+ * - qualified ones (`html.dark`, `body[arco-theme=dark]`, `:host(.dark)`) match either
+ *   on the scope element or as an ancestor of it, so theme switches work both ways
  * - a lone class/attribute (`.van-theme-dark`) also matches on the scope element
  * - every other selector becomes a descendant of the scope
  * - `:where()` keeps the original specificity untouched
@@ -86,21 +86,30 @@ function either(...selectors: Selector[]): SelectorComponent {
   return { type: "pseudo-class", kind: "is", selectors };
 }
 
-/** Returns one selector per input; alternatives are combined with `:is()`. */
-function scopeSelector(selector: Selector, scope: SelectorComponent): Selector {
-  // Nested rules (`&`) are already inside a scoped parent.
-  if (selector.some((component) => component.type === "nesting")) return selector;
+/** `:host(.dark) .x` -> `:root.dark .x`: the argument qualifies the root like a class on `:root` would. */
+function hostAsRoot(selector: Selector): Selector {
+  const [first] = selector;
+  if (first?.type !== "pseudo-class" || first.kind !== "host" || !first.selectors) return selector;
+  return [{ type: "pseudo-class", kind: "root" }, ...first.selectors, ...selector.slice(1)];
+}
 
+/** Returns one selector per input; alternatives are combined with `:is()`. */
+function scopeSelector(input: Selector, scope: SelectorComponent): Selector {
+  // Nested rules (`&`) are already inside a scoped parent.
+  if (input.some((component) => component.type === "nesting")) return input;
+
+  const selector = hostAsRoot(input);
   const [first] = selector;
 
-  // `:where(:root, :host, [data-theme])` -> `:where(<scope>, <scope> [data-theme])`
+  // `:where(:root, [data-theme])` -> `:where(<scope>, <scope> [data-theme])`; a qualified root
+  // in the list (`:root.dark`, `:host(.dark)`) is scoped like one standing alone.
   if (
     first?.type === "pseudo-class" &&
     (first.kind === "where" || first.kind === "is") &&
-    first.selectors.some((inner) => inner.length === 1 && isGlobalElement(inner[0]))
+    first.selectors.some((inner) => isGlobalElement(hostAsRoot(inner)[0]))
   ) {
     const selectors = first.selectors.map((inner) =>
-      inner.length === 1 && isGlobalElement(inner[0]) ? [scope] : [scope, DESCENDANT, ...inner],
+      isGlobalElement(hostAsRoot(inner)[0]) ? scopeSelector(inner, scope) : [scope, DESCENDANT, ...inner],
     );
     return [{ ...first, selectors }, ...selector.slice(1)];
   }

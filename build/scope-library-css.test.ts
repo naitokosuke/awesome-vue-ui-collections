@@ -55,8 +55,17 @@ describe("scopeLibraryCss", () => {
     expect(scoped("body::before")).toBe(`${SCOPE}:before`);
   });
 
+  test("treats :host(<selector>) as a root qualified by that selector", () => {
+    expect(scoped(":host(.dark) .x")).toBe(`:is(${SCOPE}.dark, :where(:root.dark) ${SCOPE}) .x`);
+  });
+
   test("rewrites roots listed inside a leading :where() / :is()", () => {
     expect(scoped(":where(:root, :host, [data-theme])")).toBe(`:where(${SCOPE}, ${SCOPE}, ${SCOPE} [data-theme])`);
+    // Vize UI's theme presets: the :host() alternative must keep its condition.
+    expect(scoped(":where([data-theme~=paper], :host([data-theme~=paper]))")).toBe(
+      `:where(${SCOPE} [data-theme~="paper"], :is(${SCOPE}[data-theme~="paper"], :where(:root[data-theme~="paper"]) ${SCOPE}))`,
+    );
+    expect(scoped(":is(html.dark, .x) .a")).toBe(`:is(:is(${SCOPE}.dark, :where(html.dark) ${SCOPE}), ${SCOPE} .x) .a`);
   });
 
   test("scopes each selector of a list, and rules inside at-rules", () => {
