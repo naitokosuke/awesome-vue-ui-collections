@@ -13,7 +13,7 @@
     "@oruga-ui/theme-oruga": "^0.10.0",
     "@quasar/extras": "^2.1.0",
     "@varlet/ui": "^3.20.7",
-    "@vizejs/ui": "^0.467.0",
+    "@vizejs/ui": "^0.539.0",
     "@vuetify/v0": "^1.2.3",
     "@vueuse/core": "^15.0.0",
     "bootstrap": "^5.3.8",
@@ -38,7 +38,7 @@
     "@iconify-json/lucide": "^1.2.145",
     "@types/node": "^26.6.5",
     "@vitest/browser-playwright": "5.0.5",
-    "@vizejs/vite-plugin": "0.501.0",
+    "@vizejs/vite-plugin": "0.539.0",
     "lightningcss": "^1.33.0",
     "playwright": "^1.64.1",
     "shadcn-vue": "^2.8.2",
@@ -46,7 +46,7 @@
     "unplugin-icons": "^24.0.0",
     "vite": "catalog:",
     "vite-plus": "catalog:",
-    "vize": "0.501.0"
+    "vize": "0.539.0"
   },
   "packageManager": "pnpm@12.9.0"
 }
