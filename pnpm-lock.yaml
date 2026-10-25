@@ -269,8 +269,8 @@ importers:
         specifier: ^1.20.10
         version: 1.20.10(vue@3.5.44(typescript@7.1.0-beta))
       temporal-polyfill-lite:
-        specifier: ^0.4.3
-        version: 0.4.3
+        specifier: ^1.0.0
+        version: 1.0.0
       tw-animate-css:
         specifier: ^1.4.0
         version: 1.4.0
@@ -5654,8 +5654,8 @@ packages:
     peerDependencies:
       vue: '>=3.1.0'
 
-  temporal-polyfill-lite@0.4.3:
-    resolution: {integrity: sha512-Lw/de9tydKmrU0icQy6Z+abX5mzDk4iqyt6Xp2iDDxY6SGISiuhuP3TcfWlYveM1FN1I7FjT5nG+Kh9eCiSnVg==}
+  temporal-polyfill-lite@1.0.0:
+    resolution: {integrity: sha512-dC6ITb3X/JgPN+kbhi4MFsVHMgWPBIE5BS9GlwF8cTlGyXaW229HKQxjOfdBI2tE8f2VcbyUAFwS6TzVmR1Wqw==}
 
   terminal-columns@2.0.0:
     resolution: {integrity: sha512-6IByuUjyNZJXUtwDNm+OIe62zgwwaRbH+WMNTcx05O2G5V9WhvluAAHJY8OvUdwmzMPpqAD/7EUpGdI6ae1aiQ==}
@@ -11620,7 +11620,7 @@ snapshots:
       validator: 13.15.35
       vue: 3.5.44(typescript@7.1.0-beta)
 
-  temporal-polyfill-lite@0.4.3: {}
+  temporal-polyfill-lite@1.0.0: {}
 
   terminal-columns@2.0.0: {}
 
