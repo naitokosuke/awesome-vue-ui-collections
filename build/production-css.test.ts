@@ -50,6 +50,34 @@ function selectorsOf(filename: string, code: Buffer) {
   return selectors;
 }
 
+/**
+ * Whether the selector is anchored on a matching compound: on or under it, never beside it.
+ * Only ancestors may come before it (`:where(html.dark) <scope>`), `~` / `+` may not follow it,
+ * and a `:where()` / `:is()` counts as the anchor only when every alternative is anchored itself.
+ */
+function anchored(selector: Selector, match: (component: SelectorComponent) => boolean): boolean {
+  const isAnchor = (component: SelectorComponent) =>
+    match(component) ||
+    (component.type === "pseudo-class" &&
+      (component.kind === "where" || component.kind === "is") &&
+      component.selectors.every((inner) => anchored(inner, match)));
+  const isAncestry = (component: SelectorComponent | undefined) =>
+    component === undefined ||
+    component.type !== "combinator" ||
+    component.value === "descendant" ||
+    component.value === "child";
+
+  let start = 0;
+  while (start < selector.length) {
+    const end = selector.findIndex((component, i) => i >= start && component.type === "combinator");
+    const compound = selector.slice(start, end === -1 ? selector.length : end);
+    if (compound.some(isAnchor)) return isAncestry(selector[end]);
+    if (end === -1 || !isAncestry(selector[end])) return false;
+    start = end + 1;
+  }
+  return false;
+}
+
 /** Whether the selector, or a leading `:where()` / `:is()` alternative of it, has a matching component. */
 function mentions(selector: Selector, match: (component: SelectorComponent) => boolean): boolean {
   return selector.some(
@@ -118,7 +146,7 @@ describe("production build", () => {
         checked++;
         const text = print(selector);
         if (text in GLOBAL_SELECTORS) continue;
-        if (mentions(selector, isScope(lib?.id)) || mentions(selector, isShell)) continue;
+        if (anchored(selector, isScope(lib?.id)) || mentions(selector, isShell)) continue;
         unscoped.push(`${file} → ${text}`);
       }
     }

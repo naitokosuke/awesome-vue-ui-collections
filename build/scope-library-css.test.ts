@@ -55,6 +55,24 @@ describe("scopeLibraryCss", () => {
     expect(scoped("body::before")).toBe(`${SCOPE}:before`);
   });
 
+  test("decides a root's :not() on the scope element alone, never on an ancestor", () => {
+    // Quasar's platform rules: an ancestor branch would hold on any <body> and never switch off.
+    expect(scoped("body:not(.desktop) .desktop-only")).toBe(`${SCOPE}:not(.desktop) .desktop-only`);
+    expect(scoped("body.mobile:not(.native-mobile) .q-select__dialog")).toBe(
+      `${SCOPE}.mobile:not(.native-mobile) .q-select__dialog`,
+    );
+    expect(scoped("html body:not(.q-body--layout-animate) .x")).toBe(`${SCOPE}:not(.q-body--layout-animate) .x`);
+  });
+
+  test("keeps a root's siblings under the scope, away from the neighbouring libraries", () => {
+    expect(scoped("body ~ .a")).toBe(`${SCOPE} body ~ .a`);
+    expect(scoped("body + .a")).toBe(`${SCOPE} body + .a`);
+    expect(scoped("html.dark ~ .a")).toBe(`${SCOPE} html.dark ~ .a`);
+    expect(scoped(":where(:root, .x) ~ .a")).toBe(`${SCOPE} :where(:root, .x) ~ .a`);
+    // Only right after the root: siblings further in are ordinary descendants.
+    expect(scoped("body .a ~ .b")).toBe(`${SCOPE} .a ~ .b`);
+  });
+
   test("treats :host(<selector>) as a root qualified by that selector", () => {
     expect(scoped(":host(.dark) .x")).toBe(`:is(${SCOPE}.dark, :where(:root.dark) ${SCOPE}) .x`);
   });

@@ -15,6 +15,10 @@ export interface ScopeRule {
  * - bare `:root` / `html` / `body` are replaced by the scope itself
  * - qualified ones (`html.dark`, `body[arco-theme=dark]`, `:host(.dark)`) match either
  *   on the scope element or as an ancestor of it, so theme switches work both ways
+ * - ones qualified with a `:not()` (`body:not(.desktop)`) match only on the scope element:
+ *   the real <html>/<body> never carry library classes, so an ancestor branch would always hold
+ * - a root followed by `~` / `+` goes under the scope unchanged and matches nothing,
+ *   instead of reaching the neighbouring libraries (a page has nothing after <body>)
  * - a lone class/attribute (`.van-theme-dark`) also matches on the scope element
  * - every other selector becomes a descendant of the scope
  * - `:where()` keeps the original specificity untouched
@@ -75,6 +79,23 @@ function isBody(component: SelectorComponent | undefined) {
   return component?.type === "type" && component.name === "body";
 }
 
+function isSibling(component: SelectorComponent | undefined) {
+  return (
+    component?.type === "combinator" && (component.value === "next-sibling" || component.value === "later-sibling")
+  );
+}
+
+/** Whether the selector starts at html/body/:root/:host, or at a `:where()` / `:is()` listing one. */
+function startsWithRoot(selector: Selector) {
+  const [first] = selector;
+  if (isGlobalElement(first)) return true;
+  return (
+    first?.type === "pseudo-class" &&
+    (first.kind === "where" || first.kind === "is") &&
+    first.selectors.some((inner) => isGlobalElement(hostAsRoot(inner)[0]))
+  );
+}
+
 /** Index of the first combinator, i.e. the end of the leading compound selector. */
 function compoundEnd(selector: Selector, from = 0) {
   const index = selector.findIndex((component, i) => i >= from && component.type === "combinator");
@@ -100,6 +121,10 @@ function scopeSelector(input: Selector, scope: SelectorComponent): Selector {
 
   const selector = hostAsRoot(input);
   const [first] = selector;
+
+  // `body ~ .x`: the scope's siblings are other libraries' cells, so it stays a descendant
+  // (`<scope> body ~ .x`) and matches nothing, as on a page of the library's own.
+  if (startsWithRoot(selector) && isSibling(selector[compoundEnd(selector)])) return [scope, DESCENDANT, ...input];
 
   // `:where(:root, [data-theme])` -> `:where(<scope>, <scope> [data-theme])`; a qualified root
   // in the list (`:root.dark`, `:host(.dark)`) is scoped like one standing alone.
@@ -136,6 +161,11 @@ function scopeSelector(input: Selector, scope: SelectorComponent): Selector {
   if (qualifiers.length === 0) return [scope, ...rest];
   // Pseudo-elements are invalid inside :where()/:is() and would drop the whole rule.
   if (qualifiers.some((component) => component.type === "pseudo-element")) return [scope, ...qualifiers, ...rest];
+  // A negation holds on the real <html>/<body>, which never carry library classes: decide it on
+  // the scope alone, also when mixed with positive qualifiers (`body.mobile:not(.native-mobile)`).
+  if (qualifiers.some((component) => component.type === "pseudo-class" && component.kind === "not")) {
+    return [scope, ...qualifiers, ...rest];
+  }
   const global: SelectorComponent = { type: "pseudo-class", kind: "where", selectors: [selector.slice(0, end)] };
   // `:is(<scope>.dark, :where(html.dark) <scope>) .x`
   return [either([scope, ...qualifiers], [global, DESCENDANT, scope]), ...rest];
