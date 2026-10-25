@@ -9,7 +9,7 @@ import { controls } from "./store";
  * Bind `setCell` / `setOverlay` as function refs on those elements.
  */
 export function useLibraryApps(activeKind: () => Kind) {
-  /** Why a library failed to load or mount, by id. */
+  /** Why a library failed to load or mount, or its first error after mounting, by id. */
   const errors = reactive<Record<string, string>>({});
 
   const cells: Record<string, Partial<Record<DemoKey, HTMLElement>>> = {};
@@ -27,6 +27,11 @@ export function useLibraryApps(activeKind: () => Kind) {
     if (el instanceof HTMLElement) overlays[libId] = el;
   }
 
+  function fail(lib: Library, error: unknown) {
+    errors[lib.id] ??= String(error);
+    console.error(`[${lib.id}]`, error);
+  }
+
   async function start(lib: Library, load: () => Promise<LibraryModule>) {
     started.add(lib.id);
     try {
@@ -41,6 +46,7 @@ export function useLibraryApps(activeKind: () => Kind) {
             cells: cells[lib.id] as Record<DemoKey, HTMLElement>,
             overlay: overlays[lib.id]!,
             controls: readonly(controls),
+            reportError: (error) => fail(lib, error),
           }),
         );
       } catch (error) {
@@ -50,8 +56,7 @@ export function useLibraryApps(activeKind: () => Kind) {
       }
       scopes.push(scope);
     } catch (error) {
-      errors[lib.id] = String(error);
-      console.error(`[${lib.id}]`, error);
+      fail(lib, error);
     }
   }
 

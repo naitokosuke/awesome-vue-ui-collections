@@ -52,6 +52,8 @@ export interface MountContext {
   overlay: HTMLElement;
   /** The shell's demo options: libraries read them, only the shell changes them. */
   controls: DeepReadonly<Controls>;
+  /** Shows an error the library's app ran into after mounting (in a render, watcher or handler) in its column header. */
+  reportError: (error: unknown) => void;
 }
 
 /** The library's own component behind one demo row, as its docs name it. */

@@ -13,19 +13,21 @@ export function mount(context: MountContext) {
   // on them (dark mode comes from `darkAttrs` + the `dark` prop), so undo them.
   const bodyClass = document.body.getAttribute("class");
 
-  mountLibrary(context, Demos, (app) => {
-    app.use(Quasar, {
-      config: {
-        dark: false,
-        // don't set `lang`/`dir` on <html>
-        lang: { noHtmlAttrs: true },
-      },
+  try {
+    mountLibrary(context, Demos, (app) => {
+      app.use(Quasar, {
+        config: {
+          dark: false,
+          // don't set `lang`/`dir` on <html>
+          lang: { noHtmlAttrs: true },
+        },
+      });
     });
-  });
-
-  // Restored exactly: no `class=""` left behind on a <body> that had no class attribute.
-  if (bodyClass === null) document.body.removeAttribute("class");
-  else document.body.setAttribute("class", bodyClass);
+  } finally {
+    // Restored exactly, even when mounting failed: no `class=""` left behind on a <body> that had no class attribute.
+    if (bodyClass === null) document.body.removeAttribute("class");
+    else document.body.setAttribute("class", bodyClass);
+  }
 
   // Workaround: Quasar has no option for where portals (QMenu, QDialog, ...) go; it always
   // appends `#q-portal--<type>--<n>` nodes to <body>. Move them into the overlay host,

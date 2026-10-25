@@ -16,23 +16,34 @@ let appCount = 0;
  * Creates the Vue app of one UI library, so plugins installed via `install` stay inside it.
  * `Demos` renders every row at once through DemoCells.vue, which teleports each one into its
  * grid cell after the shell's own content, so all libraries line up row by row.
- * The app is unmounted when the library's effect scope (see LibraryModule) stops.
+ * The app is unmounted when the library's effect scope (see LibraryModule) stops, also when
+ * mounting fails: an error while mounting is thrown from here, after anything already rendered.
  */
 export function mountLibrary(context: MountContext, Demos: Component, install: (app: App) => void = () => {}) {
   const app = createApp(Demos);
   // Every app's useId() would otherwise start at `v-0`, so ids (label `for`, aria-*) collide across apps.
   app.config.idPrefix = `app${appCount++}`;
   app.provide(contextKey, context);
-  install(app);
+  // Without a handler, Vue only logs component errors in production (and throws them in dev), so a
+  // library failing in setup or render would show empty cells and no error.
+  let mounted = false;
+  const mountErrors: unknown[] = [];
+  app.config.errorHandler = (error) => {
+    if (mounted) context.reportError(error);
+    else mountErrors.push(error);
+  };
   // The root itself renders only what isn't teleported (e.g. a provider's wrapper element), so it
   // lives in the overlay host: inside the library's CSS scope, and out of the table's layout.
   const host = document.createElement("div");
   context.overlay.append(host);
-  app.mount(host);
   onScopeDispose(() => {
-    app.unmount();
+    if (mounted) app.unmount();
     host.remove();
   });
+  install(app);
+  app.mount(host);
+  mounted = true;
+  if (mountErrors.length > 0) throw mountErrors[0];
 }
 
 /**
