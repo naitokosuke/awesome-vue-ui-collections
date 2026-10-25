@@ -30,13 +30,21 @@ const LAYOUT_PROPERTIES = new Set([
 
 type Style = Record<string, string>;
 
+/**
+ * Chromium on macOS sometimes reports the default (unstyled) font as `"Times New Roman"` instead
+ * of `Times` partway through a run, with no stylesheet setting either: the same font, so one name.
+ */
+const normalizeFontFamily = (value: string) => (value === '"Times New Roman"' ? "Times" : value);
+
 /** Every computed property (custom properties included), minus the layout-dependent ones. */
 function computedStyle(el: Element, pseudo?: string): Style {
   const style = getComputedStyle(el, pseudo);
   const out: Style = {};
   for (let i = 0; i < style.length; i++) {
     const name = style.item(i);
-    if (!LAYOUT_PROPERTIES.has(name)) out[name] = style.getPropertyValue(name);
+    if (LAYOUT_PROPERTIES.has(name)) continue;
+    const value = style.getPropertyValue(name);
+    out[name] = name === "font-family" ? normalizeFontFamily(value) : value;
   }
   return out;
 }
@@ -58,6 +66,11 @@ function attributes(el: Element): Record<string, string> {
   );
 }
 
+/** Every stylesheet on the page: <style> / <link> ones and constructed ones adopted by the document. */
+function allSheets(): CSSStyleSheet[] {
+  return [...document.styleSheets, ...document.adoptedStyleSheets];
+}
+
 /** Every stylesheet rule on the page, nested rules included. */
 function allRules(): CSSRule[] {
   const rules: CSSRule[] = [];
@@ -67,7 +80,7 @@ function allRules(): CSSRule[] {
       if ("cssRules" in rule) walk((rule as CSSGroupingRule).cssRules);
     }
   };
-  for (const sheet of document.styleSheets) walk(sheet.cssRules);
+  for (const sheet of allSheets()) walk(sheet.cssRules);
   return rules;
 }
 
@@ -279,6 +292,25 @@ const OPEN_DIALOG_BODY_ATTRIBUTES: Record<string, { attributes: Record<string, s
   },
 };
 
+/**
+ * Class prefixes of libraries that inject their component styles at runtime, unscoped, and why
+ * that's tolerated: every rule starts at one of the library's own prefixed classes.
+ */
+const RUNTIME_CLASS_PREFIXES: Record<string, string> = {
+  "n-": "Naive UI's components inject their styles with css-render as they mount, with no way to scope them",
+  "v-binder-": "vueuc (Naive UI's popup positioning) injects its follower styles the same way",
+};
+
+/** `.n-button .x` starts with prefix `n-`. */
+function startsWithClassPrefix(selector: string, prefix: string) {
+  return selector.startsWith(`.${prefix}`);
+}
+
+/** Libraries whose dialog row has no "Open dialog" trigger, and why. */
+const DIALOGS_WITHOUT_TRIGGER: Record<string, string> = {
+  "vue-bits": "no dialog component",
+};
+
 /** Libraries whose select row opens no popup of its own to check, and why. */
 const SELECTS_WITHOUT_POPUP: Record<string, string> = {
   "bootstrap-vue-next": "BFormSelect is a native <select>: its picker is drawn by the browser",
@@ -387,10 +419,13 @@ let host: HTMLElement;
 let probe: HTMLElement;
 let before: {
   document: ReturnType<typeof documentSnapshot>;
-  shell: ReturnType<typeof shellSnapshot>;
+  /** Per tab, since each table has its own cells and chips. */
+  shell: Record<Kind, ReturnType<typeof shellSnapshot>>;
   probe: ReturnType<typeof probeSnapshot>;
   styles: Set<Element>;
+  adoptedSheets: Set<CSSStyleSheet>;
   bodyChildren: Set<Element>;
+  headChildren: Set<Element>;
 };
 
 beforeAll(async () => {
@@ -408,11 +443,22 @@ beforeAll(async () => {
   // Synchronously after mounting: libraries are dynamic imports, so none of their code or CSS has run yet.
   before = {
     document: documentSnapshot(),
-    shell: shellSnapshot(),
+    shell: {} as Record<Kind, ReturnType<typeof shellSnapshot>>,
     probe: probeSnapshot(probe),
     styles: new Set(document.querySelectorAll("style, link[rel=stylesheet]")),
+    adoptedSheets: new Set(document.adoptedStyleSheets),
     bodyChildren: new Set(document.body.children),
+    headChildren: new Set(document.head.children),
   };
+  // Each tab as soon as it's shown: its libraries' modules have only started loading (and mount
+  // only once their tab is shown again), so this is still the shell alone.
+  for (const kind of KINDS) {
+    controls.kind = kind;
+    await nextTick();
+    before.shell[kind] = shellSnapshot();
+  }
+  controls.kind = "styled";
+  await nextTick();
 
   for (const kind of KINDS) await showKind(kind);
   await showKind("styled");
@@ -445,8 +491,15 @@ describe("Shell with every library loaded", () => {
     expect(withoutRegistered(now.style)).toEqual(before.document.style);
   });
 
-  test("the shell's own styles are unaffected", () => {
-    expect(withoutRegistered(shellSnapshot())).toEqual(before.shell);
+  test("the shell's own styles are unaffected, in every tab", async () => {
+    try {
+      for (const kind of KINDS) {
+        await showKind(kind);
+        expect(withoutRegistered(shellSnapshot()), kind).toEqual(before.shell[kind]);
+      }
+    } finally {
+      await showKind("styled");
+    }
   });
 
   test("only known, prefixed custom properties are registered globally", () => {
@@ -479,15 +532,24 @@ describe("Shell with every library loaded", () => {
     expect(unscoped).toEqual([]);
   });
 
-  test("styles injected at runtime never target the document itself", () => {
-    const root = /^(?:html|body|:root|:host|\*)(?![\w-])/;
-    const offending = [...document.querySelectorAll<HTMLStyleElement>("style:not([data-vite-dev-id])")]
-      .filter((style) => !before.styles.has(style))
-      .flatMap((style) =>
-        topLevelSelectors(style.sheet!)
-          .filter((selector) => root.test(selector) && !selector.includes("[data-lib="))
-          .map((selector) => `${style.id || style.outerHTML.slice(0, 60)} → ${selector}`),
-      );
+  test("styles injected at runtime stay inside a library's scope", () => {
+    const runtime = [
+      ...[...document.querySelectorAll<HTMLStyleElement>("style:not([data-vite-dev-id])")]
+        .filter((style) => !before.styles.has(style))
+        .map((style) => ({ source: style.id || style.outerHTML.slice(0, 60), sheet: style.sheet! })),
+      ...[...document.adoptedStyleSheets]
+        .filter((sheet) => !before.adoptedSheets.has(sheet))
+        .map((sheet) => ({ source: "adopted stylesheet", sheet })),
+    ];
+    const offending = runtime.flatMap(({ source, sheet }) =>
+      topLevelSelectors(sheet)
+        .filter(
+          (selector) =>
+            !selector.includes("[data-lib=") &&
+            !Object.keys(RUNTIME_CLASS_PREFIXES).some((prefix) => startsWithClassPrefix(selector, prefix)),
+        )
+        .map((selector) => `${source} → ${selector}`),
+    );
     expect(offending).toEqual([]);
   });
 
@@ -574,9 +636,12 @@ describe("Shell with every library loaded", () => {
         const trigger = [...cellOf(lib, "dialog").querySelectorAll<HTMLElement>("button, [role=button]")].find((el) =>
           el.textContent?.includes("Open dialog"),
         );
-        // Vue Bits has no dialog.
-        if (!trigger) continue;
-        trigger.click();
+        if (lib.id in DIALOGS_WITHOUT_TRIGGER) {
+          expect(trigger, `${lib.id} has a dialog now: drop it from DIALOGS_WITHOUT_TRIGGER`).toBeUndefined();
+          continue;
+        }
+        expect(trigger, `${lib.id}: no "Open dialog" trigger`).toBeDefined();
+        trigger!.click();
         const text = await vi.waitFor(
           () => {
             const shown = libraryScopes(lib)
@@ -669,6 +734,11 @@ describe("Shell with every library loaded", () => {
       .filter((el) => !before.bodyChildren.has(el))
       .map((el) => el.outerHTML.slice(0, 120));
     expect(strays).toEqual([]);
+    // Stylesheets may stay (modules aren't unloaded, and every rule is checked to be scoped above); nothing else may.
+    const headStrays = [...document.head.children]
+      .filter((el) => !before.headChildren.has(el) && !el.matches("style, link[rel=stylesheet]"))
+      .map((el) => el.outerHTML.slice(0, 120));
+    expect(headStrays).toEqual([]);
 
     // The observers that adopt portals into an overlay host (Quasar, Astryx Vue) are disconnected.
     const portals = [
