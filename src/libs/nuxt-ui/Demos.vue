@@ -25,7 +25,16 @@ const open = ref(false);
       </template>
 
       <template #select="{ disabled }">
-        <USelect v-model="fruit" placeholder="Fruit" :items="fruits" :size :disabled class="w-48" />
+        <!-- body-lock / outside-pointer-events would set overflow and pointer-events on <body> -->
+        <USelect
+          v-model="fruit"
+          placeholder="Fruit"
+          :items="fruits"
+          :size
+          :disabled
+          :content="{ bodyLock: false, disableOutsidePointerEvents: false }"
+          class="w-48"
+        />
       </template>
 
       <template #switch="{ disabled }">

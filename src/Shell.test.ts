@@ -7,7 +7,8 @@
  * (they're dynamic imports), so it is the page as the shell alone styles it.
  */
 import "./tokens.css";
-import { afterAll, beforeAll, describe, expect, test, vi } from "vite-plus/test";
+import { afterAll, beforeAll, describe, expect, onTestFinished, test, vi } from "vite-plus/test";
+import { page, userEvent } from "vite-plus/test/browser";
 import { type App, createApp, nextTick } from "vue";
 import { KIND_LABELS } from "./board";
 import { libraries } from "./libs";
@@ -278,6 +279,29 @@ const OPEN_DIALOG_BODY_ATTRIBUTES: Record<string, { attributes: Record<string, s
   },
 };
 
+/** Libraries whose select row opens no popup of its own to check, and why. */
+const SELECTS_WITHOUT_POPUP: Record<string, string> = {
+  "bootstrap-vue-next": "BFormSelect is a native <select>: its picker is drawn by the browser",
+  "oruga": "OSelect is a native <select>",
+  "vize-ui": "NativeSelect is a native <select>",
+  "inspira-ui": "no select component",
+  "vue-bits": "OptionWheel scrolls in place",
+};
+
+/** What to press to open a library's select, where it marks no element `role=combobox` or `aria-haspopup`. */
+const SELECT_TRIGGERS: Record<string, string> = {
+  "arco-design-vue": ".arco-select-view",
+  "naive-ui": ".n-base-selection",
+  "tdesign": ".t-select-input",
+  "vant": ".van-dropdown-menu__item",
+  "varlet": ".var-select",
+};
+
+/** Libraries whose select popup doesn't close on Escape, and why; the test presses the trigger again instead. */
+const SELECTS_NOT_CLOSED_BY_ESCAPE: Record<string, string> = {
+  vant: "touch-first: DropdownItem's Popup only emits keydown, and the menu closes on another press of its title",
+};
+
 /** `@keyframes` / `@font-face` that two libraries define differently, and why that's tolerated. */
 const KNOWN_CLASHES: Record<string, string> = {
   "@keyframes fadeOut":
@@ -309,6 +333,21 @@ function headOf(lib: Library) {
   const table = document.querySelector(`[role=table][aria-label="${KIND_LABELS[lib.kind].name}"]`)!;
   const column = libraries.filter((other) => other.kind === lib.kind).indexOf(lib);
   return table.querySelectorAll(".head:not(.corner)")[column]!;
+}
+
+/** Where a library's demos and popups may render: its cells and its overlay host. */
+function libraryScopes(lib: Library): Element[] {
+  return [document.getElementById(`overlay-${lib.id}`)!, ...document.querySelectorAll(`.cell[data-lib="${lib.id}"]`)];
+}
+
+/** Visible elements added to <body> since the baseline; libraries may still park invisible helpers there. */
+function visibleBodyStrays() {
+  return [...document.body.children]
+    .filter(
+      (el) => !before.bodyChildren.has(el) && el.checkVisibility({ opacityProperty: true, visibilityProperty: true }),
+    )
+    .filter((el) => el.getBoundingClientRect().width * el.getBoundingClientRect().height > 0)
+    .map((el) => el.outerHTML.slice(0, 120));
 }
 
 /** Mounted, or failed to: waiting on another library's failure would cut this one's wait short. */
@@ -485,6 +524,49 @@ describe("Shell with every library loaded", () => {
     }
   });
 
+  // Before the dialog test, which leaves non-modal dialogs open over the table.
+  test("selects open inside their library's scope and leave <html> / <body> alone", async () => {
+    // Wide enough for a column beside the sticky label column, so the press lands on the select.
+    await page.viewport(1280, 900);
+    onTestFinished(() => page.viewport(414, 896));
+    for (const kind of KINDS) {
+      await showKind(kind);
+      for (const lib of mounted.filter((lib) => lib.kind === kind && !(lib.id in SELECTS_WITHOUT_POPUP))) {
+        const cell = cellOf(lib, "select");
+        const trigger = cell.querySelector<HTMLElement>(
+          SELECT_TRIGGERS[lib.id] ?? ".demo [role=combobox], .demo [aria-haspopup]:not([aria-haspopup=false])",
+        );
+        expect(
+          trigger,
+          `${lib.id}: no select trigger (role=combobox / aria-haspopup, or SELECT_TRIGGERS)`,
+        ).not.toBeNull();
+        // Clear of the sticky header row and label column, which would take the press.
+        cell.scrollIntoView({ block: "nearest", inline: "end" });
+        // A real pointer press: Reka-based selects open on pointerdown, which click() doesn't fire.
+        // Forced: a select's own placeholder or value often sits on top of its trigger and takes it, as it would for a user.
+        await userEvent.click(trigger!, { force: true });
+        const option = await vi.waitFor(
+          () => {
+            const option = libraryScopes(lib)
+              .flatMap((scope) => [...scope.querySelectorAll("*")])
+              .find((el) => el.childElementCount === 0 && el.textContent?.trim() === "Cherry" && el.checkVisibility());
+            if (!option) throw new Error(`${lib.id}: no select options shown inside its scope`);
+            return option;
+          },
+          { timeout: 5_000 },
+        );
+        await new Promise((resolve) => setTimeout(resolve, 300));
+        expect(documentSnapshot().attributes, `after opening ${lib.id}'s select`).toEqual(before.document.attributes);
+        if (lib.id in SELECTS_NOT_CLOSED_BY_ESCAPE) await userEvent.click(trigger!, { force: true });
+        else await userEvent.keyboard("{Escape}");
+        await vi.waitFor(() => expect(option.checkVisibility(), `${lib.id}'s select closes`).toBe(false));
+      }
+    }
+    await settle();
+    expect(documentSnapshot().attributes).toEqual(before.document.attributes);
+    expect(visibleBodyStrays()).toEqual([]);
+  });
+
   test("dialogs open inside their library's scope and leave <html> / <body> alone", async () => {
     for (const kind of KINDS) {
       await showKind(kind);
@@ -497,11 +579,7 @@ describe("Shell with every library loaded", () => {
         trigger.click();
         const text = await vi.waitFor(
           () => {
-            const scopes = [
-              document.getElementById(`overlay-${lib.id}`)!,
-              ...document.querySelectorAll(`.cell[data-lib="${lib.id}"]`),
-            ];
-            const shown = scopes
+            const shown = libraryScopes(lib)
               .flatMap((scope) => [...scope.querySelectorAll("*")])
               .find(
                 (el) =>
@@ -534,14 +612,7 @@ describe("Shell with every library loaded", () => {
 
     expect(documentSnapshot().attributes).toEqual(before.document.attributes);
     expect(withoutRegistered(documentSnapshot().style)).toEqual(before.document.style);
-    // Libraries may still park invisible helpers on <body> (measuring nodes, empty containers).
-    const visibleStrays = [...document.body.children]
-      .filter(
-        (el) => !before.bodyChildren.has(el) && el.checkVisibility({ opacityProperty: true, visibilityProperty: true }),
-      )
-      .filter((el) => el.getBoundingClientRect().width * el.getBoundingClientRect().height > 0)
-      .map((el) => el.outerHTML.slice(0, 120));
-    expect(visibleStrays).toEqual([]);
+    expect(visibleBodyStrays()).toEqual([]);
   });
 
   test("switching size never changes a row's height (ROW_HEIGHTS in Shell.vue covers every library)", async () => {
