@@ -1,21 +1,25 @@
 import "vant/lib/index.css";
 import Vant, { Popup } from "vant";
-import { onScopeDispose } from "vue";
-import { bindScopeVars, mountLibrary } from "../mount";
+import { bindScopeVars, mountLibrary, workaround } from "../mount";
 import type { MountContext } from "../types";
 import Demos from "./Demos.vue";
 
 export function mount(context: MountContext) {
   const { controls } = context;
-  // Workaround: DropdownItem renders a Popup without forwarding `lock-scroll`, and the
-  // lock adds `van-overflow-hidden` to <body>. Flip Popup's default before this app
-  // normalizes its props, and put it back with the library; Dialog still receives
-  // `:lock-scroll="false"` explicitly.
-  const props = Popup.props as Record<string, unknown>;
-  const { lockScroll } = props;
-  props.lockScroll = { type: Boolean, default: false };
-  onScopeDispose(() => {
-    props.lockScroll = lockScroll;
+  const props = Popup.props as Record<string, { type?: unknown; default?: unknown }>;
+  workaround({
+    reason:
+      "Vant's DropdownItem renders a Popup without forwarding `lock-scroll`, whose lock adds a class to <body>: " +
+      "Popup's `lockScroll` defaults to false while Vant is mounted (Dialog turns it off with its own prop)",
+    // Flipped before this app normalizes Popup's props.
+    assumes: () => props.lockScroll?.default === true,
+    apply: () => {
+      const { lockScroll } = props;
+      props.lockScroll = { type: Boolean, default: false };
+      return () => {
+        props.lockScroll = lockScroll!;
+      };
+    },
   });
 
   mountLibrary(context, Demos, (app) => {

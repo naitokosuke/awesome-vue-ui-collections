@@ -47,6 +47,39 @@ export function mountLibrary(context: MountContext, Demos: Component, install: (
 }
 
 /**
+ * Something a library does to the page that one shared page can't take, and how it's undone.
+ * Every change an adapter makes outside its own app goes through `workaround()`, so each one
+ * states its reason, checks what it relies on, and is undone with the library.
+ */
+export interface Workaround {
+  /** What the library does, and what's changed about it. Shown in the column header if `assumes` fails. */
+  reason: string;
+  /**
+   * What the change relies on in the library's internals, checked before applying it. False means
+   * the library changed under it (e.g. in an upgrade): mounting fails rather than the change quietly
+   * missing. Leave it out where there's nothing to check up front.
+   */
+  assumes?: () => boolean;
+  /** Makes the change and returns how to undo it. */
+  apply: () => () => void;
+}
+
+/**
+ * Applies a workaround inside the library's effect scope. The undo runs when the scope stops, or
+ * earlier by calling the returned function (e.g. right after mounting); either way at most once.
+ */
+export function workaround({ reason, assumes, apply }: Workaround): () => void {
+  if (assumes && !assumes()) throw new Error(`Workaround no longer holds: ${reason}`);
+  let undo: (() => void) | null = apply();
+  const undoOnce = () => {
+    undo?.();
+    undo = null;
+  };
+  onScopeDispose(undoOnce);
+  return undoOnce;
+}
+
+/**
  * Reactively sets CSS custom properties on a library's scope elements (its demo cells and
  * overlay host), e.g. to push the selected primary color into a CSS-variable-themed library.
  * `vars` returning null removes them again, as does stopping the library's effect scope.
