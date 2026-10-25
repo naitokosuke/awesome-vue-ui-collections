@@ -1,11 +1,11 @@
 import "./style.css";
-import { isLight } from "../color";
+import { wantsDarkText } from "../color";
 import { bindScopeVars, mountLibrary } from "../mount";
 import type { MountContext } from "../types";
 import Demos from "./Demos.vue";
 
-/** shadcn's own near-black or near-white, whichever reads better on `hex`. */
-const foreground = (hex: string) => (isLight(hex) ? "oklch(0.145 0 0)" : "oklch(0.985 0 0)");
+/** shadcn's own near-white, or its near-black where dark text reads better on `hex` (see wantsDarkText). */
+const foreground = (hex: string) => (wantsDarkText(hex) ? "oklch(0.145 0 0)" : "oklch(0.985 0 0)");
 
 export function mount(context: MountContext) {
   const { controls } = context;

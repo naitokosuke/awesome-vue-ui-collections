@@ -5,6 +5,7 @@ export const meta: LibraryMeta = {
   name: "Oruga",
   package: "@oruga-ui/oruga-next",
   kind: "styled",
+  order: 11,
   // oruga-next ships no CSS; the look comes from @oruga-ui/theme-oruga
   components: {
     button: { name: "OButton", docs: "https://oruga-ui.com/components/Button.html" },

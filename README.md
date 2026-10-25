@@ -66,9 +66,9 @@ vp run build
 
 Create `src/libs/<id>/` with three files
 
-- `meta.ts` holds the library's static info (name, package, kind, the CSS files to scope, dark-mode attributes)
+- `meta.ts` holds the library's static info (name, package, kind, column order, the CSS files to scope, dark-mode attributes)
 - `index.ts` exports `mount(context)`, which creates the library's app with `mountLibrary()` and pushes the shared primary color into it
 - `Demos.vue` renders `<DemoCells>` with one slot per demo row, using `<NotProvided>` for a row the library has no component for
 
-Anything `mount()` changes outside its app must be undone with `onScopeDispose()`
+Anything `mount()` changes outside its app goes through `workaround()` (`src/libs/mount.ts`): why it's needed, what it relies on in the library (checked first, so an upgrade that breaks it shows as an error in the column), and how to undo it
 Then run `vp test run`, which fails if the library's CSS or DOM side effects leak, or if a demo is taller than `ROW_HEIGHTS` in `src/Shell.vue` allows

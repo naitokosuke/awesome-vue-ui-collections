@@ -1,9 +1,8 @@
 import "@varlet/ui/es/varlet.css";
 import "./measure.css";
 import Varlet, { Dialog, Menu, Themes } from "@varlet/ui";
-import { onScopeDispose } from "vue";
 import { hexToRgb } from "../color";
-import { bindScopeVars, mountLibrary } from "../mount";
+import { bindScopeVars, mountLibrary, workaround } from "../mount";
 import type { MountContext } from "../types";
 import Demos from "./Demos.vue";
 
@@ -24,17 +23,24 @@ function primaryVars(hex: string) {
 const propsOf = (component: unknown) => (component as { props: Record<string, unknown> }).props;
 
 /**
- * `target.setPropsDefaults()`, undone when the library's scope stops. Varlet replaces each named
+ * `target.setPropsDefaults()` as a workaround, undone with the library. Varlet replaces each named
  * entry of the component's `props` object, so the original entries are put back as they were.
  */
 function setPropsDefaults(
-  target: { setPropsDefaults: (defaults: Record<string, unknown>) => void },
+  reason: string,
+  target: { setPropsDefaults?: (defaults: Record<string, unknown>) => void },
   props: Record<string, unknown>,
   defaults: Record<string, unknown>,
 ) {
-  const original = Object.fromEntries(Object.keys(defaults).map((key) => [key, props[key]]));
-  target.setPropsDefaults(defaults);
-  onScopeDispose(() => Object.assign(props, original));
+  workaround({
+    reason,
+    assumes: () => typeof target.setPropsDefaults === "function" && Object.keys(defaults).every((key) => key in props),
+    apply: () => {
+      const original = Object.fromEntries(Object.keys(defaults).map((key) => [key, props[key]]));
+      target.setPropsDefaults!(defaults);
+      return () => Object.assign(props, original);
+    },
+  });
 }
 
 function hexToHsl(hex: string) {
@@ -50,12 +56,21 @@ function hexToHsl(hex: string) {
 
 export function mount(context: MountContext) {
   const { controls } = context;
-  // Select renders its options through an internal <var-menu> that teleports to `body`
-  // and has no prop to change that, so set the defaults globally. Dialog gets the same,
-  // plus no `var--lock` class on <body>.
-  setPropsDefaults(Menu, propsOf(Menu), { teleport: context.overlay });
-  // `Dialog` is the function API; the props are those of the component it renders.
-  setPropsDefaults(Dialog, propsOf(Dialog.Component), { teleport: context.overlay, lockScroll: false });
+  setPropsDefaults(
+    "Varlet's Select renders its options through an internal <var-menu> that teleports to <body>, with no prop " +
+      "to change that: Menu's `teleport` defaults to the overlay host while Varlet is mounted",
+    Menu,
+    propsOf(Menu),
+    { teleport: context.overlay },
+  );
+  setPropsDefaults(
+    "Varlet's Dialog teleports to <body> and adds `var--lock` to it: its `teleport` defaults to the overlay host " +
+      "and `lockScroll` to false while Varlet is mounted",
+    // `Dialog` is the function API; the props are those of the component it renders.
+    Dialog,
+    propsOf(Dialog.Component),
+    { teleport: context.overlay, lockScroll: false },
+  );
 
   // `StyleProvider(vars)` would write the theme to `:root`; instead the dark theme and the
   // chosen primary go inline on the scope elements (cells + overlay host), where Varlet's

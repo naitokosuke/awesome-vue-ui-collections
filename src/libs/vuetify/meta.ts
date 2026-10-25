@@ -5,6 +5,7 @@ export const meta: LibraryMeta = {
   name: "Vuetify",
   package: "vuetify",
   kind: "styled",
+  order: 1,
   components: {
     button: { name: "VBtn", docs: "https://vuetifyjs.com/en/components/buttons/" },
     input: { name: "VTextField", docs: "https://vuetifyjs.com/en/components/text-fields/" },

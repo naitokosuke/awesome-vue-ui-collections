@@ -1,7 +1,7 @@
 import "./style.css";
 import ui from "@nuxt/ui/vue-plugin";
 import { shade, tint } from "../color";
-import { bindScopeVars, mountLibrary } from "../mount";
+import { bindScopeVars, mountLibrary, workaround } from "../mount";
 import type { MountContext } from "../types";
 import Demos from "./Demos.vue";
 
@@ -55,12 +55,27 @@ export function mount(context: MountContext) {
   const { controls } = context;
   mountLibrary(context, Demos, (app) => {
     app.use(ui);
-    // The colors style goes through unhead; rewrite it before it's rendered into <head>.
-    const head = app.config.globalProperties.$unhead as Head;
-    head.hooks.hook("tags:resolve", ({ tags }) => {
-      for (const tag of tags) {
-        if (tag.props.id === "nuxt-ui-colors" && tag.innerHTML) tag.innerHTML = scopeColors(tag.innerHTML);
-      }
+    const head = app.config.globalProperties.$unhead as Head | undefined;
+    const reason =
+      "Nuxt UI's colors plugin writes `:root, :host` and `.dark` rules into a runtime <style>, out of reach of the " +
+      "build-time scoping: it's rewritten to this library's scope as unhead resolves it";
+    workaround({
+      reason,
+      assumes: () => typeof head?.hooks.hook === "function",
+      apply: () => {
+        head!.hooks.hook("tags:resolve", ({ tags }) => {
+          for (const tag of tags) {
+            if (tag.props.id !== "nuxt-ui-colors" || !tag.innerHTML) continue;
+            tag.innerHTML = scopeColors(tag.innerHTML);
+            // The rewrite matches Nuxt UI's exact text; anything it missed would reach the whole page.
+            if (/:root|:host|\.(?:dark|light)\s*\{/.test(tag.innerHTML)) {
+              context.reportError(new Error(`Workaround no longer holds: ${reason}`));
+            }
+          }
+        });
+        // The hook belongs to this app's unhead instance, which goes with the app.
+        return () => {};
+      },
     });
   });
   // `--ui-primary` resolves on the scope element, so it must be set here too, not just the scale.

@@ -8,6 +8,7 @@ export const meta: LibraryMeta = {
   // runtime every component imports `cn` from, so its npm stats stand in for the library's.
   package: "@inspira-ui/plugins",
   kind: "copy-paste",
+  order: 2,
   // `@inspira-ui/plugins` points at its own repo; the components live here.
   repository: "unovue/inspira-ui",
   components: {

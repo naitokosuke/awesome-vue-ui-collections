@@ -5,6 +5,7 @@ export const meta: LibraryMeta = {
   name: "TDesign",
   package: "tdesign-vue-next",
   kind: "styled",
+  order: 6,
   // The icon package injects its own stylesheet from JS (esm/style/index.css).
   components: {
     button: { name: "TButton", docs: "https://tdesign.tencent.com/vue-next/components/button" },

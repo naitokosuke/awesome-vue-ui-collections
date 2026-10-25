@@ -5,6 +5,7 @@ export const meta: LibraryMeta = {
   name: "Arco Design Vue",
   package: "@arco-design/web-vue",
   kind: "styled",
+  order: 5,
   components: {
     button: { name: "AButton", docs: "https://arco.design/vue/en-US/component/button" },
     input: { name: "AInput", docs: "https://arco.design/vue/en-US/component/input" },

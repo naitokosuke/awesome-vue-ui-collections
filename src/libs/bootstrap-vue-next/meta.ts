@@ -5,6 +5,7 @@ export const meta: LibraryMeta = {
   name: "BootstrapVue Next",
   package: "bootstrap-vue-next",
   kind: "styled",
+  order: 10,
   components: {
     button: { name: "BButton", docs: "https://bootstrap-vue-next.github.io/bootstrap-vue-next/docs/components/button" },
     input: {

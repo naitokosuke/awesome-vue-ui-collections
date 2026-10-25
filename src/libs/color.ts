@@ -36,17 +36,18 @@ export function luminance(hex: string): number {
   return 0.2126 * r + 0.7152 * g + 0.0722 * b;
 }
 
-/**
- * Whether black text reads better than white on `hex`: above this luminance, contrast with
- * black wins ((L + 0.05) / 0.05 > 1.05 / (L + 0.05)).
- */
-export const isLight = (hex: string) => luminance(hex) > 0.179;
-
 /** WCAG contrast ratio between two colors (1–21). */
 export function contrast(a: string, b: string): number {
   const [light, dark] = [luminance(a), luminance(b)].sort((x, y) => y - x) as [number, number];
   return (light + 0.05) / (dark + 0.05);
 }
+
+/**
+ * Whether text on a `hex` primary should be dark rather than white. The styled libraries keep white
+ * text on their primary buttons unless that gets hard to read, so white stays until its contrast
+ * drops under 3:1 (WCAG's minimum for large text and UI): every column then pairs a color the same way.
+ */
+export const wantsDarkText = (hex: string) => contrast(hex, "#ffffff") < 3;
 
 /** Whichever of `light` / `dark` reads better on `hex`. */
 export const readableOn = (hex: string, light = "#ffffff", dark = "#18181b") =>

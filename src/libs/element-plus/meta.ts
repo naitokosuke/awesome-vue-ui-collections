@@ -5,6 +5,7 @@ export const meta: LibraryMeta = {
   name: "Element Plus",
   package: "element-plus",
   kind: "styled",
+  order: 2,
   components: {
     button: { name: "ElButton", docs: "https://element-plus.org/en-US/component/button.html" },
     input: { name: "ElInput", docs: "https://element-plus.org/en-US/component/input.html" },

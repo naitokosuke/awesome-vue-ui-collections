@@ -5,6 +5,7 @@ export const meta: LibraryMeta = {
   name: "Varlet",
   package: "@varlet/ui",
   kind: "styled",
+  order: 9,
   components: {
     button: { name: "VarButton", docs: "https://varletjs.org/#/en-US/button" },
     input: { name: "VarInput", docs: "https://varletjs.org/#/en-US/input" },

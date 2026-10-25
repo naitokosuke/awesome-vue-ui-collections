@@ -1,25 +1,26 @@
 import "virtual:naive-ui-preflight.css";
 import naive from "naive-ui";
-import { onScopeDispose } from "vue";
-import { mountLibrary } from "../mount";
+import { mountLibrary, workaround } from "../mount";
 import type { MountContext } from "../types";
 import Demos from "./Demos.vue";
 
-/**
- * vueuc's viewport measurer (Naive's popup positioning), taken off <body> while Naive is unmounted.
- * vueuc appends it to <body> the first time a popup opens and keeps it by reference from then on,
- * so it can't simply be removed: it's put back when Naive mounts again.
- */
+/** vueuc's viewport measurer, kept while Naive is unmounted (see below). */
 let viewMeasurer: Element | null = null;
 
 export function mount(context: MountContext) {
-  if (viewMeasurer) document.body.append(viewMeasurer);
+  workaround({
+    reason:
+      "vueuc (Naive UI's popup positioning) appends `#v-binder-view-measurer` to <body> when a popup first opens, " +
+      "keeps it by reference and never removes it: it's taken off with Naive and put back when Naive mounts again",
+    apply: () => {
+      if (viewMeasurer) document.body.append(viewMeasurer);
+      return () => {
+        viewMeasurer = document.getElementById("v-binder-view-measurer");
+        viewMeasurer?.remove();
+      };
+    },
+  });
   mountLibrary(context, Demos, (app) => {
     app.use(naive);
-  });
-  // Workaround: nothing in vueuc removes the measurer.
-  onScopeDispose(() => {
-    viewMeasurer = document.getElementById("v-binder-view-measurer");
-    viewMeasurer?.remove();
   });
 }

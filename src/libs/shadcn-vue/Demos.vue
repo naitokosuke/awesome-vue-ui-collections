@@ -25,6 +25,8 @@ const id = useId();
 const buttonSize = computed(() => (({ small: "sm", medium: "default", large: "lg" }) as const)[controls.size]);
 // Input and Select have no size prop (Select only `sm`/`default`): match the button heights.
 const height = computed(() => (({ small: "h-8", medium: "h-9", large: "h-10" }) as const)[controls.size]);
+// Switch has one size, shadcn's default: scaled (layout included) around it, like the other columns' switches.
+const switchZoom = computed(() => ({ small: 0.875, medium: 1, large: 1.25 })[controls.size]);
 
 const fruits = ["Apple", "Banana", "Cherry"];
 const name = ref("");
@@ -62,7 +64,7 @@ const open = ref(false);
 
       <template #switch="{ disabled }">
         <div class="flex items-center gap-2">
-          <Switch :id="`${id}-switch`" v-model="enabled" :disabled />
+          <Switch :id="`${id}-switch`" v-model="enabled" :disabled :style="{ zoom: switchZoom }" />
           <Label :for="`${id}-switch`">Notifications</Label>
         </div>
       </template>

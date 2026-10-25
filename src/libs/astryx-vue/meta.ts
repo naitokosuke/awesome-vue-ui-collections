@@ -6,6 +6,7 @@ export const meta: LibraryMeta = {
   name: "Astryx Vue",
   package: "@astryx-vue/core",
   kind: "styled",
+  order: 12,
   // Component structure (@astryx-vue/core) and the neutral theme (@astryx-vue/themes).
   components: {
     button: { name: "Button", docs: "https://astryx-vue.pages.dev/en/components/button" },

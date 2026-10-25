@@ -6,6 +6,7 @@ export const meta: LibraryMeta = {
   name: "Reka UI",
   package: "reka-ui",
   kind: "headless",
+  order: 2,
   components: {
     // Reka has no Button or Input primitive; the demos use plain elements.
     button: { name: "native <button>" },

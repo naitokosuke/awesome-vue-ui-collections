@@ -1,6 +1,17 @@
 import { describe, expect, test } from "vite-plus/test";
-import { contrast, hexToRgb, isLight, luminance, mix, readableOn, rgbChannels, rgbToHex, shade, tint } from "./color";
-import { COLORS } from "./types";
+import {
+  contrast,
+  hexToRgb,
+  luminance,
+  mix,
+  readableOn,
+  rgbChannels,
+  rgbToHex,
+  shade,
+  tint,
+  wantsDarkText,
+} from "./color";
+import { COLORS, DARK_COLORS } from "./types";
 
 describe("color", () => {
   test("converts between hex and rgb", () => {
@@ -26,15 +37,28 @@ describe("color", () => {
   });
 
   test("picks the more readable text color", () => {
-    expect(isLight("#ffffff")).toBe(true);
-    expect(isLight("#ffff00")).toBe(true);
-    expect(isLight(COLORS.black)).toBe(false);
+    expect(wantsDarkText("#ffffff")).toBe(true);
+    expect(wantsDarkText("#ffff00")).toBe(true);
+    expect(wantsDarkText(COLORS.black)).toBe(false);
+    // Green and orange read slightly better with dark text, but keep white like the styled libraries.
+    expect(wantsDarkText(COLORS.green)).toBe(false);
+    expect(wantsDarkText(COLORS.orange)).toBe(false);
     expect(readableOn("#ffffff")).toBe("#18181b");
     expect(readableOn(COLORS.black)).toBe("#ffffff");
   });
 
   test("gives white text on every shared primary color", () => {
     // The styled adapters put white on the primary (Astryx, Oruga); keep it at least 3:1 (large text / UI).
-    for (const hex of Object.values(COLORS)) expect(contrast(hex, "#ffffff"), hex).toBeGreaterThanOrEqual(3);
+    for (const hex of [...Object.values(COLORS), ...Object.values(DARK_COLORS)]) {
+      expect(contrast(hex, "#ffffff"), hex).toBeGreaterThanOrEqual(3);
+    }
+  });
+
+  test("keeps every primary color visible on a dark background", () => {
+    // Element Plus's dark background; the other libraries' are as dark or darker.
+    for (const hex of Object.values(COLORS)) {
+      const shown = DARK_COLORS[hex] ?? hex;
+      expect(contrast(shown, "#141414"), `${hex} shown as ${shown}`).toBeGreaterThanOrEqual(3);
+    }
   });
 });

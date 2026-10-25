@@ -1,9 +1,8 @@
 import "element-plus/dist/index.css";
 import "element-plus/theme-chalk/dark/css-vars.css";
 import ElementPlus from "element-plus";
-import { onScopeDispose } from "vue";
 import { mix, rgbChannels, shade, tint } from "../color";
-import { bindScopeVars, mountLibrary } from "../mount";
+import { bindScopeVars, mountLibrary, workaround } from "../mount";
 import type { MountContext } from "../types";
 import Demos from "./Demos.vue";
 
@@ -24,11 +23,13 @@ export function mount(context: MountContext) {
   mountLibrary(context, Demos, (app) => {
     app.use(ElementPlus);
   });
-  // Workaround: every popper appends one empty `#el-popper-container-<n>` to <body>, even when
-  // given an `append-to` (as all of these are), and nothing removes it. Element Plus creates a
-  // new one whenever it's missing, so it's safe to take away with the library.
-  onScopeDispose(() => {
-    for (const el of document.querySelectorAll('body > [id^="el-popper-container-"]')) el.remove();
+  workaround({
+    reason:
+      "Element Plus's poppers each append an empty `#el-popper-container-<n>` to <body>, even with an `append-to`, " +
+      "and nothing removes it: they're taken away with the library (Element Plus recreates one whenever it's missing)",
+    apply: () => () => {
+      for (const el of document.querySelectorAll('body > [id^="el-popper-container-"]')) el.remove();
+    },
   });
   bindScopeVars(context, () => (controls.color ? palette(controls.color, controls.dark) : null));
 }

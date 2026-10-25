@@ -5,6 +5,7 @@ export const meta: LibraryMeta = {
   name: "PrimeVue",
   package: "primevue",
   kind: "styled",
+  order: 13,
   // npm's `repository` points at the private primevue-nextchapter repo.
   repository: "primefaces/primevue",
   cssMatch: [],

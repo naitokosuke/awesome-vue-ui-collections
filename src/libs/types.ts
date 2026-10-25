@@ -29,6 +29,13 @@ export const COLORS = {
 
 export type Color = (typeof COLORS)[keyof typeof COLORS];
 
+/**
+ * A primary color as libraries show it in dark mode, where that differs. Black all but vanishes on
+ * the libraries' dark backgrounds (about 1:1), so it becomes the neutral zinc a dark theme would use,
+ * which still takes white text.
+ */
+export const DARK_COLORS: Partial<Record<Color, string>> = { [COLORS.black]: "#71717a" };
+
 /** The demo options: the shell owns and changes them (store.ts), libraries only read them. */
 export interface Controls {
   size: Size;
@@ -44,6 +51,9 @@ export interface Controls {
   color: Color | null;
 }
 
+/** The demo options as libraries read them: `color` is the hex to show in the current mode (see DARK_COLORS). */
+export type LibraryControls = Omit<Controls, "color"> & { color: string | null };
+
 /** What the shell hands a library: where to render, and the options to render with. */
 export interface MountContext {
   /** One cell per demo row; the library's demos are teleported into them (see DemoCells.vue). */
@@ -51,7 +61,7 @@ export interface MountContext {
   /** Where the library should render dialogs and popups, inside its CSS scope. */
   overlay: HTMLElement;
   /** The shell's demo options: libraries read them, only the shell changes them. */
-  controls: DeepReadonly<Controls>;
+  controls: DeepReadonly<LibraryControls>;
   /** Shows an error the library's app ran into after mounting (in a render, watcher or handler) in its column header. */
   reportError: (error: unknown) => void;
 }
@@ -73,6 +83,8 @@ export interface LibraryMeta {
   package?: string;
   /** Which tab the library is in; see KINDS. */
   kind: Kind;
+  /** Column position within its tab, lowest first. */
+  order: number;
   /** Path fragments of CSS files to scope under `[data-lib="<id>"]`. */
   cssMatch: string[];
   /** Attributes set on the library's scope elements while dark mode is on. */

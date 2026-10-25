@@ -5,6 +5,7 @@ export const meta: LibraryMeta = {
   name: "Vize UI",
   package: "@vizejs/ui",
   kind: "headless",
+  order: 1,
   components: {
     button: { name: "Button", docs: "https://vizejs.dev/guide/ui/button/index.html" },
     // Input inside a Field (which gives it the label).

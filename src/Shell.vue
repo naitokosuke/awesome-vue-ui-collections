@@ -103,6 +103,8 @@ function scopeAttrs(lib: Library) {
                 <!-- The color fills the chip, labeled with its code. -->
                 <template v-else>
                   <span class="swatch" :style="{ background: option }" :title="COLOR_NAMES[option]" />
+                  <!-- Announced name first ("blue #2563eb"): the code alone says little to a screen reader user. -->
+                  <span class="visually-hidden">{{ COLOR_NAMES[option] }}</span>
                   <span class="swatch-code" :style="{ color: readableOn(option) }">{{ option }}</span>
                 </template>
               </template>
@@ -219,7 +221,7 @@ function scopeAttrs(lib: Library) {
               </div>
               <div
                 v-else
-                :ref="(el) => setCell(lib.id, demo, el)"
+                :ref="(el) => setCell(lib, demo, el)"
                 class="cell"
                 role="cell"
                 :style="{ minBlockSize: `${ROW_HEIGHTS[demo]}px` }"
@@ -253,7 +255,7 @@ function scopeAttrs(lib: Library) {
         v-for="lib in mountedLibraries"
         :id="`overlay-${lib.id}`"
         :key="lib.id"
-        :ref="(el) => setOverlay(lib.id, el)"
+        :ref="(el) => setOverlay(lib, el)"
         class="overlay"
         v-bind="scopeAttrs(lib)"
       />

@@ -5,6 +5,7 @@ export const meta: LibraryMeta = {
   name: "Vant",
   package: "vant",
   kind: "styled",
+  order: 7,
   components: {
     button: { name: "VanButton", docs: "https://vant-ui.github.io/vant/#/en-US/button" },
     input: { name: "VanField", docs: "https://vant-ui.github.io/vant/#/en-US/field" },

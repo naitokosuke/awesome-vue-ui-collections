@@ -7,6 +7,7 @@ export const meta: LibraryMeta = {
   // so its npm stats stand in for the library's.
   package: "shadcn-vue",
   kind: "copy-paste",
+  order: 1,
   components: {
     button: { name: "Button", docs: "https://www.shadcn-vue.com/docs/components/button" },
     input: { name: "Input", docs: "https://www.shadcn-vue.com/docs/components/input" },

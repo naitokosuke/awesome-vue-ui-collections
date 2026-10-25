@@ -7,6 +7,7 @@ export const meta: LibraryMeta = {
   name: "Naive UI",
   package: "naive-ui",
   kind: "styled",
+  order: 3,
   components: {
     button: { name: "NButton", docs: "https://www.naiveui.com/en-US/os-theme/components/button" },
     input: { name: "NInput", docs: "https://www.naiveui.com/en-US/os-theme/components/input" },

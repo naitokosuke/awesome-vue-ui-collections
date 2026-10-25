@@ -1,7 +1,6 @@
 import "@astryx-vue/themes/neutral.css";
-import { onScopeDispose } from "vue";
 import { tint } from "../color";
-import { bindScopeVars, mountLibrary } from "../mount";
+import { bindScopeVars, mountLibrary, workaround } from "../mount";
 import type { MountContext } from "../types";
 import Demos from "./Demos.vue";
 
@@ -19,20 +18,20 @@ function accentVars(hex: string) {
 export function mount(context: MountContext) {
   const { controls } = context;
   bindScopeVars(context, () => (controls.color ? accentVars(controls.color) : null));
-  adoptListboxes(context);
+  workaround({
+    reason:
+      "Astryx Vue's Selector teleports its listbox to <body> (its `to` is fixed), outside the CSS scope: " +
+      "it's moved into the overlay host as soon as it lands there (it's fixed-positioned, and Vue keeps patching it there)",
+    apply: () => {
+      const adopt = (node: Node) => {
+        if (node instanceof HTMLElement && node.classList.contains("astryx-selector-listbox")) {
+          context.overlay.append(node);
+        }
+      };
+      const observer = new MutationObserver((records) => records.forEach((record) => record.addedNodes.forEach(adopt)));
+      observer.observe(document.body, { childList: true });
+      return () => observer.disconnect();
+    },
+  });
   mountLibrary(context, Demos);
-}
-
-/**
- * Selector teleports its listbox to `<body>` (a fixed `to: "body"`), outside this library's CSS
- * scope, where it would render unstyled. Move it into the overlay host as soon as it lands there;
- * it is fixed-positioned, and Vue keeps patching and removing it wherever it lives.
- */
-function adoptListboxes(context: MountContext) {
-  const adopt = (node: Node) => {
-    if (node instanceof HTMLElement && node.classList.contains("astryx-selector-listbox")) context.overlay.append(node);
-  };
-  const observer = new MutationObserver((records) => records.forEach((record) => record.addedNodes.forEach(adopt)));
-  observer.observe(document.body, { childList: true });
-  onScopeDispose(() => observer.disconnect());
 }

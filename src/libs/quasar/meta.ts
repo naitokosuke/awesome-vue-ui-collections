@@ -5,6 +5,7 @@ export const meta: LibraryMeta = {
   name: "Quasar",
   package: "quasar",
   kind: "styled",
+  order: 4,
   components: {
     button: { name: "QBtn", docs: "https://quasar.dev/vue-components/button" },
     input: { name: "QInput", docs: "https://quasar.dev/vue-components/input" },

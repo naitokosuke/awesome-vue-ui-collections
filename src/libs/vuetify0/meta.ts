@@ -6,6 +6,7 @@ export const meta: LibraryMeta = {
   name: "Vuetify0",
   package: "@vuetify/v0",
   kind: "headless",
+  order: 3,
   components: {
     button: { name: "Button", docs: "https://0.vuetifyjs.com/components/actions/button" },
     input: { name: "Input", docs: "https://0.vuetifyjs.com/components/forms/input" },

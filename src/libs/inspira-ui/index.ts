@@ -1,11 +1,11 @@
 import "./style.css";
-import { isLight } from "../color";
+import { wantsDarkText } from "../color";
 import { bindScopeVars, mountLibrary } from "../mount";
 import type { MountContext } from "../types";
 import Demos from "./Demos.vue";
 
-/** Inspira's own near-black or near-white, whichever reads better on `hex`. */
-const foreground = (hex: string) => (isLight(hex) ? "oklch(0.141 0.005 285.823)" : "oklch(0.985 0 0)");
+/** Inspira's own near-white, or its near-black where dark text reads better on `hex` (see wantsDarkText). */
+const foreground = (hex: string) => (wantsDarkText(hex) ? "oklch(0.141 0.005 285.823)" : "oklch(0.985 0 0)");
 
 export function mount(context: MountContext) {
   const { controls } = context;
