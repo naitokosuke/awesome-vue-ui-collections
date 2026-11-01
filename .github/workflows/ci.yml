@@ -18,7 +18,7 @@ jobs:
     steps:
       - uses: actions/checkout@v7.0.1
       # Installs Vite+ (the version in pnpm-workspace.yaml's catalog), Node.js and pnpm, then the dependencies.
-      - uses: voidzero-dev/setup-vp@v1.21.2
+      - uses: voidzero-dev/setup-vp@v1.22.0
         with:
           node-version: "26"
           cache: true
