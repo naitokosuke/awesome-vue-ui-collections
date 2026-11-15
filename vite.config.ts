@@ -95,6 +95,9 @@ export default defineConfig({
     // Adapters are lazy-loaded; scan them up front so the dev server doesn't
     // re-optimize mid-load and end up with two copies of Vue.
     entries: ["index.html", "src/libs/*/index.ts"],
+    // The browser test's import, which the entries above don't reach. On a cold cache (CI), its late discovery
+    // re-optimized while the libraries were loading, so they got a second copy of Vue and never unmounted.
+    include: ["vite-plus/test/browser"],
     // A pre-bundled copy of Vitest's API wouldn't share the browser runner's state.
     exclude: ["vite-plus/test"],
   },
