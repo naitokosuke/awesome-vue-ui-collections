@@ -44,8 +44,12 @@ export default defineConfig({
       preset: "happy-path",
       // Also check how components relate: provide/inject, reactivity passed between files, races.
       crossFile: true,
-      // Flags component props such as `<n-space align>` as deprecated HTML attributes.
-      rules: { "html/deprecated-attr": "off" },
+      rules: {
+        // Flags component props such as `<n-space align>` as deprecated HTML attributes.
+        "html/deprecated-attr": "off",
+        // Asks to destructure a bare `defineProps<…>()` whose props are only read in the template.
+        "script/define-props-destructuring": "off",
+      },
     },
     ignorePatterns: ["dist/**", vendored],
   },

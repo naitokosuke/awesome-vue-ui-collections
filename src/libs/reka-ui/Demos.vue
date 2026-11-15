@@ -44,7 +44,7 @@ const open = ref(false);
   <ConfigProvider :teleport-to="overlay" :scroll-body="false">
     <DemoCells class="rk-demo" :class="`rk-size-${controls.size}`">
       <template #button="{ disabled }">
-        <button class="control button primary" type="button" :disabled>{{ controls.label }}</button>
+        <button type="button" class="control button primary" :disabled>{{ controls.label }}</button>
       </template>
 
       <!-- Reka UI has no text input primitive; Label + native input is the intended pattern -->
@@ -101,7 +101,9 @@ const open = ref(false);
             <div v-if="open" class="backdrop" />
             <DialogContent class="rk-popup rk-dialog">
               <DialogTitle class="title">Reka UI</DialogTitle>
-              <DialogDescription class="text">This dialog is teleported into the Reka UI overlay host.</DialogDescription>
+              <DialogDescription class="text">
+                This dialog is teleported into the Reka UI overlay host.
+              </DialogDescription>
               <div class="actions">
                 <DialogClose class="control button">Close</DialogClose>
               </div>

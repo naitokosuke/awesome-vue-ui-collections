@@ -69,7 +69,9 @@ const open = ref(false);
         <Teleport :to="overlay">
           <Dialog.Content class="v0-popup v0-dialog">
             <Dialog.Title class="title">Vuetify0</Dialog.Title>
-            <Dialog.Description class="text">This dialog is teleported into the Vuetify0 overlay host.</Dialog.Description>
+            <Dialog.Description class="text">
+              This dialog is teleported into the Vuetify0 overlay host.
+            </Dialog.Description>
             <div class="actions">
               <Dialog.Close class="control button">Close</Dialog.Close>
             </div>
