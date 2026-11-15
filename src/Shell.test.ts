@@ -285,6 +285,10 @@ const GLOBAL_LIBRARY_CSS: Record<string, string> = {
  * that's tolerated. These dialogs are closed again in the test, and must undo it.
  */
 const OPEN_DIALOG_BODY_ATTRIBUTES: Record<string, { attributes: Record<string, string>; reason: string }> = {
+  "akaza-ui": {
+    attributes: { style: "overflow: hidden;" },
+    reason: "Dialog is always modal and locks scroll with no option to opt out; the shell's page never scrolls itself",
+  },
   "astryx-vue": {
     attributes: { style: "overflow: hidden;" },
     reason:

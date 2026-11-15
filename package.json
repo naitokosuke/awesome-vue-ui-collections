@@ -16,6 +16,7 @@
     "@vizejs/ui": "^0.467.0",
     "@vuetify/v0": "^1.2.3",
     "@vueuse/core": "^15.0.0",
+    "akaza-ui": "0.0.10-alpha",
     "bootstrap": "^5.3.8",
     "bootstrap-vue-next": "^1.2.2",
     "class-variance-authority": "^0.7.1",
