@@ -15,7 +15,7 @@
     "@ui-sdk/core": "0.1.0-beta.2",
     "@ui-sdk/vue": "0.1.0-beta.2",
     "@varlet/ui": "^3.20.7",
-    "@vizejs/ui": "^0.467.0",
+    "@vizejs/ui": "^0.751.0",
     "@vuetify/v0": "^1.2.3",
     "@vueuse/core": "^15.0.0",
     "ai": "^7.0.173",
