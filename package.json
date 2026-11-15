@@ -12,6 +12,8 @@
     "@oruga-ui/oruga-next": "^0.14.4",
     "@oruga-ui/theme-oruga": "^0.10.0",
     "@quasar/extras": "^2.1.0",
+    "@ui-sdk/core": "0.1.0-beta.2",
+    "@ui-sdk/vue": "0.1.0-beta.2",
     "@varlet/ui": "^3.20.7",
     "@vizejs/ui": "^0.467.0",
     "@vuetify/v0": "^1.2.3",

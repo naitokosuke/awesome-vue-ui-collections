@@ -7,7 +7,7 @@ The libraries are grouped into four tabs
 
 - Styled libraries ship a complete visual design as a package (Vuetify, Element Plus, Naive UI, Quasar, …)
 - Copy-paste libraries are styled components a CLI copies into your project (shadcn-vue, Inspira UI)
-- Headless libraries are unstyled, accessible primitives (Reka UI, Vuetify0, Vize UI, Akaza UI)
+- Headless libraries are unstyled, accessible primitives (Reka UI, Vuetify0, Vize UI, Akaza UI, UI SDK)
 - Fancy libraries are animated, effect-first components (Vue Bits)
 
 The page can switch dark mode, size, primary color, the button label and each row's disabled state

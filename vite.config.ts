@@ -170,8 +170,13 @@ export default defineConfig({
     },
     {
       // Headless demos style elements that never get the scoped attribute (portalled roots, v0's
-      // fragment roots, Akaza UI's `ui` classes); those rules are written under `[data-lib]` by hand instead (see each file).
-      files: ["src/libs/reka-ui/Demos.vue", "src/libs/vuetify0/Demos.vue", "src/libs/akaza-ui/Demos.vue"],
+      // fragment roots, Akaza UI's `ui` classes, UI SDK's top-layer popups); those rules are written under `[data-lib]` by hand instead (see each file).
+      files: [
+        "src/libs/reka-ui/Demos.vue",
+        "src/libs/vuetify0/Demos.vue",
+        "src/libs/akaza-ui/Demos.vue",
+        "src/libs/ui-sdk/Demos.vue",
+      ],
       linter: { rules: { "vue/require-scoped-style": "off" } },
     },
     {

@@ -305,6 +305,19 @@ const RUNTIME_CLASS_PREFIXES: Record<string, string> = {
   "v-binder-": "vueuc (Naive UI's popup positioning) injects its follower styles the same way",
 };
 
+/**
+ * Ids of `<style>` elements a library injects into <head> at runtime, unscoped, and why that's
+ * tolerated.
+ */
+const RUNTIME_STYLE_IDS: Record<string, string> = {
+  "ui-sdk-popover-reset":
+    "UI SDK resets the UA [popover] styles of its own parts (`[data-slot=dialog-content][popover]`, …), " +
+    "in `@layer ui-sdk` under :where()",
+  "ui-sdk-hidden":
+    "UI SDK keeps `hidden` parts hidden over `display` rules: `[data-slot][hidden]` is display:none anyway, " +
+    "in `@layer ui-sdk` under :where()",
+};
+
 /** `.n-button .x` starts with prefix `n-`. */
 function startsWithClassPrefix(selector: string, prefix: string) {
   return selector.startsWith(`.${prefix}`);
@@ -539,7 +552,7 @@ describe("Shell with every library loaded", () => {
   test("styles injected at runtime stay inside a library's scope", () => {
     const runtime = [
       ...[...document.querySelectorAll<HTMLStyleElement>("style:not([data-vite-dev-id])")]
-        .filter((style) => !before.styles.has(style))
+        .filter((style) => !before.styles.has(style) && !(style.id in RUNTIME_STYLE_IDS))
         .map((style) => ({ source: style.id || style.outerHTML.slice(0, 60), sheet: style.sheet! })),
       ...[...document.adoptedStyleSheets]
         .filter((sheet) => !before.adoptedSheets.has(sheet))
