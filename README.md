@@ -6,7 +6,7 @@ Every library renders the same five demos (button, input, select, switch, dialog
 The libraries are grouped into four tabs
 
 - Styled libraries ship a complete visual design as a package (Vuetify, Element Plus, Naive UI, Quasar, …)
-- Copy-paste libraries are styled components a CLI copies into your project (shadcn-vue, Inspira UI)
+- Copy-paste libraries are styled components a CLI copies into your project (shadcn-vue, Inspira UI, AI Elements Vue)
 - Headless libraries are unstyled, accessible primitives (Reka UI, Vuetify0, Vize UI, Akaza UI, UI SDK)
 - Fancy libraries are animated, effect-first components (Vue Bits)
 
