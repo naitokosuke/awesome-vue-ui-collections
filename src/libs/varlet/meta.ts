@@ -3,6 +3,7 @@ import type { LibraryMeta } from "../types.ts";
 export const meta: LibraryMeta = {
   id: "varlet",
   name: "Varlet",
+  docs: "https://varletjs.org/",
   package: "@varlet/ui",
   kind: "styled",
   order: 9,

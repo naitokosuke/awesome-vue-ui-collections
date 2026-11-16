@@ -3,6 +3,7 @@ import type { LibraryMeta } from "../types.ts";
 export const meta: LibraryMeta = {
   id: "ai-elements-vue",
   name: "AI Elements Vue",
+  docs: "https://www.ai-elements-vue.com/",
   // Components are copied into the project (./ui) on top of shadcn-vue; `ai-elements-vue` is the
   // CLI that adds them, so its npm stats stand in for the library's.
   package: "ai-elements-vue",

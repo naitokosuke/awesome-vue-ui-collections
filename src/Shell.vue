@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed, onBeforeUnmount, onMounted, ref, useTemplateRef, watch } from "vue";
 import IconArrowUpRight from "~icons/lucide/arrow-up-right";
+import IconBookOpen from "~icons/lucide/book-open";
 import IconGithub from "~icons/lucide/github";
 import IconPackage from "~icons/lucide/package";
 import { DEMO_LABELS, groups, KIND_LABELS, npmFetchedAt } from "./board";
@@ -191,6 +192,15 @@ function scopeAttrs(lib: Library) {
                 </span>
                 <!-- Links leave the page: the icons say where to, the tooltip says it opens a new tab. -->
                 <span v-if="controls.stats" class="links">
+                  <a
+                    :href="lib.docs"
+                    rel="noopener noreferrer"
+                    target="_blank"
+                    :title="`${lib.name} docs (opens in a new tab)`"
+                    :aria-label="`${lib.name} docs (opens in a new tab)`"
+                  >
+                    <IconBookOpen aria-hidden="true" />
+                  </a>
                   <a
                     v-if="lib.package"
                     :href="`https://npmx.dev/package/${lib.package}`"

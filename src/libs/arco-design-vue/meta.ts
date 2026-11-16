@@ -3,6 +3,7 @@ import type { LibraryMeta } from "../types.ts";
 export const meta: LibraryMeta = {
   id: "arco-design-vue",
   name: "Arco Design Vue",
+  docs: "https://arco.design/vue/",
   package: "@arco-design/web-vue",
   kind: "styled",
   order: 5,

@@ -4,6 +4,7 @@ import type { LibraryMeta } from "../types.ts";
 export const meta: LibraryMeta = {
   id: "ui-sdk",
   name: "UI SDK",
+  docs: "https://ui-sdk.dev/",
   package: "@ui-sdk/vue",
   kind: "headless",
   order: 5,

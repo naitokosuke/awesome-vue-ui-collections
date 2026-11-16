@@ -3,6 +3,7 @@ import type { LibraryMeta } from "../types.ts";
 export const meta: LibraryMeta = {
   id: "primevue",
   name: "PrimeVue",
+  docs: "https://primevue.org/",
   package: "primevue",
   kind: "styled",
   order: 13,

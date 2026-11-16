@@ -79,6 +79,8 @@ export interface LibraryMeta {
   /** Directory name under src/libs and value of `data-lib`. */
   id: string;
   name: string;
+  /** The library's documentation site, linked from its column header. */
+  docs: string;
   /** npm package linked from the column header and used for npm stats; absent when it isn't on npm. */
   package?: string;
   /** Which tab the library is in; see KINDS. */

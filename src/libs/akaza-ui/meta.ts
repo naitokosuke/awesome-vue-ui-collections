@@ -4,6 +4,7 @@ import type { LibraryMeta } from "../types.ts";
 export const meta: LibraryMeta = {
   id: "akaza-ui",
   name: "Akaza UI",
+  docs: "https://akaza-ui.com/",
   package: "akaza-ui",
   kind: "headless",
   order: 4,

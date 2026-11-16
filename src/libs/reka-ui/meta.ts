@@ -4,6 +4,7 @@ import type { LibraryMeta } from "../types.ts";
 export const meta: LibraryMeta = {
   id: "reka-ui",
   name: "Reka UI",
+  docs: "https://reka-ui.com/",
   package: "reka-ui",
   kind: "headless",
   order: 2,

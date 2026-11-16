@@ -3,6 +3,7 @@ import type { LibraryMeta } from "../types.ts";
 export const meta: LibraryMeta = {
   id: "tdesign",
   name: "TDesign",
+  docs: "https://tdesign.tencent.com/vue-next/",
   package: "tdesign-vue-next",
   kind: "styled",
   order: 6,
