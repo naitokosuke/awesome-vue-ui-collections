@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed } from "vue";
+import { computed, onBeforeUnmount, onMounted, ref, useTemplateRef, watch } from "vue";
 import IconArrowUpRight from "~icons/lucide/arrow-up-right";
 import IconGithub from "~icons/lucide/github";
 import IconPackage from "~icons/lucide/package";
@@ -55,6 +55,30 @@ const { errors, setCell, setOverlay } = useLibraryApps(() => controls.kind);
 /** Libraries with an app of their own (not stats-only), each of which gets an overlay host. */
 const mountedLibraries = libraries.filter((lib) => lib.load);
 
+/**
+ * The kind tabs' underline: one element under the checked tab, which slides to the next one.
+ * Measured rather than drawn by each tab, so it can move between them; re-measured whenever a tab
+ * resizes (web fonts, the bold checked label, wrapping). Null until measured, so it first renders
+ * in place instead of sliding in from the corner.
+ */
+const tabs = useTemplateRef<HTMLElement>("tabs");
+const indicator = ref<{ x: number; y: number; width: number } | null>(null);
+
+function measureIndicator() {
+  const tab = tabs.value?.querySelector<HTMLElement>(".tab:has(:checked)");
+  if (!tab) return;
+  indicator.value = { x: tab.offsetLeft, y: tab.offsetTop + tab.offsetHeight, width: tab.offsetWidth };
+}
+
+watch(() => controls.kind, measureIndicator, { flush: "post" });
+let tabsObserver: ResizeObserver | undefined;
+onMounted(() => {
+  measureIndicator();
+  tabsObserver = new ResizeObserver(measureIndicator);
+  for (const el of [tabs.value!, ...tabs.value!.children]) tabsObserver.observe(el);
+});
+onBeforeUnmount(() => tabsObserver?.disconnect());
+
 function scopeAttrs(lib: Library) {
   return { "data-lib": lib.id, ...(controls.dark ? lib.darkAttrs : lib.lightAttrs) };
 }
@@ -73,12 +97,18 @@ function scopeAttrs(lib: Library) {
 
     <main class="page">
       <!-- Which libraries to show: a tab row of its own, separate from the demo options below. -->
-      <div aria-label="Library kind" class="tabs" role="radiogroup">
+      <div ref="tabs" aria-label="Library kind" class="tabs" role="radiogroup">
         <label v-for="group in groups" :key="group.kind" class="tab">
           <input v-model="controls.kind" name="kind" type="radio" :value="group.kind">
           {{ KIND_LABELS[group.kind].name.toLowerCase() }}
           <span class="muted">{{ group.columns.length }}</span>
         </label>
+        <span
+          v-if="indicator"
+          aria-hidden="true"
+          class="tab-indicator"
+          :style="{ translate: `${indicator.x}px ${indicator.y}px`, width: `${indicator.width}px` }"
+        />
       </div>
       <p class="kind-description">{{ KIND_LABELS[controls.kind].description }}</p>
 
@@ -328,6 +358,7 @@ function scopeAttrs(lib: Library) {
 /* ---- kind tabs ---- */
 
 .tabs {
+  position: relative;
   display: flex;
   flex-wrap: wrap;
   gap: 0 var(--avc-space-6);
@@ -349,7 +380,6 @@ function scopeAttrs(lib: Library) {
   }
 
   &:has(:checked) {
-    border-color: var(--avc-color-text);
     color: var(--avc-color-text);
     font-weight: var(--avc-weight-bold);
   }
@@ -363,6 +393,22 @@ function scopeAttrs(lib: Library) {
     position: absolute;
     opacity: 0;
     pointer-events: none;
+  }
+}
+
+/* Covers the checked tab's transparent bottom border, which keeps the tab's height. */
+.tab-indicator {
+  position: absolute;
+  inset: 0 auto auto 0;
+  height: 2px;
+  margin-block-start: -2px;
+  background: var(--avc-color-text);
+  pointer-events: none;
+
+  @media (prefers-reduced-motion: no-preference) {
+    transition:
+      translate 0.25s cubic-bezier(0.4, 0, 0.2, 1),
+      width 0.25s cubic-bezier(0.4, 0, 0.2, 1);
   }
 }
 
