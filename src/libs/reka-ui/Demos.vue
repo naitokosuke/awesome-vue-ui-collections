@@ -126,6 +126,8 @@ const open = ref(false);
   --rk-border: var(--hl-border);
   --rk-focus: var(--hl-focus);
   --rk-off: var(--hl-off);
+  --rk-accent: var(--hl-accent);
+  --rk-accent-fg: var(--hl-accent-fg);
 }
 
 /* Each cell's frame (DemoCells): not this component's element, so it's styled by class here. */
@@ -213,13 +215,13 @@ const open = ref(false);
 }
 
 .primary {
-  border-color: var(--rk-fg);
-  background: var(--rk-fg);
-  color: var(--rk-bg);
+  border-color: var(--rk-accent);
+  background: var(--rk-accent);
+  color: var(--rk-accent-fg);
 }
 
 .primary:not(:disabled):hover {
-  background: var(--rk-fg);
+  background: var(--rk-accent);
   opacity: 0.85;
 }
 
@@ -278,7 +280,7 @@ const open = ref(false);
 }
 
 .switch[data-state='checked'] {
-  background: var(--rk-fg);
+  background: var(--rk-accent);
 }
 
 .thumb {

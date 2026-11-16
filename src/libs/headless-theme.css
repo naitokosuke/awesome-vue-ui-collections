@@ -1,7 +1,8 @@
 /*
  * One shared, black-based look for every headless library, so the comparison shows
  * differences in the primitives themselves, not in colors someone picked per library.
- * Each headless adapter maps its own tokens onto these. Dark mode: `data-theme="dark"`
+ * Each headless adapter maps its own tokens onto these. The accent follows the shell's
+ * primary color option (headless-theme.ts). Dark mode: `data-theme="dark"`
  * on the scope element (every headless meta uses that as its darkAttrs).
  */
 :where([data-lib="vize-ui"], [data-lib="reka-ui"], [data-lib="vuetify0"], [data-lib="akaza-ui"], [data-lib="ui-sdk"]) {

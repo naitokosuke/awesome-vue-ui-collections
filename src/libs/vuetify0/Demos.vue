@@ -93,6 +93,8 @@ const open = ref(false);
   --v0-border: var(--hl-border);
   --v0-focus: var(--hl-focus);
   --v0-off: var(--hl-off);
+  --v0-accent: var(--hl-accent);
+  --v0-accent-fg: var(--hl-accent-fg);
 }
 
 /*
@@ -182,13 +184,13 @@ const open = ref(false);
   }
 
   .primary {
-    border-color: var(--v0-fg);
-    background: var(--v0-fg);
-    color: var(--v0-bg);
+    border-color: var(--v0-accent);
+    background: var(--v0-accent);
+    color: var(--v0-accent-fg);
   }
 
   .primary:not(:disabled):hover {
-    background: var(--v0-fg);
+    background: var(--v0-accent);
     opacity: 0.85;
   }
 
@@ -244,7 +246,7 @@ const open = ref(false);
   }
 
   .switch[data-state='checked'] {
-    background: var(--v0-fg);
+    background: var(--v0-accent);
   }
 
   .thumb {
