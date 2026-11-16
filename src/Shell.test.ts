@@ -778,6 +778,27 @@ describe("Shell with every library loaded", () => {
     }
   });
 
+  test("phones keep the settings in a dialog, which goes away on a wider screen", async () => {
+    const dialog = document.querySelector<HTMLDialogElement>("#options-dialog")!;
+    const facets = () => document.querySelector(".facets")!;
+    await page.viewport(375, 812);
+    onTestFinished(() => page.viewport(1280, 900));
+    await vi.waitFor(() => expect(dialog.contains(facets()), "settings in the dialog").toBe(true));
+    expect(facets().checkVisibility(), "closed, so hidden").toBe(false);
+
+    document.querySelector<HTMLButtonElement>(".topbar .options-toggle")!.click();
+    expect(dialog.matches(":modal")).toBe(true);
+    await vi.waitFor(() => expect(facets().checkVisibility()).toBe(true));
+
+    // Back on the page, and the dialog (now empty) closed.
+    await page.viewport(1280, 900);
+    await vi.waitFor(() =>
+      expect(document.querySelector("main")!.contains(facets()), "settings on the page").toBe(true),
+    );
+    expect(dialog.open).toBe(false);
+    expect(documentSnapshot().attributes).toEqual(before.document.attributes);
+  });
+
   // Last: it takes the shell down.
   test("unmounting the shell undoes every library's mount", async () => {
     app!.unmount();

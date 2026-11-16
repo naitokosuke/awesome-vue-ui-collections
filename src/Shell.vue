@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { useMediaQuery } from "@vueuse/core";
 import { computed, onBeforeUnmount, onMounted, ref, useTemplateRef, watch } from "vue";
 import IconArrowUpRight from "~icons/lucide/arrow-up-right";
 import IconBookOpen from "~icons/lucide/book-open";
@@ -55,8 +56,17 @@ const ROW_HEIGHTS: Record<DemoKey, number> = {
 
 /** Phones show one component at a time, each library's demo of it stacked (see "phone layout"). */
 const phoneDemo = ref<DemoKey>("button");
-/** On phones every setting (theme, size, color, stats, the picked component's options) folds behind one button. */
-const phoneOptions = ref(false);
+/**
+ * On phones every setting (theme, size, color, stats, the picked component's options) is in a
+ * dialog over the page, so opening it moves nothing: the settings section is teleported into it.
+ */
+const phone = useMediaQuery("(width < 40rem)");
+const optionsDialog = useTemplateRef<HTMLDialogElement>("optionsDialog");
+
+// Wider again: the section goes back onto the page, so the dialog would be empty.
+watch(phone, (isPhone) => {
+  if (!isPhone) optionsDialog.value?.close();
+});
 
 const { errors, setCell, setOverlay } = useLibraryApps(() => controls.kind);
 
@@ -99,12 +109,12 @@ function scopeAttrs(lib: Library) {
       <!-- Phones only: opens the settings, which take the theme switch along. -->
       <button
         type="button"
-        aria-controls="demo-options"
+        aria-controls="options-dialog"
+        aria-haspopup="dialog"
         class="options-toggle"
-        :aria-expanded="phoneOptions"
-        @click="phoneOptions = !phoneOptions"
+        @click="optionsDialog?.showModal()"
       >
-        <component :is="phoneOptions ? IconX : IconSlidersHorizontal" aria-hidden="true" />
+        <IconSlidersHorizontal aria-hidden="true" />
         options
       </button>
       <!-- Theme is a page setting, not part of what is compared, so it lives up here. -->
@@ -138,73 +148,75 @@ function scopeAttrs(lib: Library) {
 
       <!-- Options for the demos, right above the table they affect. -->
       <!-- Label column + options column; each row is a subgrid, so every row starts at the same x. -->
-      <section id="demo-options" aria-label="Demo options" class="facets" :class="{ open: phoneOptions }">
-        <!-- The phone-only rows stand in for what's elsewhere on wider screens: the top bar's theme
+      <Teleport defer to="#options-dialog-body" :disabled="!phone">
+        <section aria-label="Demo options" class="facets">
+          <!-- The phone-only rows stand in for what's elsewhere on wider screens: the top bar's theme
              switch, the table's stats switch and the row's options. -->
-        <div class="facet phone-only">
-          <span aria-hidden="true" class="facet-label">theme</span>
-          <label class="switch">
-            <input v-model="controls.dark" role="switch" type="checkbox">
-            dark
-          </label>
-        </div>
-        <div class="facet">
-          <span aria-hidden="true" class="facet-label">size</span>
-          <div class="options">
-            <RadioGroup v-model="controls.size" :options="SIZES" legend="Size" name="size">
-              <template #option="{ option }">{{ SIZE_LABELS[option] }}</template>
-            </RadioGroup>
-          </div>
-        </div>
-        <!-- Every kind takes it, so the row never comes and goes (which would move the table). -->
-        <div class="facet">
-          <span aria-hidden="true" class="facet-label">color</span>
-          <div class="options">
-            <RadioGroup v-model="colorChoice" :options="COLOR_OPTIONS" legend="Primary color" name="color">
-              <template #option="{ option }">
-                <template v-if="option === 'default'">default</template>
-                <!-- The color fills the chip, labeled with its code. -->
-                <template v-else>
-                  <span class="swatch" :style="{ background: option }" :title="COLOR_NAMES[option]" />
-                  <!-- Announced name first ("blue #2563eb"): the code alone says little to a screen reader user. -->
-                  <span class="visually-hidden">{{ COLOR_NAMES[option] }}</span>
-                  <span class="swatch-code" :style="{ color: readableOn(option) }">{{ option }}</span>
-                </template>
-              </template>
-            </RadioGroup>
-          </div>
-        </div>
-        <div class="facet phone-only">
-          <span aria-hidden="true" class="facet-label">stats</span>
-          <label class="switch">
-            <input v-model="controls.stats" role="switch" type="checkbox">
-            <span class="visually-hidden">stats</span>
-            <span class="stats-date">{{ npmFetchedAt ? `as of ${npmFetchedAt}` : "npm data unavailable" }}</span>
-          </label>
-        </div>
-        <div class="facet phone-only">
-          <span aria-hidden="true" class="facet-label">{{ DEMO_LABELS[phoneDemo].toLowerCase() }}</span>
-          <div class="row-options">
-            <input
-              v-if="phoneDemo === 'button'"
-              v-model="controls.label"
-              aria-label="Button label"
-              class="text-input"
-              placeholder="label"
-              type="text"
-            >
+          <div class="facet phone-only">
+            <span aria-hidden="true" class="facet-label">theme</span>
             <label class="switch">
-              <input
-                v-model="controls.disabled[phoneDemo]"
-                role="switch"
-                type="checkbox"
-                :aria-label="`${DEMO_LABELS[phoneDemo]} disabled`"
-              >
-              disabled
+              <input v-model="controls.dark" role="switch" type="checkbox">
+              dark
             </label>
           </div>
-        </div>
-      </section>
+          <div class="facet">
+            <span aria-hidden="true" class="facet-label">size</span>
+            <div class="options">
+              <RadioGroup v-model="controls.size" :options="SIZES" legend="Size" name="size">
+                <template #option="{ option }">{{ SIZE_LABELS[option] }}</template>
+              </RadioGroup>
+            </div>
+          </div>
+          <!-- Every kind takes it, so the row never comes and goes (which would move the table). -->
+          <div class="facet">
+            <span aria-hidden="true" class="facet-label">color</span>
+            <div class="options">
+              <RadioGroup v-model="colorChoice" :options="COLOR_OPTIONS" legend="Primary color" name="color">
+                <template #option="{ option }">
+                  <template v-if="option === 'default'">default</template>
+                  <!-- The color fills the chip, labeled with its code. -->
+                  <template v-else>
+                    <span class="swatch" :style="{ background: option }" :title="COLOR_NAMES[option]" />
+                    <!-- Announced name first ("blue #2563eb"): the code alone says little to a screen reader user. -->
+                    <span class="visually-hidden">{{ COLOR_NAMES[option] }}</span>
+                    <span class="swatch-code" :style="{ color: readableOn(option) }">{{ option }}</span>
+                  </template>
+                </template>
+              </RadioGroup>
+            </div>
+          </div>
+          <div class="facet phone-only">
+            <span aria-hidden="true" class="facet-label">stats</span>
+            <label class="switch">
+              <input v-model="controls.stats" role="switch" type="checkbox">
+              <span class="visually-hidden">stats</span>
+              <span class="stats-date">{{ npmFetchedAt ? `as of ${npmFetchedAt}` : "npm data unavailable" }}</span>
+            </label>
+          </div>
+          <div class="facet phone-only">
+            <span aria-hidden="true" class="facet-label">{{ DEMO_LABELS[phoneDemo].toLowerCase() }}</span>
+            <div class="row-options">
+              <input
+                v-if="phoneDemo === 'button'"
+                v-model="controls.label"
+                aria-label="Button label"
+                class="text-input"
+                placeholder="label"
+                type="text"
+              >
+              <label class="switch">
+                <input
+                  v-model="controls.disabled[phoneDemo]"
+                  role="switch"
+                  type="checkbox"
+                  :aria-label="`${DEMO_LABELS[phoneDemo]} disabled`"
+                >
+                disabled
+              </label>
+            </div>
+          </div>
+        </section>
+      </Teleport>
 
       <!-- Phones only: which component the stacked list shows. -->
       <fieldset class="demo-picker">
@@ -361,6 +373,18 @@ function scopeAttrs(lib: Library) {
         </div>
       </section>
     </main>
+
+    <!-- Phones only: the settings section, teleported in. closedby="any": a click outside closes it too. -->
+    <dialog id="options-dialog" ref="optionsDialog" aria-label="Options" class="options-dialog" closedby="any">
+      <div class="options-dialog-head">
+        <span class="brand">options</span>
+        <button type="button" class="options-toggle" @click="optionsDialog?.close()">
+          <IconX aria-hidden="true" />
+          close
+        </button>
+      </div>
+      <div id="options-dialog-body" class="options-dialog-body" />
+    </dialog>
 
     <div class="overlays">
       <div
@@ -938,12 +962,6 @@ a.component-ref {
     font-size: var(--avc-text-sm);
     cursor: pointer;
 
-    &[aria-expanded="true"] {
-      border-color: var(--avc-color-text);
-      background: var(--avc-color-text);
-      color: var(--avc-color-bg);
-    }
-
     &:focus-visible {
       outline: var(--avc-focus-ring);
       outline-offset: 2px;
@@ -963,48 +981,77 @@ a.component-ref {
     display: none;
   }
 
-  /* The settings: a drawer under the top bar while open, edge to edge so the options fit. */
+  /* The settings, in the options dialog: a sheet over the top of the page. Its head lines up with
+     the top bar, the close button where the options button was. */
   .facets {
-    display: none;
-    flex-shrink: 0;
-    order: -1;
-    margin: calc(-1 * var(--avc-space-4)) calc(-1 * var(--avc-space-4)) var(--avc-space-4);
-    padding: var(--avc-space-4);
+    margin: 0;
+  }
+
+  .options-dialog {
+    box-sizing: border-box;
+    inline-size: 100%;
+    max-inline-size: none;
+    margin: 0;
+    inset: 0 0 auto;
+    padding: 0;
+    border: 0;
     border-block-end: 1px solid var(--avc-color-border);
     background: var(--avc-color-subtle);
+    color: var(--avc-color-text);
 
-    &.open {
-      display: grid;
+    &::backdrop {
+      background: rgb(0 0 0 / 0.4);
     }
 
-    /* Grows open decelerating (ease-out) and shrinks shut accelerating (ease-in), a little faster.
-       Height to and from `auto` needs interpolate-size; where that's missing it just opens. */
+    /* Slides down decelerating (ease-out) and back up accelerating (ease-in), a little faster. */
     @media (prefers-reduced-motion: no-preference) {
-      interpolate-size: allow-keywords;
-      overflow: hidden;
-      transition-behavior: allow-discrete;
-      transition-property: display, height, padding-block, margin-block;
-      transition-duration: 0.2s;
-      transition-timing-function: cubic-bezier(0.4, 0, 1, 1);
-
-      &:not(.open) {
-        height: 0;
-        margin-block: 0;
-        padding-block: 0;
+      &,
+      &::backdrop {
+        transition-behavior: allow-discrete;
+        transition-property: display, overlay, translate, opacity;
+        transition-duration: 0.2s;
+        transition-timing-function: cubic-bezier(0.4, 0, 1, 1);
       }
 
-      &.open {
-        height: auto;
+      &:not([open]) {
+        translate: 0 -100%;
+      }
+
+      &:not([open])::backdrop {
+        opacity: 0;
+      }
+
+      &[open],
+      &[open]::backdrop {
         transition-duration: 0.25s;
         transition-timing-function: cubic-bezier(0, 0, 0.2, 1);
+      }
 
-        @starting-style {
-          height: 0;
-          margin-block: 0;
-          padding-block: 0;
+      @starting-style {
+        &[open] {
+          translate: 0 -100%;
+        }
+
+        &[open]::backdrop {
+          opacity: 0;
         }
       }
     }
+  }
+
+  .options-dialog-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    box-sizing: border-box;
+    block-size: var(--avc-topbar-size);
+    padding-inline: var(--avc-space-4);
+    border-block-end: 1px solid var(--avc-color-border);
+    background: var(--avc-color-bg);
+  }
+
+  .options-dialog-body {
+    padding: var(--avc-space-4);
   }
 
   .facet.phone-only {
