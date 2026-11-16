@@ -11,6 +11,7 @@ The libraries are grouped into four tabs
 - Fancy libraries are animated, effect-first components (Vue Bits)
 
 The page can switch dark mode, size, primary color, the button label and each row's disabled state
+Columns can be reordered per tab, by dragging a column's grip or with its arrow keys, and the order is kept
 Column headers show npm stats (version, release age, weekly downloads) fetched at build time
 A second page, `/libraries/`, lists every library by kind with those stats and links to its docs, npm and GitHub, without loading any of them
 

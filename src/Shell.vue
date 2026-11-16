@@ -1,13 +1,14 @@
 <script setup lang="ts">
-import { useMediaQuery } from "@vueuse/core";
-import { computed, onBeforeUnmount, onMounted, ref, useTemplateRef, watch } from "vue";
+import { useEventListener, useMediaQuery } from "@vueuse/core";
+import { computed, nextTick, onBeforeUnmount, onMounted, ref, useTemplateRef, watch } from "vue";
 import IconArrowUpRight from "~icons/lucide/arrow-up-right";
+import IconGripVertical from "~icons/lucide/grip-vertical";
 import IconSlidersHorizontal from "~icons/lucide/sliders-horizontal";
 import IconX from "~icons/lucide/x";
-import { DEMO_LABELS, groups, KIND_LABELS, npmFetchedAt } from "./board";
+import { DEMO_LABELS, groups, KIND_LABELS, npmFetchedAt, orderColumns } from "./board";
 import { libraries } from "./libs";
 import { readableOn } from "./libs/color";
-import { type Color, COLORS, DEMOS, type DemoKey, type Library, SIZES } from "./libs/types";
+import { type Color, COLORS, DEMOS, type DemoKey, type Kind, type Library, SIZES } from "./libs/types";
 import LibraryLinks from "./LibraryLinks.vue";
 import RadioGroup from "./RadioGroup.vue";
 import { controls } from "./store";
@@ -97,6 +98,89 @@ onMounted(() => {
 });
 onBeforeUnmount(() => tabsObserver?.disconnect());
 
+/**
+ * The tables in each tab's saved column order. Reordering moves the existing header and cell
+ * elements (keyed by library), so a library's demos stay mounted, and the DOM order (what a
+ * screen reader reads) is the order on screen.
+ */
+const orderedGroups = computed(() =>
+  groups.map((group) => ({ ...group, columns: orderColumns(group.columns, controls.order[group.kind]) })),
+);
+
+/** Read out after each move, for screen readers. */
+const announcement = ref("");
+
+function moveTo(kind: Kind, id: string, to: number) {
+  const ids = orderedGroups.value.find((group) => group.kind === kind)!.columns.map((lib) => lib.id);
+  const from = ids.indexOf(id);
+  if (from === -1 || to < 0 || to >= ids.length || to === from) return;
+  ids.splice(to, 0, ...ids.splice(from, 1));
+  controls.order = { ...controls.order, [kind]: ids };
+  const name = libraries.find((lib) => lib.id === id)!.name;
+  announcement.value = `${name} moved to column ${to + 1} of ${ids.length}`;
+}
+
+/** ←/→ on a column's grip. Moving its header out and back in drops focus, so the grip takes it back. */
+async function moveByKey(event: KeyboardEvent, kind: Kind, id: string, to: number) {
+  const grip = event.currentTarget as HTMLElement;
+  moveTo(kind, id, to);
+  await nextTick();
+  grip.focus();
+}
+
+/** The reset button goes away with the saved order, so focus moves on to the first column's grip. */
+async function resetOrder(event: MouseEvent, kind: Kind) {
+  const table = (event.currentTarget as HTMLElement).closest(".table")!;
+  const { [kind]: _, ...rest } = controls.order;
+  controls.order = rest;
+  announcement.value = "Columns back in their default order";
+  await nextTick();
+  table.querySelector<HTMLElement>(".grip")?.focus();
+}
+
+/** The column being dragged by its grip, and where it would land (shown on that side of the target). */
+const drag = ref<{ id: string; from: number; over: number | null } | null>(null);
+
+function onDragStart(event: DragEvent, id: string, from: number) {
+  drag.value = { id, from, over: null };
+  event.dataTransfer!.effectAllowed = "move";
+  event.dataTransfer!.setData("text/plain", id);
+  // The whole header follows the pointer, not just the grip.
+  const head = (event.currentTarget as HTMLElement).closest<HTMLElement>(".head");
+  if (head) event.dataTransfer!.setDragImage(head, 16, 16);
+}
+
+/** The column header under the pointer, by its position. */
+function headAt(event: DragEvent) {
+  const col = (event.target as Element).closest<HTMLElement>(".head[data-col]")?.dataset.col;
+  return col === undefined ? null : Number(col);
+}
+
+function onDragOver(event: DragEvent) {
+  const index = headAt(event);
+  if (!drag.value || index === null) return;
+  event.preventDefault();
+  drag.value.over = index;
+}
+
+function onDrop(event: DragEvent) {
+  const index = headAt(event);
+  if (!drag.value || index === null) return;
+  event.preventDefault();
+  moveTo(controls.kind, drag.value.id, index);
+  drag.value = null;
+}
+
+// The headers are drop targets for a pointer only; the grips' arrow keys do the same from the keyboard.
+const page = useTemplateRef<HTMLElement>("page");
+useEventListener(page, "dragover", onDragOver);
+useEventListener(page, "drop", onDrop);
+
+function dropSide(index: number) {
+  if (!drag.value || drag.value.over !== index || index === drag.value.from) return null;
+  return index < drag.value.from ? "drop-before" : "drop-after";
+}
+
 function scopeAttrs(lib: Library) {
   return { "data-lib": lib.id, ...(controls.dark ? lib.darkAttrs : lib.lightAttrs) };
 }
@@ -118,7 +202,7 @@ function scopeAttrs(lib: Library) {
       </button>
     </TopBar>
 
-    <main class="page">
+    <main ref="page" class="page">
       <!-- Which libraries to show: a tab row of its own, separate from the demo options below. -->
       <div ref="tabs" aria-label="Library kind" class="tabs" role="radiogroup">
         <label v-for="group in groups" :key="group.kind" class="tab">
@@ -212,7 +296,12 @@ function scopeAttrs(lib: Library) {
       </fieldset>
 
       <!-- One table per kind; all stay mounted (v-show), so a library mounted once keeps its cells. -->
-      <section v-for="(group, index) in groups" v-show="controls.kind === group.kind" :key="group.kind" class="table">
+      <section
+        v-for="(group, index) in orderedGroups"
+        v-show="controls.kind === group.kind"
+        :key="group.kind"
+        class="table"
+      >
         <!-- A table to assistive tech: each row wrapper is `display: contents`, so the grid lays out its cells. -->
         <div
           class="grid"
@@ -227,11 +316,43 @@ function scopeAttrs(lib: Library) {
               <span :id="`stats-date-${index}`" class="stats-date" title="npm data; downloads cover the last 7 days">
                 {{ npmFetchedAt ? `(as of ${npmFetchedAt})` : "(npm data unavailable)" }}
               </span>
+              <button
+                v-if="controls.order[group.kind]"
+                type="button"
+                class="reset-order"
+                @click="resetOrder($event, group.kind)"
+              >
+                reset order
+              </button>
             </div>
             <!-- Two lines per column: name and downloads, then version, release age and links. -->
-            <div v-for="(lib, i) in group.columns" :key="lib.id" class="head" role="columnheader" :style="{ '--i': i }">
+            <div
+              v-for="(lib, i) in group.columns"
+              :key="lib.id"
+              class="head"
+              :class="[{ dragging: drag?.id === lib.id }, dropSide(i)]"
+              role="columnheader"
+              :data-col="i"
+              :style="{ '--i': i }"
+            >
               <div class="line">
-                <span class="name">{{ lib.name }}</span>
+                <span class="title">
+                  <!-- Reorders the columns: drag it, or focus it and press the left / right arrow keys. -->
+                  <button
+                    type="button"
+                    aria-describedby="reorder-help"
+                    class="grip"
+                    draggable="true"
+                    :aria-label="`Move ${lib.name}`"
+                    @dragend="drag = null"
+                    @dragstart="onDragStart($event, lib.id, i)"
+                    @keydown.left.prevent="moveByKey($event, group.kind, lib.id, i - 1)"
+                    @keydown.right.prevent="moveByKey($event, group.kind, lib.id, i + 1)"
+                  >
+                    <IconGripVertical aria-hidden="true" />
+                  </button>
+                  <span class="name">{{ lib.name }}</span>
+                </span>
                 <span
                   v-if="controls.stats"
                   class="muted"
@@ -328,6 +449,9 @@ function scopeAttrs(lib: Library) {
       </div>
       <div id="options-dialog-body" class="options-dialog-body" />
     </dialog>
+
+    <p id="reorder-help" class="visually-hidden">Drag, or press the left and right arrow keys, to move the column.</p>
+    <p aria-live="polite" class="visually-hidden">{{ announcement }}</p>
 
     <div class="overlays">
       <div
@@ -554,6 +678,81 @@ function scopeAttrs(lib: Library) {
     z-index: 4;
     background: var(--avc-color-subtle);
   }
+}
+
+.reset-order {
+  align-self: flex-start;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--avc-color-text-muted);
+  font: inherit;
+  font-size: var(--avc-text-sm);
+  text-decoration: underline;
+  cursor: pointer;
+
+  &:hover {
+    color: var(--avc-color-text);
+  }
+
+  &:focus-visible {
+    outline: var(--avc-focus-ring);
+    outline-offset: 2px;
+  }
+}
+
+/* The name and, before it, the grip that reorders the column. */
+.title {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--avc-space-0-5);
+  margin-inline-start: calc(-1 * var(--avc-space-1));
+}
+
+.grip {
+  display: grid;
+  flex: none;
+  place-items: center;
+  inline-size: var(--avc-target-min);
+  block-size: var(--avc-target-min);
+  padding: 0;
+  border: 0;
+  border-radius: var(--avc-radius-sm);
+  background: none;
+  color: var(--avc-color-text-muted);
+  cursor: grab;
+
+  &:hover {
+    background: var(--avc-color-subtle);
+    color: var(--avc-color-text);
+  }
+
+  &:active {
+    cursor: grabbing;
+  }
+
+  &:focus-visible {
+    outline: var(--avc-focus-ring);
+    outline-offset: 0;
+  }
+
+  & svg {
+    inline-size: 1rem;
+    block-size: 1rem;
+  }
+}
+
+/* While dragging: the dragged column dims, and a bar marks the side it would land on. */
+.head.dragging {
+  opacity: 0.5;
+}
+
+.head.drop-before {
+  box-shadow: inset 3px 0 0 var(--avc-color-text);
+}
+
+.head.drop-after {
+  box-shadow: inset -3px 0 0 var(--avc-color-text);
 }
 
 /* Under the stats switch: when its numbers were fetched. */
@@ -966,6 +1165,7 @@ a.component-ref {
     border-inline-start: 0;
 
     & .line:first-child > .muted,
+    & .grip,
     & .version:not(:has(.error)),
     & :deep(.npm) {
       display: none;

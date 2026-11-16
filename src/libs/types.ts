@@ -49,10 +49,12 @@ export interface Controls {
   kind: Kind;
   /** Primary color forced on every styled and copy-paste library, or null for each library's own default. */
   color: Color | null;
+  /** Column order per tab, by library id; a tab without one (or a library missing from it) keeps the default. */
+  order: Partial<Record<Kind, string[]>>;
 }
 
 /** The demo options as libraries read them: `color` is the hex to show in the current mode (see DARK_COLORS). */
-export type LibraryControls = Omit<Controls, "color"> & { color: string | null };
+export type LibraryControls = Omit<Controls, "color" | "order"> & { color: string | null };
 
 /** What the shell hands a library: where to render, and the options to render with. */
 export interface MountContext {

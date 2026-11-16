@@ -646,6 +646,42 @@ describe("Shell with every library loaded", () => {
     expect(visibleBodyStrays()).toEqual([]);
   });
 
+  // Before the dialog test, which leaves dialogs open (one traps focus).
+  test("a column moves with its grip's arrow keys, its cells along with it, without remounting", async () => {
+    await showKind("styled");
+    const table = [...document.querySelectorAll<HTMLElement>(".table")].find((el) => el.checkVisibility())!;
+    const names = () => [...table.querySelectorAll(".head:not(.corner) .name")].map((el) => el.textContent!.trim());
+    const cellLibs = () =>
+      [...table.querySelectorAll<HTMLElement>(".table-row")[1]!.querySelectorAll<HTMLElement>(".cell")].map(
+        (el) => el.dataset.lib,
+      );
+    const [first, second] = libraries.filter((lib) => lib.kind === "styled");
+    const cell = cellOf(first!, "button");
+    try {
+      const grip = table.querySelector<HTMLButtonElement>(".head:not(.corner) .grip")!;
+      // Dispatched on the grip, which doesn't need the page to have the window's focus.
+      grip.focus();
+      grip.dispatchEvent(new KeyboardEvent("keydown", { key: "ArrowRight", bubbles: true }));
+      await nextTick();
+      expect(names().slice(0, 2)).toEqual([second!.name, first!.name]);
+      expect(cellLibs().slice(0, 2)).toEqual([second!.id, first!.id]);
+      expect(controls.order.styled?.slice(0, 2)).toEqual([second!.id, first!.id]);
+      // The same cell, moved, with the library's demo still in it.
+      expect(cellOf(first!, "button")).toBe(cell);
+      expect(cell.querySelector(":scope > .demo")).not.toBeNull();
+      expect(document.activeElement, "the grip keeps focus").toBe(grip);
+      expect([...document.querySelectorAll(".head .error")].map((el) => el.getAttribute("title"))).toEqual([]);
+
+      table.querySelector<HTMLButtonElement>(".reset-order")!.click();
+      await vi.waitFor(() => expect(names()[0]).toBe(first!.name));
+      expect(controls.order).toEqual({});
+      expect(table.querySelector(".reset-order")).toBeNull();
+    } finally {
+      controls.order = {};
+      await nextTick();
+    }
+  });
+
   test("dialogs open inside their library's scope and leave <html> / <body> alone", async () => {
     for (const kind of KINDS) {
       await showKind(kind);
