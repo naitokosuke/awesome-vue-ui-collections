@@ -446,6 +446,9 @@ let before: {
 };
 
 beforeAll(async () => {
+  // The table layout, wide enough for a column beside the sticky label column (so a press lands on
+  // the demo); phones get a layout of their own, with a test of its own.
+  await page.viewport(1280, 900);
   Object.assign(controls, { kind: "styled", dark: false, color: null, size: "medium", stats: true, label: "Click me" });
 
   probe = document.createElement("div");
@@ -605,9 +608,6 @@ describe("Shell with every library loaded", () => {
 
   // Before the dialog test, which leaves non-modal dialogs open over the table.
   test("selects open inside their library's scope and leave <html> / <body> alone", async () => {
-    // Wide enough for a column beside the sticky label column, so the press lands on the select.
-    await page.viewport(1280, 900);
-    onTestFinished(() => page.viewport(414, 896));
     for (const kind of KINDS) {
       await showKind(kind);
       for (const lib of mounted.filter((lib) => lib.kind === kind && !(lib.id in SELECTS_WITHOUT_POPUP))) {
@@ -737,6 +737,45 @@ describe("Shell with every library loaded", () => {
       .filter(([key, sources]) => sources.length > 1 && !(key in KNOWN_CLASHES))
       .map(([key, sources]) => `${key}: ${sources.join(" vs ")}`);
     expect(clashing).toEqual([]);
+  });
+
+  test("phones show one component at a time, each library's demo under its header", async () => {
+    await page.viewport(375, 812);
+    onTestFinished(() => page.viewport(1280, 900));
+    const pick = async (demo: DemoKey) => {
+      document.querySelector<HTMLInputElement>(`.demo-picker input[value="${demo}"]`)!.click();
+      await nextTick();
+    };
+    try {
+      for (const kind of KINDS) {
+        await showKind(kind);
+        const table = [...document.querySelectorAll<HTMLElement>(".table")].find((el) => el.checkVisibility())!;
+        const heads = [...table.querySelectorAll(".head:not(.corner)")];
+        const rows = [...table.querySelectorAll(".table-row")].slice(1);
+        for (const [index, demo] of DEMO_ORDER.entries()) {
+          await pick(demo);
+          expect(table.scrollWidth, `${kind} ${demo}: scrolls sideways`).toBeLessThanOrEqual(table.clientWidth);
+          for (const [rowIndex, row] of rows.entries()) {
+            const shown = [...row.querySelectorAll(".cell")].map((cell) => cell.checkVisibility());
+            expect(shown, `${kind}: ${DEMO_ORDER[rowIndex]} cells with ${demo} picked`).toEqual(
+              shown.map(() => rowIndex === index),
+            );
+          }
+          // Each cell right under its library's header, as wide.
+          const cells = [...rows[index]!.querySelectorAll(".cell")];
+          for (const [i, head] of heads.entries()) {
+            const h = head.getBoundingClientRect();
+            const c = cells[i]!.getBoundingClientRect();
+            expect([c.top, c.left, c.width].map(Math.round), `${kind} ${demo}: cell ${i}`).toEqual(
+              [h.bottom, h.left, h.width].map(Math.round),
+            );
+          }
+        }
+      }
+    } finally {
+      await pick("button");
+      await showKind("styled");
+    }
   });
 
   // Last: it takes the shell down.
