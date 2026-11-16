@@ -10,6 +10,20 @@
  *   borders and controls are at least 3:1 where they carry meaning (WCAG 1.4.11).
  */
 
+/* A column's position and a row's index in the compare table's grid (see Shell.vue). Not inherited,
+   so changing one restyles only that header or cell, not the library rendered in it. */
+@property --avc-column {
+  syntax: "<integer>";
+  inherits: false;
+  initial-value: 0;
+}
+
+@property --avc-row {
+  syntax: "<integer>";
+  inherits: false;
+  initial-value: 1;
+}
+
 .shell {
   /* ---- color ---- */
   --avc-color-bg: oklch(98.5% 0 0);

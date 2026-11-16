@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { useEventListener, useMediaQuery } from "@vueuse/core";
+import { useMediaQuery } from "@vueuse/core";
 import { computed, nextTick, onBeforeUnmount, onMounted, ref, useTemplateRef, watch } from "vue";
 import IconArrowUpRight from "~icons/lucide/arrow-up-right";
 import IconGripVertical from "~icons/lucide/grip-vertical";
@@ -14,6 +14,7 @@ import RadioGroup from "./RadioGroup.vue";
 import { controls } from "./store";
 import ToggleSwitch from "./ToggleSwitch.vue";
 import TopBar from "./TopBar.vue";
+import { useColumnDrag } from "./useColumnDrag";
 import { useLibraryApps } from "./useLibraryApps";
 
 const SIZE_LABELS = { small: "sm", medium: "md", large: "lg" } as const;
@@ -99,34 +100,47 @@ onMounted(() => {
 onBeforeUnmount(() => tabsObserver?.disconnect());
 
 /**
- * The tables in each tab's saved column order. Reordering moves the existing header and cell
- * elements (keyed by library), so a library's demos stay mounted, and the DOM order (what a
- * screen reader reads) is the order on screen.
+ * Each tab's saved column order, as every column's position in it. The grid places a column's
+ * header and cells by it (`--avc-column`) rather than by DOM order, so reordering moves no
+ * element: moving a cell out and back in restyles everything its library rendered in it, which
+ * made each move take a third of a second. `reading-flow` keeps focus (and reading) order in
+ * step with the grid, and `aria-colindex` tells assistive tech each cell's column.
  */
-const orderedGroups = computed(() =>
-  groups.map((group) => ({ ...group, columns: orderColumns(group.columns, controls.order[group.kind]) })),
+const positions = computed(
+  () =>
+    Object.fromEntries(
+      groups.map((group) => [
+        group.kind,
+        Object.fromEntries(orderColumns(group.columns, controls.order[group.kind]).map((lib, i) => [lib.id, i])),
+      ]),
+    ) as Record<Kind, Record<string, number>>,
 );
 
 /** Read out after each move, for screen readers. */
 const announcement = ref("");
 
+const columnIds = (kind: Kind) =>
+  orderColumns(groups.find((group) => group.kind === kind)!.columns, controls.order[kind]).map((lib) => lib.id);
+
+/** Saves a tab's new order, after `id` was moved. */
+function saveOrder(kind: Kind, ids: string[], id: string) {
+  controls.order = { ...controls.order, [kind]: ids };
+  announcement.value = `${nameOf(id)} moved to column ${ids.indexOf(id) + 1} of ${ids.length}`;
+}
+
 function moveTo(kind: Kind, id: string, to: number) {
-  const ids = orderedGroups.value.find((group) => group.kind === kind)!.columns.map((lib) => lib.id);
+  const ids = columnIds(kind);
   const from = ids.indexOf(id);
   if (from === -1 || to < 0 || to >= ids.length || to === from) return;
   ids.splice(to, 0, ...ids.splice(from, 1));
-  controls.order = { ...controls.order, [kind]: ids };
-  const name = libraries.find((lib) => lib.id === id)!.name;
-  announcement.value = `${name} moved to column ${to + 1} of ${ids.length}`;
+  saveOrder(kind, ids, id);
 }
 
-/** ←/→ on a column's grip. Moving its header out and back in drops focus, so the grip takes it back. */
-async function moveByKey(event: KeyboardEvent, kind: Kind, id: string, to: number) {
-  const grip = event.currentTarget as HTMLElement;
-  moveTo(kind, id, to);
-  await nextTick();
-  grip.focus();
-}
+/** Dragging a grip: a ghost follows the pointer, the columns make way, the order is saved on release (see useColumnDrag). */
+const { ghost, onPointerDown, onPointerMove, onPointerUp, onPointerCancel } = useColumnDrag({
+  order: columnIds,
+  commit: saveOrder,
+});
 
 /** The reset button goes away with the saved order, so focus moves on to the first column's grip. */
 async function resetOrder(event: MouseEvent, kind: Kind) {
@@ -138,48 +152,7 @@ async function resetOrder(event: MouseEvent, kind: Kind) {
   table.querySelector<HTMLElement>(".grip")?.focus();
 }
 
-/** The column being dragged by its grip, and where it would land (shown on that side of the target). */
-const drag = ref<{ id: string; from: number; over: number | null } | null>(null);
-
-function onDragStart(event: DragEvent, id: string, from: number) {
-  drag.value = { id, from, over: null };
-  event.dataTransfer!.effectAllowed = "move";
-  event.dataTransfer!.setData("text/plain", id);
-  // The whole header follows the pointer, not just the grip.
-  const head = (event.currentTarget as HTMLElement).closest<HTMLElement>(".head");
-  if (head) event.dataTransfer!.setDragImage(head, 16, 16);
-}
-
-/** The column header under the pointer, by its position. */
-function headAt(event: DragEvent) {
-  const col = (event.target as Element).closest<HTMLElement>(".head[data-col]")?.dataset.col;
-  return col === undefined ? null : Number(col);
-}
-
-function onDragOver(event: DragEvent) {
-  const index = headAt(event);
-  if (!drag.value || index === null) return;
-  event.preventDefault();
-  drag.value.over = index;
-}
-
-function onDrop(event: DragEvent) {
-  const index = headAt(event);
-  if (!drag.value || index === null) return;
-  event.preventDefault();
-  moveTo(controls.kind, drag.value.id, index);
-  drag.value = null;
-}
-
-// The headers are drop targets for a pointer only; the grips' arrow keys do the same from the keyboard.
-const page = useTemplateRef<HTMLElement>("page");
-useEventListener(page, "dragover", onDragOver);
-useEventListener(page, "drop", onDrop);
-
-function dropSide(index: number) {
-  if (!drag.value || drag.value.over !== index || index === drag.value.from) return null;
-  return index < drag.value.from ? "drop-before" : "drop-after";
-}
+const nameOf = (id: string) => libraries.find((lib) => lib.id === id)!.name;
 
 function scopeAttrs(lib: Library) {
   return { "data-lib": lib.id, ...(controls.dark ? lib.darkAttrs : lib.lightAttrs) };
@@ -202,7 +175,7 @@ function scopeAttrs(lib: Library) {
       </button>
     </TopBar>
 
-    <main ref="page" class="page">
+    <main class="page">
       <!-- Which libraries to show: a tab row of its own, separate from the demo options below. -->
       <div ref="tabs" aria-label="Library kind" class="tabs" role="radiogroup">
         <label v-for="group in groups" :key="group.kind" class="tab">
@@ -296,12 +269,7 @@ function scopeAttrs(lib: Library) {
       </fieldset>
 
       <!-- One table per kind; all stay mounted (v-show), so a library mounted once keeps its cells. -->
-      <section
-        v-for="(group, index) in orderedGroups"
-        v-show="controls.kind === group.kind"
-        :key="group.kind"
-        class="table"
-      >
+      <section v-for="(group, index) in groups" v-show="controls.kind === group.kind" :key="group.kind" class="table">
         <!-- A table to assistive tech: each row wrapper is `display: contents`, so the grid lays out its cells. -->
         <div
           class="grid"
@@ -311,7 +279,7 @@ function scopeAttrs(lib: Library) {
         >
           <div class="table-row" role="row">
             <!-- The stats live in the column headers, so their switch sits at the start of that row. -->
-            <div class="head sticky corner" role="columnheader">
+            <div aria-colindex="1" class="head sticky corner" role="columnheader">
               <ToggleSwitch v-model="controls.stats" :aria-describedby="`stats-date-${index}`">stats</ToggleSwitch>
               <span :id="`stats-date-${index}`" class="stats-date" title="npm data; downloads cover the last 7 days">
                 {{ npmFetchedAt ? `(as of ${npmFetchedAt})` : "(npm data unavailable)" }}
@@ -327,13 +295,13 @@ function scopeAttrs(lib: Library) {
             </div>
             <!-- Two lines per column: name and downloads, then version, release age and links. -->
             <div
-              v-for="(lib, i) in group.columns"
+              v-for="lib in group.columns"
               :key="lib.id"
               class="head"
-              :class="[{ dragging: drag?.id === lib.id }, dropSide(i)]"
               role="columnheader"
-              :data-col="i"
-              :style="{ '--i': i }"
+              :aria-colindex="positions[group.kind][lib.id]! + 2"
+              :data-column-item="lib.id"
+              :style="{ '--avc-column': positions[group.kind][lib.id] }"
             >
               <div class="line">
                 <span class="title">
@@ -342,12 +310,13 @@ function scopeAttrs(lib: Library) {
                     type="button"
                     aria-describedby="reorder-help"
                     class="grip"
-                    draggable="true"
                     :aria-label="`Move ${lib.name}`"
-                    @dragend="drag = null"
-                    @dragstart="onDragStart($event, lib.id, i)"
-                    @keydown.left.prevent="moveByKey($event, group.kind, lib.id, i - 1)"
-                    @keydown.right.prevent="moveByKey($event, group.kind, lib.id, i + 1)"
+                    @pointercancel="onPointerCancel"
+                    @pointerdown="onPointerDown($event, group.kind, lib.id)"
+                    @pointermove="onPointerMove"
+                    @pointerup="onPointerUp"
+                    @keydown.left.prevent="moveTo(group.kind, lib.id, positions[group.kind][lib.id]! - 1)"
+                    @keydown.right.prevent="moveTo(group.kind, lib.id, positions[group.kind][lib.id]! + 1)"
                   >
                     <IconGripVertical aria-hidden="true" />
                   </button>
@@ -380,9 +349,15 @@ function scopeAttrs(lib: Library) {
             </div>
           </div>
 
-          <div v-for="demo in DEMOS" :key="demo" class="table-row" :class="{ current: demo === phoneDemo }" role="row">
+          <div
+            v-for="(demo, row) in DEMOS"
+            :key="demo"
+            class="table-row"
+            :class="{ current: demo === phoneDemo }"
+            role="row"
+          >
             <!-- Row header: the component's name, then the options that only affect this row. -->
-            <div class="label sticky demo" role="rowheader">
+            <div aria-colindex="1" class="label sticky demo" role="rowheader" :style="{ '--avc-row': row + 2 }">
               <span class="row-name">{{ DEMO_LABELS[demo] }}</span>
               <div class="row-options">
                 <input
@@ -398,12 +373,18 @@ function scopeAttrs(lib: Library) {
                 </ToggleSwitch>
               </div>
             </div>
-            <template v-for="(lib, i) in group.columns" :key="lib.id">
+            <template v-for="lib in group.columns" :key="lib.id">
               <div
                 v-if="lib.withoutDemos"
                 class="cell empty"
                 role="cell"
-                :style="{ 'minBlockSize': `${ROW_HEIGHTS[demo]}px`, '--i': i }"
+                :aria-colindex="positions[group.kind][lib.id]! + 2"
+                :data-column-item="lib.id"
+                :style="{
+                  'minBlockSize': `${ROW_HEIGHTS[demo]}px`,
+                  '--avc-row': row + 2,
+                  '--avc-column': positions[group.kind][lib.id],
+                }"
               >
                 {{ demo === DEMOS[0] ? `— ${lib.withoutDemos}` : "—" }}
               </div>
@@ -412,7 +393,13 @@ function scopeAttrs(lib: Library) {
                 :ref="(el) => setCell(lib, demo, el)"
                 class="cell"
                 role="cell"
-                :style="{ 'minBlockSize': `${ROW_HEIGHTS[demo]}px`, '--i': i }"
+                :aria-colindex="positions[group.kind][lib.id]! + 2"
+                :data-column-item="lib.id"
+                :style="{
+                  'minBlockSize': `${ROW_HEIGHTS[demo]}px`,
+                  '--avc-row': row + 2,
+                  '--avc-column': positions[group.kind][lib.id],
+                }"
                 v-bind="scopeAttrs(lib)"
               >
                 <!-- Which of the library's components this is, by its own name (it often isn't the row's). -->
@@ -434,6 +421,17 @@ function scopeAttrs(lib: Library) {
               </div>
             </template>
           </div>
+        </div>
+        <!-- While a column is dragged: an empty ghost of it, which follows the pointer (see useColumnDrag). -->
+        <div
+          v-if="ghost?.kind === group.kind"
+          aria-hidden="true"
+          class="column-ghost"
+          :style="
+            { insetInlineStart: `${ghost.left}px`, inlineSize: `${ghost.width}px`, blockSize: `${ghost.height}px` }
+          "
+        >
+          <span class="column-ghost-name">{{ nameOf(ghost.id) }}</span>
         </div>
       </section>
     </main>
@@ -647,6 +645,27 @@ function scopeAttrs(lib: Library) {
   display: grid;
   grid-template-columns: 12rem repeat(var(--libs), minmax(15rem, 1fr));
   min-inline-size: max-content;
+  /* Tab and reading order follow the grid, not the DOM (columns are placed by their order). */
+  reading-flow: grid-rows;
+}
+
+/* Every cell placed explicitly: a column by its position in the tab's order (--avc-column, see
+   Shell's script), a row by its index (--avc-row; headers are row 1). Auto-placement would start a
+   new row whenever a column came before the previous one. */
+.head,
+.cell,
+.table-row > .label {
+  grid-row: var(--avc-row);
+}
+
+.head:not(.corner),
+.cell {
+  grid-column: calc(var(--avc-column) + 2);
+}
+
+.corner,
+.table-row > .label {
+  grid-column: 1;
 }
 
 .sticky {
@@ -673,9 +692,9 @@ function scopeAttrs(lib: Library) {
     border-inline-start: 1px solid var(--avc-color-border-soft);
   }
 
-  /* Top-left corner: sticks both ways, above everything else. */
+  /* Top-left corner: sticks both ways, above everything else (a dragged header included). */
   &.corner {
-    z-index: 4;
+    z-index: 5;
     background: var(--avc-color-subtle);
   }
 }
@@ -721,6 +740,10 @@ function scopeAttrs(lib: Library) {
   background: none;
   color: var(--avc-color-text-muted);
   cursor: grab;
+  /* A drag on a touch screen moves the column, not the page; and it selects no text on the way.
+     (Set here, not by a :has() on the page: that would restyle every library's DOM as a drag starts.) */
+  touch-action: none;
+  user-select: none;
 
   &:hover {
     background: var(--avc-color-subtle);
@@ -742,17 +765,29 @@ function scopeAttrs(lib: Library) {
   }
 }
 
-/* While dragging: the dragged column dims, and a bar marks the side it would land on. */
-.head.dragging {
-  opacity: 0.5;
+/* The dragged column's ghost: drawn over the table, it follows the pointer by `translate` alone. */
+.column-ghost {
+  position: absolute;
+  inset-block-start: 0;
+  z-index: 4;
+  box-sizing: border-box;
+  padding: var(--avc-space-3) var(--avc-space-4);
+  border: 2px solid var(--avc-color-text);
+  border-radius: var(--avc-radius-md);
+  background: color-mix(in oklch, var(--avc-color-surface) 35%, transparent);
+  box-shadow: 0 12px 32px oklch(0% 0 0 / 0.2);
+  pointer-events: none;
+  will-change: translate;
 }
 
-.head.drop-before {
-  box-shadow: inset 3px 0 0 var(--avc-color-text);
-}
-
-.head.drop-after {
-  box-shadow: inset -3px 0 0 var(--avc-color-text);
+.column-ghost-name {
+  display: inline-block;
+  padding: var(--avc-space-1) var(--avc-space-2);
+  border-radius: var(--avc-radius-sm);
+  background: var(--avc-color-text);
+  color: var(--avc-color-bg);
+  font-family: var(--avc-font-sans);
+  font-weight: var(--avc-weight-semibold);
 }
 
 /* Under the stats switch: when its numbers were fetched. */
@@ -1158,7 +1193,7 @@ a.component-ref {
   .head {
     position: static;
     display: grid;
-    grid-row: calc(var(--i) * 2 + 1);
+    grid-row: calc(var(--avc-column) * 2 + 1);
     grid-template-columns: minmax(0, 1fr) auto;
     align-items: center;
     padding-block: var(--avc-space-2);
@@ -1185,8 +1220,13 @@ a.component-ref {
   }
 
   .cell {
-    grid-row: calc(var(--i) * 2 + 2);
+    grid-row: calc(var(--avc-column) * 2 + 2);
     border-inline-start: 0;
+  }
+
+  .head:not(.corner),
+  .cell {
+    grid-column: 1;
   }
 }
 </style>
