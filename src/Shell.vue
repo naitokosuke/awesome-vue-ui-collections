@@ -123,8 +123,8 @@ function scopeAttrs(lib: Library) {
             </RadioGroup>
           </div>
         </div>
-        <!-- Headless libraries already share one neutral look (libs/headless-theme.css); fancy ones have no primary color to set. -->
-        <div v-if="controls.kind === 'styled' || controls.kind === 'copy-paste'" class="facet">
+        <!-- Every kind takes it, so the row never comes and goes (which would move the table). -->
+        <div class="facet">
           <span aria-hidden="true" class="facet-label">color</span>
           <div class="options">
             <RadioGroup v-model="colorChoice" :options="COLOR_OPTIONS" legend="Primary color" name="color">
