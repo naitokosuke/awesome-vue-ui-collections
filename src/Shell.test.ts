@@ -399,6 +399,14 @@ function visibleBodyStrays() {
     .map((el) => el.outerHTML.slice(0, 120));
 }
 
+/**
+ * The error a library's column header shows: from loading or mounting it, or the first one its app
+ * raised since (a popup's component failing in setup, say). Null when there's none.
+ */
+function libraryError(lib: Library) {
+  return headOf(lib).querySelector(".error")?.getAttribute("title") ?? null;
+}
+
 /** Mounted, or failed to: waiting on another library's failure would cut this one's wait short. */
 function libraryReady(lib: Library) {
   const frames = document.querySelectorAll(`.cell[data-lib="${lib.id}"] > .demo`).length;
@@ -635,6 +643,7 @@ describe("Shell with every library loaded", () => {
           { timeout: 5_000 },
         );
         await new Promise((resolve) => setTimeout(resolve, 300));
+        expect(libraryError(lib), `after opening ${lib.id}'s select`).toBeNull();
         expect(documentSnapshot().attributes, `after opening ${lib.id}'s select`).toEqual(before.document.attributes);
         if (lib.id in SELECTS_NOT_CLOSED_BY_ESCAPE) await userEvent.click(trigger!, { force: true });
         else await userEvent.keyboard("{Escape}");
@@ -710,6 +719,7 @@ describe("Shell with every library loaded", () => {
         );
         // Scroll locks and the like land right after opening; checked per library to name the culprit.
         await new Promise((resolve) => setTimeout(resolve, 300));
+        expect(libraryError(lib), `after opening ${lib.id}'s dialog`).toBeNull();
         const tolerated = OPEN_DIALOG_BODY_ATTRIBUTES[lib.id];
         expect(documentSnapshot().attributes, `after opening ${lib.id}'s dialog`).toEqual({
           ...before.document.attributes,
