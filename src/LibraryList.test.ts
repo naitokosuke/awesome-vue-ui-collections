@@ -41,6 +41,17 @@ test("links each library's docs, and GitHub where it's known", () => {
   }
 });
 
+test("shows every library's logo (src/libs/<id>/logo.svg, .png or .ico)", () => {
+  const host = mount();
+  const libs = groups.flatMap((group) => group.columns);
+  expect(
+    libs.filter((lib) => !lib.logo).map((lib) => lib.id),
+    "libraries without a logo file",
+  ).toEqual([]);
+  const srcs = [...host.querySelectorAll("tbody tr")].map((row) => row.querySelector(".logo img")?.getAttribute("src"));
+  expect(srcs).toEqual(libs.map((lib) => lib.logo));
+});
+
 test("marks itself current in the top bar's navigation", () => {
   const host = mount();
   expect(host.querySelector("nav [aria-current=page]")!.textContent!.trim()).toBe("libraries");

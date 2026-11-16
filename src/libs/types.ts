@@ -113,4 +113,6 @@ export interface LibraryModule {
 export interface Library extends LibraryMeta {
   /** Null for a stats-only library (`withoutDemos`). */
   load: (() => Promise<LibraryModule>) | null;
+  /** Its logo, as a URL: src/libs/<id>/logo.svg (or .png / .ico where it has no SVG); null without one. */
+  logo: string | null;
 }

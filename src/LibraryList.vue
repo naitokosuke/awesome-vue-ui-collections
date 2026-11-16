@@ -40,6 +40,8 @@ const total = groups.reduce((sum, group) => sum + group.columns.length, 0);
           <tbody>
             <tr v-for="lib in group.columns" :key="lib.id">
               <th class="name" scope="row">
+                <!-- On a light tile in both themes: many logos are dark on a transparent background. -->
+                <span class="logo"><img v-if="lib.logo" alt="" :src="lib.logo"></span>
                 {{ lib.name }}
               </th>
               <td class="version">{{ lib.version ?? "—" }}</td>
@@ -155,6 +157,25 @@ thead th {
   font-family: var(--avc-font-sans);
   font-size: var(--avc-text-md);
   font-weight: var(--avc-weight-semibold);
+}
+
+.logo {
+  display: inline-grid;
+  place-items: center;
+  box-sizing: border-box;
+  inline-size: 1.75rem;
+  block-size: 1.75rem;
+  margin-inline-end: var(--avc-space-2);
+  padding: 0.25rem;
+  border: 1px solid var(--avc-color-border);
+  border-radius: var(--avc-radius-sm);
+  background: oklch(100% 0 0);
+  vertical-align: middle;
+
+  & img {
+    max-inline-size: 100%;
+    max-block-size: 100%;
+  }
 }
 
 .version,
