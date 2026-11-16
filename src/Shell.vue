@@ -2,17 +2,17 @@
 import { useMediaQuery } from "@vueuse/core";
 import { computed, onBeforeUnmount, onMounted, ref, useTemplateRef, watch } from "vue";
 import IconArrowUpRight from "~icons/lucide/arrow-up-right";
-import IconBookOpen from "~icons/lucide/book-open";
-import IconGithub from "~icons/lucide/github";
-import IconPackage from "~icons/lucide/package";
 import IconSlidersHorizontal from "~icons/lucide/sliders-horizontal";
 import IconX from "~icons/lucide/x";
 import { DEMO_LABELS, groups, KIND_LABELS, npmFetchedAt } from "./board";
 import { libraries } from "./libs";
 import { readableOn } from "./libs/color";
 import { type Color, COLORS, DEMOS, type DemoKey, type Library, SIZES } from "./libs/types";
+import LibraryLinks from "./LibraryLinks.vue";
 import RadioGroup from "./RadioGroup.vue";
 import { controls } from "./store";
+import ToggleSwitch from "./ToggleSwitch.vue";
+import TopBar from "./TopBar.vue";
 import { useLibraryApps } from "./useLibraryApps";
 
 const SIZE_LABELS = { small: "sm", medium: "md", large: "lg" } as const;
@@ -104,8 +104,7 @@ function scopeAttrs(lib: Library) {
 
 <template>
   <div class="shell" :class="{ 'is-dark': controls.dark }">
-    <header class="topbar">
-      <span class="brand">awesome-vue-ui-collections</span>
+    <TopBar page="compare" theme-in-settings>
       <!-- Phones only: opens the settings, which take the theme switch along. -->
       <button
         type="button"
@@ -117,12 +116,7 @@ function scopeAttrs(lib: Library) {
         <IconSlidersHorizontal aria-hidden="true" />
         options
       </button>
-      <!-- Theme is a page setting, not part of what is compared, so it lives up here. -->
-      <label class="switch topbar-theme">
-        <input v-model="controls.dark" role="switch" type="checkbox">
-        dark
-      </label>
-    </header>
+    </TopBar>
 
     <main class="page">
       <!-- Which libraries to show: a tab row of its own, separate from the demo options below. -->
@@ -154,10 +148,7 @@ function scopeAttrs(lib: Library) {
              switch, the table's stats switch and the row's options. -->
           <div class="facet phone-only">
             <span aria-hidden="true" class="facet-label">theme</span>
-            <label class="switch">
-              <input v-model="controls.dark" role="switch" type="checkbox">
-              dark
-            </label>
+            <ToggleSwitch v-model="controls.dark">dark</ToggleSwitch>
           </div>
           <div class="facet">
             <span aria-hidden="true" class="facet-label">size</span>
@@ -187,11 +178,10 @@ function scopeAttrs(lib: Library) {
           </div>
           <div class="facet phone-only">
             <span aria-hidden="true" class="facet-label">stats</span>
-            <label class="switch">
-              <input v-model="controls.stats" role="switch" type="checkbox">
+            <ToggleSwitch v-model="controls.stats">
               <span class="visually-hidden">stats</span>
               <span class="stats-date">{{ npmFetchedAt ? `as of ${npmFetchedAt}` : "npm data unavailable" }}</span>
-            </label>
+            </ToggleSwitch>
           </div>
           <div class="facet phone-only">
             <span aria-hidden="true" class="facet-label">{{ DEMO_LABELS[phoneDemo].toLowerCase() }}</span>
@@ -204,15 +194,9 @@ function scopeAttrs(lib: Library) {
                 placeholder="label"
                 type="text"
               >
-              <label class="switch">
-                <input
-                  v-model="controls.disabled[phoneDemo]"
-                  role="switch"
-                  type="checkbox"
-                  :aria-label="`${DEMO_LABELS[phoneDemo]} disabled`"
-                >
+              <ToggleSwitch v-model="controls.disabled[phoneDemo]" :aria-label="`${DEMO_LABELS[phoneDemo]} disabled`">
                 disabled
-              </label>
+              </ToggleSwitch>
             </div>
           </div>
         </section>
@@ -239,10 +223,7 @@ function scopeAttrs(lib: Library) {
           <div class="table-row" role="row">
             <!-- The stats live in the column headers, so their switch sits at the start of that row. -->
             <div class="head sticky corner" role="columnheader">
-              <label class="switch">
-                <input v-model="controls.stats" role="switch" type="checkbox" :aria-describedby="`stats-date-${index}`">
-                stats
-              </label>
+              <ToggleSwitch v-model="controls.stats" :aria-describedby="`stats-date-${index}`">stats</ToggleSwitch>
               <span :id="`stats-date-${index}`" class="stats-date" title="npm data; downloads cover the last 7 days">
                 {{ npmFetchedAt ? `(as of ${npmFetchedAt})` : "(npm data unavailable)" }}
               </span>
@@ -273,39 +254,7 @@ function scopeAttrs(lib: Library) {
                     :title="`latest release ${lib.release.date}${lib.release.stale ? ', over a year ago' : ''}`"
                   > · {{ lib.release.ago }}</span>
                 </span>
-                <!-- Links leave the page: the icons say where to, the tooltip says it opens a new tab. -->
-                <span v-if="controls.stats" class="links">
-                  <a
-                    :href="lib.docs"
-                    rel="noopener noreferrer"
-                    target="_blank"
-                    :title="`${lib.name} docs (opens in a new tab)`"
-                    :aria-label="`${lib.name} docs (opens in a new tab)`"
-                  >
-                    <IconBookOpen aria-hidden="true" />
-                  </a>
-                  <a
-                    v-if="lib.package"
-                    class="npm"
-                    :href="`https://npmx.dev/package/${lib.package}`"
-                    rel="noopener noreferrer"
-                    target="_blank"
-                    :title="`${lib.package} on npmx.dev (opens in a new tab)`"
-                    :aria-label="`${lib.package} on npmx.dev (opens in a new tab)`"
-                  >
-                    <IconPackage aria-hidden="true" />
-                  </a>
-                  <a
-                    v-if="lib.github"
-                    :href="lib.github.url"
-                    rel="noopener noreferrer"
-                    target="_blank"
-                    :title="`${lib.github.slug} on GitHub (opens in a new tab)`"
-                    :aria-label="`${lib.github.slug} on GitHub (opens in a new tab)`"
-                  >
-                    <IconGithub aria-hidden="true" />
-                  </a>
-                </span>
+                <LibraryLinks v-if="controls.stats" :lib />
               </div>
             </div>
           </div>
@@ -323,15 +272,9 @@ function scopeAttrs(lib: Library) {
                   placeholder="label"
                   type="text"
                 >
-                <label class="switch">
-                  <input
-                    v-model="controls.disabled[demo]"
-                    role="switch"
-                    type="checkbox"
-                    :aria-label="`${DEMO_LABELS[demo]} disabled`"
-                  >
+                <ToggleSwitch v-model="controls.disabled[demo]" :aria-label="`${DEMO_LABELS[demo]} disabled`">
                   disabled
-                </label>
+                </ToggleSwitch>
               </div>
             </div>
             <template v-for="(lib, i) in group.columns" :key="lib.id">
@@ -377,7 +320,7 @@ function scopeAttrs(lib: Library) {
     <!-- Phones only: the settings section, teleported in. closedby="any": a click outside closes it too. -->
     <dialog id="options-dialog" ref="optionsDialog" aria-label="Options" class="options-dialog" closedby="any">
       <div class="options-dialog-head">
-        <span class="brand">options</span>
+        <span class="options-dialog-title">options</span>
         <button type="button" class="options-toggle" @click="optionsDialog?.close()">
           <IconX aria-hidden="true" />
           close
@@ -427,26 +370,6 @@ function scopeAttrs(lib: Library) {
   overflow: hidden;
   clip-path: inset(50%);
   white-space: nowrap;
-}
-
-/* ---- top bar ---- */
-
-.topbar {
-  position: sticky;
-  inset-block-start: 0;
-  z-index: 10;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  box-sizing: border-box;
-  block-size: var(--avc-topbar-size);
-  padding: 0 var(--avc-space-6);
-  border-block-end: 1px solid var(--avc-color-border);
-  background: var(--avc-color-bg);
-}
-
-.brand {
-  font-weight: var(--avc-weight-bold);
 }
 
 /* ---- page ---- */
@@ -579,69 +502,6 @@ function scopeAttrs(lib: Library) {
   position: relative;
 }
 
-/* A native checkbox drawn as a monochrome switch; the whole label is the target. */
-.switch {
-  display: inline-flex;
-  align-items: center;
-  gap: var(--avc-space-2);
-  min-block-size: var(--avc-target-min);
-  color: var(--avc-color-text-muted);
-  font-size: var(--avc-text-sm);
-  cursor: pointer;
-  user-select: none;
-
-  &:has(:checked) {
-    color: var(--avc-color-text);
-  }
-
-  & input {
-    --track-inline: 2rem;
-    --track-block: 1.125rem;
-    --thumb: 0.75rem;
-    /* Thumb inset from the track's inner edge (inside the 1px border). */
-    --inset: calc((var(--track-block) - 2px - var(--thumb)) / 2);
-
-    appearance: none;
-    position: relative;
-    flex: none;
-    inline-size: var(--track-inline);
-    block-size: var(--track-block);
-    margin: 0;
-    border: 1px solid var(--avc-color-border-control);
-    border-radius: var(--avc-radius-full);
-    background: var(--avc-color-subtle);
-    cursor: pointer;
-    transition: background-color 0.15s, border-color 0.15s;
-
-    &::after {
-      content: '';
-      position: absolute;
-      inset-block-start: var(--inset);
-      inset-inline-start: var(--inset);
-      inline-size: var(--thumb);
-      block-size: var(--thumb);
-      border-radius: 50%;
-      background: var(--avc-color-text-muted);
-      transition: translate 0.15s, background-color 0.15s;
-    }
-
-    &:checked {
-      border-color: var(--avc-color-text);
-      background: var(--avc-color-text);
-
-      &::after {
-        translate: calc(var(--track-inline) - 2px - var(--thumb) - var(--inset) * 2) 0;
-        background: var(--avc-color-bg);
-      }
-    }
-
-    &:focus-visible {
-      outline: var(--avc-focus-ring);
-      outline-offset: 2px;
-    }
-  }
-}
-
 /* ---- table ---- */
 
 .table {
@@ -743,36 +603,6 @@ function scopeAttrs(lib: Library) {
 
 .stale {
   color: var(--avc-color-warning);
-}
-
-.links {
-  display: flex;
-  gap: var(--avc-space-1);
-
-  /* Icon-only links still get a full-size target. */
-  & a {
-    display: grid;
-    place-items: center;
-    inline-size: var(--avc-target-min);
-    block-size: var(--avc-target-min);
-    border-radius: var(--avc-radius-sm);
-    color: var(--avc-color-text-muted);
-
-    &:hover {
-      background: var(--avc-color-subtle);
-      color: var(--avc-color-text);
-    }
-
-    &:focus-visible {
-      outline: var(--avc-focus-ring);
-      outline-offset: 0;
-    }
-  }
-
-  & svg {
-    inline-size: 1rem;
-    block-size: 1rem;
-  }
 }
 
 /* Rows exist for assistive tech only: their cells are the grid's items. */
@@ -931,22 +761,6 @@ a.component-ref {
 }
 
 @media (width < 40rem) {
-  .topbar {
-    gap: var(--avc-space-4);
-    padding-inline: var(--avc-space-4);
-  }
-
-  .brand {
-    min-inline-size: 0;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-  }
-
-  .topbar-theme {
-    display: none;
-  }
-
   .options-toggle {
     display: inline-flex;
     flex-shrink: 0;
@@ -1050,6 +864,10 @@ a.component-ref {
     background: var(--avc-color-bg);
   }
 
+  .options-dialog-title {
+    font-weight: var(--avc-weight-bold);
+  }
+
   .options-dialog-body {
     padding: var(--avc-space-4);
   }
@@ -1149,7 +967,7 @@ a.component-ref {
 
     & .line:first-child > .muted,
     & .version:not(:has(.error)),
-    & .npm {
+    & :deep(.npm) {
       display: none;
     }
 

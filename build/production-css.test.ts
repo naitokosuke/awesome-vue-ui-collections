@@ -130,6 +130,12 @@ function print(selector: Selector): string {
 }
 
 describe("production build", () => {
+  test("ships both pages, each with its own entry script", () => {
+    for (const page of ["index.html", "libraries/index.html"]) {
+      expect(readFileSync(join(outDir, page), "utf8"), page).toMatch(/<script type="module"[^>]* src="\/assets\//);
+    }
+  });
+
   test("ships every library's CSS in a chunk of its own", () => {
     const withCss = libraries.filter((lib) => lib.load && lib.cssMatch.length > 0).map((lib) => lib.id);
     const missing = withCss.filter((id) => !sheets.some(({ file }) => file.startsWith(`${id}-`)));

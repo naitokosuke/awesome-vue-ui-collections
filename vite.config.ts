@@ -1,5 +1,5 @@
 import { globSync, statSync } from "node:fs";
-import { pathToFileURL } from "node:url";
+import { fileURLToPath, pathToFileURL } from "node:url";
 import ui from "@nuxt/ui/vite";
 import { defineConfig } from "@vizejs/vite-plugin/vite-plus";
 import Icons from "unplugin-icons/vite";
@@ -104,6 +104,12 @@ export default defineConfig({
   css: {
     transformer: "lightningcss",
   },
+  // Two pages: the comparison (index.html) and the list of libraries (libraries/index.html).
+  build: {
+    rolldownOptions: {
+      input: ["index.html", "libraries/index.html"].map((page) => fileURLToPath(new URL(page, import.meta.url))),
+    },
+  },
   test: {
     projects: [
       {
@@ -111,7 +117,7 @@ export default defineConfig({
         test: {
           name: "unit",
           include: ["{build,src}/**/*.test.ts"],
-          exclude: ["src/Shell.test.ts", "build/production-css.test.ts"],
+          exclude: ["src/Shell.test.ts", "src/LibraryList.test.ts", "build/production-css.test.ts"],
           // Without a backing file, Node's localStorage only warns; store.ts copes with none at all.
           execArgv: ["--no-experimental-webstorage"],
         },
@@ -129,7 +135,7 @@ export default defineConfig({
         extends: true,
         test: {
           name: "browser",
-          include: ["src/Shell.test.ts"],
+          include: ["src/Shell.test.ts", "src/LibraryList.test.ts"],
           // In a real browser: what's tested is how every library's CSS and DOM side effects play out on one page.
           browser: {
             enabled: true,
@@ -180,8 +186,9 @@ export default defineConfig({
       linter: { rules: { "vue/require-scoped-style": "off" } },
     },
     {
-      // Every href is built from meta.ts or from a GitHub slug matched by build/npm-stats.ts; none is user input.
-      files: ["src/Shell.vue"],
+      // Every href is built from meta.ts, from a GitHub slug matched by build/npm-stats.ts or from the
+      // base URL; none is user input.
+      files: ["src/Shell.vue", "src/LibraryLinks.vue", "src/TopBar.vue"],
       linter: { rules: { "vue/no-unsafe-url": "off" } },
     },
   ],
