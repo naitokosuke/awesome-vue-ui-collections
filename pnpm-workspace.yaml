@@ -7,8 +7,8 @@ allowBuilds:
   esbuild: true
   vue-demi: false
 catalog:
-  vite: npm:@voidzero-dev/vite-plus-core@1.3.0
-  vite-plus: 1.3.0
+  vite: npm:@voidzero-dev/vite-plus-core@1.6.0
+  vite-plus: 1.6.0
 overrides:
   vite@*: "catalog:"
 # Plugins' `vite` peer ranges don't cover the vite-plus-core version `vite` is overridden with.
