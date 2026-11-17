@@ -24,7 +24,7 @@ jobs:
           cache: true
       # The browser tests run in headless Chromium. Its download is cached per lockfile;
       # `install --with-deps` still installs the OS packages and skips a browser that's already there.
-      - uses: actions/cache@v4.3.0
+      - uses: actions/cache@v6.1.0
         with:
           path: ~/.cache/ms-playwright
           key: playwright-${{ runner.os }}-${{ hashFiles('pnpm-lock.yaml') }}
