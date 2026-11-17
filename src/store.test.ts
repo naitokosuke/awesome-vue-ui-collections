@@ -36,6 +36,14 @@ describe("parseControls", () => {
     expect(parseControls({ disabled: true })).toEqual({});
   });
 
+  test("reads the column order per tab, and drops a tab whose order isn't a list of ids", () => {
+    expect(parseControls({ order: { styled: ["vuetify", "quasar"], headless: "reka-ui", nope: ["x"] } })).toEqual({
+      order: { styled: ["vuetify", "quasar"] },
+    });
+    expect(parseControls({ order: { fancy: ["vue-bits", 1] } })).toEqual({ order: {} });
+    expect(parseControls({ order: ["vuetify"] })).toEqual({});
+  });
+
   test("ignores anything that isn't an object", () => {
     for (const saved of [null, undefined, 1, "x", []]) expect(parseControls(saved)).toEqual({});
   });

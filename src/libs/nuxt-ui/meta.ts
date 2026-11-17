@@ -3,6 +3,7 @@ import type { LibraryMeta } from "../types.ts";
 export const meta: LibraryMeta = {
   id: "nuxt-ui",
   name: "Nuxt UI",
+  docs: "https://ui.nuxt.com/",
   package: "@nuxt/ui",
   kind: "styled",
   order: 8,

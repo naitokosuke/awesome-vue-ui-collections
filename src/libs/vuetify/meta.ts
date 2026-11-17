@@ -3,6 +3,7 @@ import type { LibraryMeta } from "../types.ts";
 export const meta: LibraryMeta = {
   id: "vuetify",
   name: "Vuetify",
+  docs: "https://vuetifyjs.com/",
   package: "vuetify",
   kind: "styled",
   order: 1,

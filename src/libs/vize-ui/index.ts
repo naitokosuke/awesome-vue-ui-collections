@@ -1,7 +1,6 @@
 // Headless components + optional CSS: base tokens, the official "headless" preset (no palette
 // of its own), and the visual layers of the components used in the demos. Colors come from the
 // shared headless theme (see adapter.css), like the other headless libraries.
-import "../headless-theme.css";
 import "@vizejs/ui/theme.css";
 import "@vizejs/ui/theme-preset-headless.css";
 import "@vizejs/ui/component-button.css";
@@ -9,11 +8,13 @@ import "@vizejs/ui/component-input.css";
 import "@vizejs/ui/component-switch.css";
 import "@vizejs/ui/component-dialog.css";
 import "./adapter.css";
+import { bindHeadlessTheme } from "../headless-theme";
 import { mountLibrary } from "../mount";
 import type { MountContext } from "../types";
 import Demos from "./Demos.vue";
 
 export function mount(context: MountContext) {
+  bindHeadlessTheme(context);
   // No plugin: components are imported locally in Demos.vue.
   mountLibrary(context, Demos);
 }

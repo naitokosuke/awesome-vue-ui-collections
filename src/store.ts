@@ -12,6 +12,7 @@ export const controls = reactive<Controls>({
   label: "Click me",
   kind: "styled",
   color: null,
+  order: {},
   ...restore(),
 });
 
@@ -33,7 +34,7 @@ function restore(): Partial<Controls> {
 /** Saved controls, field by field; anything missing, outdated or invalid is left out (keeps its default). */
 export function parseControls(saved: unknown): Partial<Controls> {
   if (typeof saved !== "object" || saved === null) return {};
-  const { size, disabled, dark, stats, label, kind, color } = saved as Record<string, unknown>;
+  const { size, disabled, dark, stats, label, kind, color, order } = saved as Record<string, unknown>;
   const restored: Partial<Controls> = {};
   if (oneOf(SIZES, size)) restored.size = size;
   // `disabled` used to be one boolean for every row.
@@ -49,6 +50,16 @@ export function parseControls(saved: unknown): Partial<Controls> {
   if (typeof label === "string") restored.label = label;
   if (oneOf(KINDS, kind)) restored.kind = kind;
   if (color === null || oneOf(Object.values(COLORS), color)) restored.color = color;
+  // Ids aren't checked against the libraries: a removed one is skipped when ordering (see orderColumns).
+  if (typeof order === "object" && order !== null && !Array.isArray(order)) {
+    const tabs = order as Record<string, unknown>;
+    restored.order = Object.fromEntries(
+      KINDS.flatMap((kind) => {
+        const ids = tabs[kind];
+        return Array.isArray(ids) && ids.every((id) => typeof id === "string") ? [[kind, ids]] : [];
+      }),
+    );
+  }
   return restored;
 }
 

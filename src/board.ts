@@ -110,6 +110,18 @@ export interface Column extends Library {
   github: { slug: string; url: string } | null;
 }
 
+/**
+ * The columns in a saved order: the ids it lists first, as listed (unknown ones skipped), then any
+ * column it doesn't list, in default order, so a library added later still shows.
+ */
+export function orderColumns<T extends { id: string }>(columns: readonly T[], order: readonly string[] = []): T[] {
+  const rank = (id: string) => {
+    const index = order.indexOf(id);
+    return index === -1 ? order.length : index;
+  };
+  return [...columns].sort((a, b) => rank(a.id) - rank(b.id));
+}
+
 /** One table per kind, in display order. */
 export const groups = KINDS.map((kind) => ({
   kind,

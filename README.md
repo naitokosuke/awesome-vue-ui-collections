@@ -6,12 +6,14 @@ Every library renders the same five demos (button, input, select, switch, dialog
 The libraries are grouped into four tabs
 
 - Styled libraries ship a complete visual design as a package (Vuetify, Element Plus, Naive UI, Quasar, …)
-- Copy-paste libraries are styled components a CLI copies into your project (shadcn-vue, Inspira UI)
-- Headless libraries are unstyled, accessible primitives (Reka UI, Vuetify0, Vize UI)
+- Copy-paste libraries are styled components a CLI copies into your project (shadcn-vue, Inspira UI, AI Elements Vue)
+- Headless libraries are unstyled, accessible primitives (Reka UI, Vuetify0, Vize UI, Akaza UI, UI SDK, Hamur)
 - Fancy libraries are animated, effect-first components (Vue Bits)
 
 The page can switch dark mode, size, primary color, the button label and each row's disabled state
+Columns can be reordered per tab, by dragging a column's grip or with its arrow keys, and the order is kept
 Column headers show npm stats (version, release age, weekly downloads) fetched at build time
+A second page, `/libraries/`, lists every library by kind with those stats and links to its docs, npm and GitHub, without loading any of them
 
 ## How libraries share one page
 
@@ -43,7 +45,7 @@ vp run check
 
 - `unit` covers the pure helpers (CSS scoping, npm stats, dates, saved controls, colors)
 - `build` builds the site for production and checks that every shipped CSS rule is scoped
-- `browser` loads every library into the shell in headless Chromium and checks that nothing reaches outside its scope, including after unmounting
+- `browser` loads every library into the shell in headless Chromium and checks that nothing reaches outside its scope, including after unmounting, and renders the libraries page
 
 ```bash
 vp test run
