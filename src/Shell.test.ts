@@ -366,6 +366,7 @@ const KNOWN_CLASHES: Record<string, string> = {
 const REGISTERED_PREFIXES: Record<string, string> = {
   "--tw-": "Tailwind CSS (Nuxt UI, shadcn-vue, Inspira UI)",
   "--v-": "Vuetify",
+  "--astryx-": "Astryx Vue",
 };
 
 // ---- mounting ----------------------------------------------------------------------
