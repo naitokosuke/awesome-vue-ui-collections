@@ -3,6 +3,7 @@ import type { LibraryMeta } from "../types.ts";
 export const meta: LibraryMeta = {
   id: "shadcn-vue",
   name: "shadcn-vue",
+  docs: "https://www.shadcn-vue.com/",
   // Components are copied into the project (./ui); `shadcn-vue` is the CLI that generates them,
   // so its npm stats stand in for the library's.
   package: "shadcn-vue",

@@ -4,6 +4,7 @@ import type { LibraryMeta } from "../types.ts";
 export const meta: LibraryMeta = {
   id: "astryx-vue",
   name: "Astryx Vue",
+  docs: "https://astryx-vue.pages.dev/",
   package: "@astryx-vue/core",
   kind: "styled",
   order: 12,

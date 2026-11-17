@@ -5,6 +5,7 @@ import type { LibraryMeta } from "../types.ts";
 export const meta: LibraryMeta = {
   id: "naive-ui",
   name: "Naive UI",
+  docs: "https://www.naiveui.com/",
   package: "naive-ui",
   kind: "styled",
   order: 3,

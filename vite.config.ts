@@ -1,5 +1,5 @@
 import { globSync, statSync } from "node:fs";
-import { pathToFileURL } from "node:url";
+import { fileURLToPath, pathToFileURL } from "node:url";
 import ui from "@nuxt/ui/vite";
 import { defineConfig } from "@vizejs/vite-plugin/vite-plus";
 import Icons from "unplugin-icons/vite";
@@ -44,8 +44,12 @@ export default defineConfig({
       preset: "happy-path",
       // Also check how components relate: provide/inject, reactivity passed between files, races.
       crossFile: true,
-      // Flags component props such as `<n-space align>` as deprecated HTML attributes.
-      rules: { "html/deprecated-attr": "off" },
+      rules: {
+        // Flags component props such as `<n-space align>` as deprecated HTML attributes.
+        "html/deprecated-attr": "off",
+        // Asks to destructure a bare `defineProps<…>()` whose props are only read in the template.
+        "script/define-props-destructuring": "off",
+      },
     },
     ignorePatterns: ["dist/**", vendored],
   },
@@ -91,11 +95,20 @@ export default defineConfig({
     // Adapters are lazy-loaded; scan them up front so the dev server doesn't
     // re-optimize mid-load and end up with two copies of Vue.
     entries: ["index.html", "src/libs/*/index.ts"],
+    // The browser test's import, which the entries above don't reach. On a cold cache (CI), its late discovery
+    // re-optimized while the libraries were loading, so they got a second copy of Vue and never unmounted.
+    include: ["vite-plus/test/browser"],
     // A pre-bundled copy of Vitest's API wouldn't share the browser runner's state.
     exclude: ["vite-plus/test"],
   },
   css: {
     transformer: "lightningcss",
+  },
+  // Two pages: the comparison (index.html) and the list of libraries (libraries/index.html).
+  build: {
+    rolldownOptions: {
+      input: ["index.html", "libraries/index.html"].map((page) => fileURLToPath(new URL(page, import.meta.url))),
+    },
   },
   test: {
     projects: [
@@ -104,7 +117,7 @@ export default defineConfig({
         test: {
           name: "unit",
           include: ["{build,src}/**/*.test.ts"],
-          exclude: ["src/Shell.test.ts", "build/production-css.test.ts"],
+          exclude: ["src/Shell.test.ts", "src/LibraryList.test.ts", "build/production-css.test.ts"],
           // Without a backing file, Node's localStorage only warns; store.ts copes with none at all.
           execArgv: ["--no-experimental-webstorage"],
         },
@@ -122,7 +135,7 @@ export default defineConfig({
         extends: true,
         test: {
           name: "browser",
-          include: ["src/Shell.test.ts"],
+          include: ["src/Shell.test.ts", "src/LibraryList.test.ts"],
           // In a real browser: what's tested is how every library's CSS and DOM side effects play out on one page.
           browser: {
             enabled: true,
@@ -163,13 +176,19 @@ export default defineConfig({
     },
     {
       // Headless demos style elements that never get the scoped attribute (portalled roots, v0's
-      // fragment roots); those rules are written under `[data-lib]` by hand instead (see each file).
-      files: ["src/libs/reka-ui/Demos.vue", "src/libs/vuetify0/Demos.vue"],
+      // fragment roots, Akaza UI's `ui` classes, UI SDK's top-layer popups); those rules are written under `[data-lib]` by hand instead (see each file).
+      files: [
+        "src/libs/reka-ui/Demos.vue",
+        "src/libs/vuetify0/Demos.vue",
+        "src/libs/akaza-ui/Demos.vue",
+        "src/libs/ui-sdk/Demos.vue",
+      ],
       linter: { rules: { "vue/require-scoped-style": "off" } },
     },
     {
-      // Every href is built from meta.ts or from a GitHub slug matched by build/npm-stats.ts; none is user input.
-      files: ["src/Shell.vue"],
+      // Every href is built from meta.ts, from a GitHub slug matched by build/npm-stats.ts or from the
+      // base URL; none is user input.
+      files: ["src/Shell.vue", "src/LibraryLinks.vue", "src/TopBar.vue"],
       linter: { rules: { "vue/no-unsafe-url": "off" } },
     },
   ],

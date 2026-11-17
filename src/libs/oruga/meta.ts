@@ -3,6 +3,7 @@ import type { LibraryMeta } from "../types.ts";
 export const meta: LibraryMeta = {
   id: "oruga",
   name: "Oruga",
+  docs: "https://oruga-ui.com/",
   package: "@oruga-ui/oruga-next",
   kind: "styled",
   order: 11,

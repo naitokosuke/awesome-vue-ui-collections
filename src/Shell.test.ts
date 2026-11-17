@@ -93,11 +93,16 @@ function sourceOf(rule: CSSRule): string {
 }
 
 /**
- * Custom properties registered with `@property`. Registration is global by spec (it can't be
- * scoped), and a registered property shows up, at its initial value, on every element.
+ * Custom properties the libraries register with `@property`. Registration is global by spec (it
+ * can't be scoped), and a registered property shows up, at its initial value, on every element.
+ * The shell's own (`--avc-`, tokens.css) are in the baseline already, so they aren't counted.
  */
 function registeredProperties(): Set<string> {
-  return new Set(allRules().flatMap((rule) => (rule instanceof CSSPropertyRule ? [rule.name] : [])));
+  return new Set(
+    allRules().flatMap((rule) =>
+      rule instanceof CSSPropertyRule && !rule.name.startsWith("--avc-") ? [rule.name] : [],
+    ),
+  );
 }
 
 /** `snapshot` without the registered custom properties, which are checked on their own. */
@@ -285,6 +290,10 @@ const GLOBAL_LIBRARY_CSS: Record<string, string> = {
  * that's tolerated. These dialogs are closed again in the test, and must undo it.
  */
 const OPEN_DIALOG_BODY_ATTRIBUTES: Record<string, { attributes: Record<string, string>; reason: string }> = {
+  "akaza-ui": {
+    attributes: { style: "overflow: hidden;" },
+    reason: "Dialog is always modal and locks scroll with no option to opt out; the shell's page never scrolls itself",
+  },
   "astryx-vue": {
     attributes: { style: "overflow: hidden;" },
     reason:
@@ -299,6 +308,19 @@ const OPEN_DIALOG_BODY_ATTRIBUTES: Record<string, { attributes: Record<string, s
 const RUNTIME_CLASS_PREFIXES: Record<string, string> = {
   "n-": "Naive UI's components inject their styles with css-render as they mount, with no way to scope them",
   "v-binder-": "vueuc (Naive UI's popup positioning) injects its follower styles the same way",
+};
+
+/**
+ * Ids of `<style>` elements a library injects into <head> at runtime, unscoped, and why that's
+ * tolerated.
+ */
+const RUNTIME_STYLE_IDS: Record<string, string> = {
+  "ui-sdk-popover-reset":
+    "UI SDK resets the UA [popover] styles of its own parts (`[data-slot=dialog-content][popover]`, …), " +
+    "in `@layer ui-sdk` under :where()",
+  "ui-sdk-hidden":
+    "UI SDK keeps `hidden` parts hidden over `display` rules: `[data-slot][hidden]` is display:none anyway, " +
+    "in `@layer ui-sdk` under :where()",
 };
 
 /** `.n-button .x` starts with prefix `n-`. */
@@ -382,6 +404,22 @@ function visibleBodyStrays() {
     .map((el) => el.outerHTML.slice(0, 120));
 }
 
+/**
+ * The error a library's column header shows: from loading or mounting it, or the first one its app
+ * raised since (a popup's component failing in setup, say). Null when there's none.
+ */
+function libraryError(lib: Library) {
+  return headOf(lib).querySelector(".error")?.getAttribute("title") ?? null;
+}
+
+/** The shown tab's table. */
+const visibleTable = () => [...document.querySelectorAll<HTMLElement>(".table")].find((el) => el.checkVisibility())!;
+
+/** Headers or cells in the order on screen: the grid places columns by their saved order, not the DOM's. */
+function onScreen<T extends Element>(elements: Iterable<T>): T[] {
+  return [...elements].sort((a, b) => a.getBoundingClientRect().left - b.getBoundingClientRect().left);
+}
+
 /** Mounted, or failed to: waiting on another library's failure would cut this one's wait short. */
 function libraryReady(lib: Library) {
   const frames = document.querySelectorAll(`.cell[data-lib="${lib.id}"] > .demo`).length;
@@ -429,6 +467,9 @@ let before: {
 };
 
 beforeAll(async () => {
+  // The table layout, wide enough for a column beside the sticky label column (so a press lands on
+  // the demo); phones get a layout of their own, with a test of its own.
+  await page.viewport(1280, 900);
   Object.assign(controls, { kind: "styled", dark: false, color: null, size: "medium", stats: true, label: "Click me" });
 
   probe = document.createElement("div");
@@ -535,7 +576,7 @@ describe("Shell with every library loaded", () => {
   test("styles injected at runtime stay inside a library's scope", () => {
     const runtime = [
       ...[...document.querySelectorAll<HTMLStyleElement>("style:not([data-vite-dev-id])")]
-        .filter((style) => !before.styles.has(style))
+        .filter((style) => !before.styles.has(style) && !(style.id in RUNTIME_STYLE_IDS))
         .map((style) => ({ source: style.id || style.outerHTML.slice(0, 60), sheet: style.sheet! })),
       ...[...document.adoptedStyleSheets]
         .filter((sheet) => !before.adoptedSheets.has(sheet))
@@ -588,9 +629,6 @@ describe("Shell with every library loaded", () => {
 
   // Before the dialog test, which leaves non-modal dialogs open over the table.
   test("selects open inside their library's scope and leave <html> / <body> alone", async () => {
-    // Wide enough for a column beside the sticky label column, so the press lands on the select.
-    await page.viewport(1280, 900);
-    onTestFinished(() => page.viewport(414, 896));
     for (const kind of KINDS) {
       await showKind(kind);
       for (const lib of mounted.filter((lib) => lib.kind === kind && !(lib.id in SELECTS_WITHOUT_POPUP))) {
@@ -618,6 +656,7 @@ describe("Shell with every library loaded", () => {
           { timeout: 5_000 },
         );
         await new Promise((resolve) => setTimeout(resolve, 300));
+        expect(libraryError(lib), `after opening ${lib.id}'s select`).toBeNull();
         expect(documentSnapshot().attributes, `after opening ${lib.id}'s select`).toEqual(before.document.attributes);
         if (lib.id in SELECTS_NOT_CLOSED_BY_ESCAPE) await userEvent.click(trigger!, { force: true });
         else await userEvent.keyboard("{Escape}");
@@ -627,6 +666,117 @@ describe("Shell with every library loaded", () => {
     await settle();
     expect(documentSnapshot().attributes).toEqual(before.document.attributes);
     expect(visibleBodyStrays()).toEqual([]);
+  });
+
+  test("dragging a grip: a ghost follows, the columns make way, release saves the order, Escape undoes", async () => {
+    await showKind("styled");
+    const table = visibleTable();
+    // Scrolled back (an earlier test scrolls it): near the table's edges a drag scrolls it on its own.
+    table.scrollLeft = 0;
+    const names = () =>
+      onScreen(table.querySelectorAll(".head:not(.corner)")).map((el) =>
+        el.querySelector(".name")!.textContent!.trim(),
+      );
+    const [first, second, third] = libraries.filter((lib) => lib.kind === "styled");
+    const grip = onScreen(table.querySelectorAll(".head:not(.corner)"))[0]!.querySelector<HTMLElement>(".grip")!;
+    const y = grip.getBoundingClientRect().top + 4;
+    const pointer = (type: string, x: number) =>
+      grip.dispatchEvent(
+        new PointerEvent(type, { bubbles: true, pointerId: 1, button: 0, buttons: 1, clientX: x, clientY: y }),
+      );
+    const width = grip.closest(".head")!.getBoundingClientRect().width;
+    const start = grip.getBoundingClientRect().left + 4;
+    /** Frames run (the drag follows the pointer once a frame) and every slide or landing ends. */
+    const settled = async () => {
+      await new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve)));
+      // A slide cut short by the next one rejects; a library's own endless animations never finish.
+      const finite = table
+        .getAnimations({ subtree: true })
+        .filter((animation) => animation.effect?.getComputedTiming().endTime !== Infinity);
+      await Promise.all(finite.map((animation) => animation.finished.catch(() => {})));
+      await nextTick();
+    };
+    try {
+      pointer("pointerdown", start);
+      pointer("pointermove", start + 10);
+      pointer("pointermove", start + width);
+      await settled();
+      expect(table.querySelector(".column-ghost")?.textContent?.trim(), "the ghost").toBe(first!.name);
+      expect(names().slice(0, 2), "the columns made way").toEqual([second!.name, first!.name]);
+      expect(controls.order.styled, "not saved yet").toBeUndefined();
+
+      window.dispatchEvent(new KeyboardEvent("keydown", { key: "Escape" }));
+      await settled();
+      expect(names().slice(0, 2)).toEqual([first!.name, second!.name]);
+      expect(table.querySelector(".column-ghost")).toBeNull();
+
+      pointer("pointerdown", start);
+      pointer("pointermove", start + 10);
+      pointer("pointermove", start + width * 2);
+      await settled();
+      pointer("pointerup", start + width * 2);
+      await settled();
+      expect(names().slice(0, 3)).toEqual([second!.name, third!.name, first!.name]);
+      expect(controls.order.styled?.slice(0, 3)).toEqual([second!.id, third!.id, first!.id]);
+      expect(table.querySelector(".column-ghost")).toBeNull();
+      // Nothing is left on the columns: no running slide, no inline translate.
+      const items = [...table.querySelectorAll<HTMLElement>("[data-column-item]")];
+      expect(items.filter((el) => el.getAnimations().length > 0 || el.style.translate)).toEqual([]);
+    } finally {
+      controls.order = {};
+      await nextTick();
+    }
+  });
+
+  // Before the dialog test, which leaves dialogs open (one traps focus).
+  test("a column moves with its grip's arrow keys, its cells along with it, without moving in the DOM", async () => {
+    await showKind("styled");
+    const table = visibleTable();
+    const names = () =>
+      onScreen(table.querySelectorAll(".head:not(.corner)")).map((el) =>
+        el.querySelector(".name")!.textContent!.trim(),
+      );
+    const cells = () =>
+      onScreen(table.querySelectorAll<HTMLElement>(".table-row")[1]!.querySelectorAll<HTMLElement>(".cell"));
+    const [first, second] = libraries.filter((lib) => lib.kind === "styled");
+    const domOrder = cells().map((el) => el.dataset.lib);
+    try {
+      const grip = onScreen(table.querySelectorAll(".head:not(.corner)"))[0]!.querySelector<HTMLButtonElement>(
+        ".grip",
+      )!;
+      // Dispatched on the grip, which doesn't need the page to have the window's focus.
+      grip.focus();
+      grip.dispatchEvent(new KeyboardEvent("keydown", { key: "ArrowRight", bubbles: true }));
+      await nextTick();
+      expect(names().slice(0, 2)).toEqual([second!.name, first!.name]);
+      expect(
+        cells()
+          .slice(0, 2)
+          .map((el) => el.dataset.lib),
+      ).toEqual([second!.id, first!.id]);
+      expect(controls.order.styled?.slice(0, 2)).toEqual([second!.id, first!.id]);
+      // Placed by the grid: the DOM keeps its order, so the library mounted in a cell isn't touched.
+      expect(
+        [...table.querySelectorAll<HTMLElement>(".table-row")[1]!.querySelectorAll<HTMLElement>(".cell")].map(
+          (el) => el.dataset.lib,
+        ),
+      ).toEqual(domOrder);
+      expect(cellOf(first!, "button").getAttribute("aria-colindex"), "its column, for assistive tech").toBe("3");
+      expect(
+        getComputedStyle(table.querySelector(".grid")!).getPropertyValue("reading-flow"),
+        "focus follows the grid",
+      ).toBe("grid-rows");
+      expect(document.activeElement, "the grip keeps focus").toBe(grip);
+      expect([...document.querySelectorAll(".head .error")].map((el) => el.getAttribute("title"))).toEqual([]);
+
+      table.querySelector<HTMLButtonElement>(".reset-order")!.click();
+      await vi.waitFor(() => expect(names()[0]).toBe(first!.name));
+      expect(controls.order).toEqual({});
+      expect(table.querySelector(".reset-order")).toBeNull();
+    } finally {
+      controls.order = {};
+      await nextTick();
+    }
   });
 
   test("dialogs open inside their library's scope and leave <html> / <body> alone", async () => {
@@ -657,6 +807,7 @@ describe("Shell with every library loaded", () => {
         );
         // Scroll locks and the like land right after opening; checked per library to name the culprit.
         await new Promise((resolve) => setTimeout(resolve, 300));
+        expect(libraryError(lib), `after opening ${lib.id}'s dialog`).toBeNull();
         const tolerated = OPEN_DIALOG_BODY_ATTRIBUTES[lib.id];
         expect(documentSnapshot().attributes, `after opening ${lib.id}'s dialog`).toEqual({
           ...before.document.attributes,
@@ -720,6 +871,66 @@ describe("Shell with every library loaded", () => {
       .filter(([key, sources]) => sources.length > 1 && !(key in KNOWN_CLASHES))
       .map(([key, sources]) => `${key}: ${sources.join(" vs ")}`);
     expect(clashing).toEqual([]);
+  });
+
+  test("phones show one component at a time, each library's demo under its header", async () => {
+    await page.viewport(375, 812);
+    onTestFinished(() => page.viewport(1280, 900));
+    const pick = async (demo: DemoKey) => {
+      document.querySelector<HTMLInputElement>(`.demo-picker input[value="${demo}"]`)!.click();
+      await nextTick();
+    };
+    try {
+      for (const kind of KINDS) {
+        await showKind(kind);
+        const table = [...document.querySelectorAll<HTMLElement>(".table")].find((el) => el.checkVisibility())!;
+        const heads = [...table.querySelectorAll(".head:not(.corner)")];
+        const rows = [...table.querySelectorAll(".table-row")].slice(1);
+        for (const [index, demo] of DEMO_ORDER.entries()) {
+          await pick(demo);
+          expect(table.scrollWidth, `${kind} ${demo}: scrolls sideways`).toBeLessThanOrEqual(table.clientWidth);
+          for (const [rowIndex, row] of rows.entries()) {
+            const shown = [...row.querySelectorAll(".cell")].map((cell) => cell.checkVisibility());
+            expect(shown, `${kind}: ${DEMO_ORDER[rowIndex]} cells with ${demo} picked`).toEqual(
+              shown.map(() => rowIndex === index),
+            );
+          }
+          // Each cell right under its library's header, as wide.
+          const cells = [...rows[index]!.querySelectorAll(".cell")];
+          for (const [i, head] of heads.entries()) {
+            const h = head.getBoundingClientRect();
+            const c = cells[i]!.getBoundingClientRect();
+            expect([c.top, c.left, c.width].map(Math.round), `${kind} ${demo}: cell ${i}`).toEqual(
+              [h.bottom, h.left, h.width].map(Math.round),
+            );
+          }
+        }
+      }
+    } finally {
+      await pick("button");
+      await showKind("styled");
+    }
+  });
+
+  test("phones keep the settings in a dialog, which goes away on a wider screen", async () => {
+    const dialog = document.querySelector<HTMLDialogElement>("#options-dialog")!;
+    const facets = () => document.querySelector(".facets")!;
+    await page.viewport(375, 812);
+    onTestFinished(() => page.viewport(1280, 900));
+    await vi.waitFor(() => expect(dialog.contains(facets()), "settings in the dialog").toBe(true));
+    expect(facets().checkVisibility(), "closed, so hidden").toBe(false);
+
+    document.querySelector<HTMLButtonElement>(".topbar .options-toggle")!.click();
+    expect(dialog.matches(":modal")).toBe(true);
+    await vi.waitFor(() => expect(facets().checkVisibility()).toBe(true));
+
+    // Back on the page, and the dialog (now empty) closed.
+    await page.viewport(1280, 900);
+    await vi.waitFor(() =>
+      expect(document.querySelector("main")!.contains(facets()), "settings on the page").toBe(true),
+    );
+    expect(dialog.open).toBe(false);
+    expect(documentSnapshot().attributes).toEqual(before.document.attributes);
   });
 
   // Last: it takes the shell down.

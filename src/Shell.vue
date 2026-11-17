@@ -1,14 +1,20 @@
 <script setup lang="ts">
-import { computed } from "vue";
+import { useMediaQuery } from "@vueuse/core";
+import { computed, nextTick, onBeforeUnmount, onMounted, ref, useTemplateRef, watch } from "vue";
 import IconArrowUpRight from "~icons/lucide/arrow-up-right";
-import IconGithub from "~icons/lucide/github";
-import IconPackage from "~icons/lucide/package";
-import { DEMO_LABELS, groups, KIND_LABELS, npmFetchedAt } from "./board";
+import IconGripVertical from "~icons/lucide/grip-vertical";
+import IconSlidersHorizontal from "~icons/lucide/sliders-horizontal";
+import IconX from "~icons/lucide/x";
+import { DEMO_LABELS, groups, KIND_LABELS, npmFetchedAt, orderColumns } from "./board";
 import { libraries } from "./libs";
 import { readableOn } from "./libs/color";
-import { type Color, COLORS, DEMOS, type DemoKey, type Library, SIZES } from "./libs/types";
+import { type Color, COLORS, DEMOS, type DemoKey, type Kind, type Library, SIZES } from "./libs/types";
+import LibraryLinks from "./LibraryLinks.vue";
 import RadioGroup from "./RadioGroup.vue";
 import { controls } from "./store";
+import ToggleSwitch from "./ToggleSwitch.vue";
+import TopBar from "./TopBar.vue";
+import { useColumnDrag } from "./useColumnDrag";
 import { useLibraryApps } from "./useLibraryApps";
 
 const SIZE_LABELS = { small: "sm", medium: "md", large: "lg" } as const;
@@ -50,10 +56,103 @@ const ROW_HEIGHTS: Record<DemoKey, number> = {
   dialog: 88,
 };
 
+/** Phones show one component at a time, each library's demo of it stacked (see "phone layout"). */
+const phoneDemo = ref<DemoKey>("button");
+/**
+ * On phones every setting (theme, size, color, stats, the picked component's options) is in a
+ * dialog over the page, so opening it moves nothing: the settings section is teleported into it.
+ */
+const phone = useMediaQuery("(width < 40rem)");
+const optionsDialog = useTemplateRef<HTMLDialogElement>("optionsDialog");
+
+// Wider again: the section goes back onto the page, so the dialog would be empty.
+watch(phone, (isPhone) => {
+  if (!isPhone) optionsDialog.value?.close();
+});
+
 const { errors, setCell, setOverlay } = useLibraryApps(() => controls.kind);
 
 /** Libraries with an app of their own (not stats-only), each of which gets an overlay host. */
 const mountedLibraries = libraries.filter((lib) => lib.load);
+
+/**
+ * The kind tabs' underline: one element under the checked tab, which slides to the next one.
+ * Measured rather than drawn by each tab, so it can move between them; re-measured whenever a tab
+ * resizes (web fonts, the bold checked label, wrapping). Null until measured, so it first renders
+ * in place instead of sliding in from the corner.
+ */
+const tabs = useTemplateRef<HTMLElement>("tabs");
+const indicator = ref<{ x: number; y: number; width: number } | null>(null);
+
+function measureIndicator() {
+  const tab = tabs.value?.querySelector<HTMLElement>(".tab:has(:checked)");
+  if (!tab) return;
+  indicator.value = { x: tab.offsetLeft, y: tab.offsetTop + tab.offsetHeight, width: tab.offsetWidth };
+}
+
+watch(() => controls.kind, measureIndicator, { flush: "post" });
+let tabsObserver: ResizeObserver | undefined;
+onMounted(() => {
+  measureIndicator();
+  tabsObserver = new ResizeObserver(measureIndicator);
+  for (const el of [tabs.value!, ...tabs.value!.children]) tabsObserver.observe(el);
+});
+onBeforeUnmount(() => tabsObserver?.disconnect());
+
+/**
+ * Each tab's saved column order, as every column's position in it. The grid places a column's
+ * header and cells by it (`--avc-column`) rather than by DOM order, so reordering moves no
+ * element: moving a cell out and back in restyles everything its library rendered in it, which
+ * made each move take a third of a second. `reading-flow` keeps focus (and reading) order in
+ * step with the grid, and `aria-colindex` tells assistive tech each cell's column.
+ */
+const positions = computed(
+  () =>
+    Object.fromEntries(
+      groups.map((group) => [
+        group.kind,
+        Object.fromEntries(orderColumns(group.columns, controls.order[group.kind]).map((lib, i) => [lib.id, i])),
+      ]),
+    ) as Record<Kind, Record<string, number>>,
+);
+
+/** Read out after each move, for screen readers. */
+const announcement = ref("");
+
+const columnIds = (kind: Kind) =>
+  orderColumns(groups.find((group) => group.kind === kind)!.columns, controls.order[kind]).map((lib) => lib.id);
+
+/** Saves a tab's new order, after `id` was moved. */
+function saveOrder(kind: Kind, ids: string[], id: string) {
+  controls.order = { ...controls.order, [kind]: ids };
+  announcement.value = `${nameOf(id)} moved to column ${ids.indexOf(id) + 1} of ${ids.length}`;
+}
+
+function moveTo(kind: Kind, id: string, to: number) {
+  const ids = columnIds(kind);
+  const from = ids.indexOf(id);
+  if (from === -1 || to < 0 || to >= ids.length || to === from) return;
+  ids.splice(to, 0, ...ids.splice(from, 1));
+  saveOrder(kind, ids, id);
+}
+
+/** Dragging a grip: a ghost follows the pointer, the columns make way, the order is saved on release (see useColumnDrag). */
+const { ghost, onPointerDown, onPointerMove, onPointerUp, onPointerCancel } = useColumnDrag({
+  order: columnIds,
+  commit: saveOrder,
+});
+
+/** The reset button goes away with the saved order, so focus moves on to the first column's grip. */
+async function resetOrder(event: MouseEvent, kind: Kind) {
+  const table = (event.currentTarget as HTMLElement).closest(".table")!;
+  const { [kind]: _, ...rest } = controls.order;
+  controls.order = rest;
+  announcement.value = "Columns back in their default order";
+  await nextTick();
+  table.querySelector<HTMLElement>(".grip")?.focus();
+}
+
+const nameOf = (id: string) => libraries.find((lib) => lib.id === id)!.name;
 
 function scopeAttrs(lib: Library) {
   return { "data-lib": lib.id, ...(controls.dark ? lib.darkAttrs : lib.lightAttrs) };
@@ -62,56 +161,112 @@ function scopeAttrs(lib: Library) {
 
 <template>
   <div class="shell" :class="{ 'is-dark': controls.dark }">
-    <header class="topbar">
-      <span class="brand">awesome-vue-ui-collections</span>
-      <!-- Theme is a page setting, not part of what is compared, so it lives up here. -->
-      <label class="switch">
-        <input v-model="controls.dark" role="switch" type="checkbox">
-        dark
-      </label>
-    </header>
+    <TopBar page="compare" theme-in-settings>
+      <!-- Phones only: opens the settings, which take the theme switch along. -->
+      <button
+        type="button"
+        aria-controls="options-dialog"
+        aria-haspopup="dialog"
+        class="options-toggle"
+        @click="optionsDialog?.showModal()"
+      >
+        <IconSlidersHorizontal aria-hidden="true" />
+        options
+      </button>
+    </TopBar>
 
     <main class="page">
       <!-- Which libraries to show: a tab row of its own, separate from the demo options below. -->
-      <div aria-label="Library kind" class="tabs" role="radiogroup">
+      <div ref="tabs" aria-label="Library kind" class="tabs" role="radiogroup">
         <label v-for="group in groups" :key="group.kind" class="tab">
           <input v-model="controls.kind" name="kind" type="radio" :value="group.kind">
           {{ KIND_LABELS[group.kind].name.toLowerCase() }}
           <span class="muted">{{ group.columns.length }}</span>
         </label>
+        <span
+          v-if="indicator"
+          aria-hidden="true"
+          class="tab-indicator"
+          :style="{ translate: `${indicator.x}px ${indicator.y}px`, width: `${indicator.width}px` }"
+        />
       </div>
-      <p class="kind-description">{{ KIND_LABELS[controls.kind].description }}</p>
+      <!-- Every kind's description in one cell, the others hidden: as tall as the longest at any width. -->
+      <div class="kind-description">
+        <p v-for="group in groups" :key="group.kind" :class="{ hidden: group.kind !== controls.kind }">
+          {{ KIND_LABELS[group.kind].description }}
+        </p>
+      </div>
 
       <!-- Options for the demos, right above the table they affect. -->
       <!-- Label column + options column; each row is a subgrid, so every row starts at the same x. -->
-      <section aria-label="Demo options" class="facets">
-        <div class="facet">
-          <span aria-hidden="true" class="facet-label">size</span>
-          <div class="options">
-            <RadioGroup v-model="controls.size" :options="SIZES" legend="Size" name="size">
-              <template #option="{ option }">{{ SIZE_LABELS[option] }}</template>
-            </RadioGroup>
+      <Teleport defer to="#options-dialog-body" :disabled="!phone">
+        <section aria-label="Demo options" class="facets">
+          <!-- The phone-only rows stand in for what's elsewhere on wider screens: the top bar's theme
+             switch, the table's stats switch and the row's options. -->
+          <div class="facet phone-only">
+            <span aria-hidden="true" class="facet-label">theme</span>
+            <ToggleSwitch v-model="controls.dark">dark</ToggleSwitch>
           </div>
-        </div>
-        <!-- Headless libraries already share one neutral look (libs/headless-theme.css); fancy ones have no primary color to set. -->
-        <div v-if="controls.kind === 'styled' || controls.kind === 'copy-paste'" class="facet">
-          <span aria-hidden="true" class="facet-label">color</span>
-          <div class="options">
-            <RadioGroup v-model="colorChoice" :options="COLOR_OPTIONS" legend="Primary color" name="color">
-              <template #option="{ option }">
-                <template v-if="option === 'default'">default</template>
-                <!-- The color fills the chip, labeled with its code. -->
-                <template v-else>
-                  <span class="swatch" :style="{ background: option }" :title="COLOR_NAMES[option]" />
-                  <!-- Announced name first ("blue #2563eb"): the code alone says little to a screen reader user. -->
-                  <span class="visually-hidden">{{ COLOR_NAMES[option] }}</span>
-                  <span class="swatch-code" :style="{ color: readableOn(option) }">{{ option }}</span>
+          <div class="facet">
+            <span aria-hidden="true" class="facet-label">size</span>
+            <div class="options">
+              <RadioGroup v-model="controls.size" :options="SIZES" legend="Size" name="size">
+                <template #option="{ option }">{{ SIZE_LABELS[option] }}</template>
+              </RadioGroup>
+            </div>
+          </div>
+          <!-- Every kind takes it, so the row never comes and goes (which would move the table). -->
+          <div class="facet">
+            <span aria-hidden="true" class="facet-label">color</span>
+            <div class="options">
+              <RadioGroup v-model="colorChoice" :options="COLOR_OPTIONS" legend="Primary color" name="color">
+                <template #option="{ option }">
+                  <template v-if="option === 'default'">default</template>
+                  <!-- The color fills the chip, labeled with its code. -->
+                  <template v-else>
+                    <span class="swatch" :style="{ background: option }" :title="COLOR_NAMES[option]" />
+                    <!-- Announced name first ("blue #2563eb"): the code alone says little to a screen reader user. -->
+                    <span class="visually-hidden">{{ COLOR_NAMES[option] }}</span>
+                    <span class="swatch-code" :style="{ color: readableOn(option) }">{{ option }}</span>
+                  </template>
                 </template>
-              </template>
-            </RadioGroup>
+              </RadioGroup>
+            </div>
           </div>
-        </div>
-      </section>
+          <div class="facet phone-only">
+            <span aria-hidden="true" class="facet-label">stats</span>
+            <ToggleSwitch v-model="controls.stats">
+              <span class="visually-hidden">stats</span>
+              <span class="stats-date">{{ npmFetchedAt ? `as of ${npmFetchedAt}` : "npm data unavailable" }}</span>
+            </ToggleSwitch>
+          </div>
+          <div class="facet phone-only">
+            <span aria-hidden="true" class="facet-label">{{ DEMO_LABELS[phoneDemo].toLowerCase() }}</span>
+            <div class="row-options">
+              <input
+                v-if="phoneDemo === 'button'"
+                v-model="controls.label"
+                aria-label="Button label"
+                class="text-input"
+                placeholder="label"
+                type="text"
+              >
+              <ToggleSwitch v-model="controls.disabled[phoneDemo]" :aria-label="`${DEMO_LABELS[phoneDemo]} disabled`">
+                disabled
+              </ToggleSwitch>
+            </div>
+          </div>
+        </section>
+      </Teleport>
+
+      <!-- Phones only: which component the stacked list shows. -->
+      <fieldset class="demo-picker">
+        <legend class="visually-hidden">Component</legend>
+        <label v-for="demo in DEMOS" :key="demo">
+          <input v-model="phoneDemo" class="visually-hidden" name="phone-demo" type="radio" :value="demo">
+          {{ DEMO_LABELS[demo] }}
+        </label>
+      </fieldset>
 
       <!-- One table per kind; all stay mounted (v-show), so a library mounted once keeps its cells. -->
       <section v-for="(group, index) in groups" v-show="controls.kind === group.kind" :key="group.kind" class="table">
@@ -124,19 +279,49 @@ function scopeAttrs(lib: Library) {
         >
           <div class="table-row" role="row">
             <!-- The stats live in the column headers, so their switch sits at the start of that row. -->
-            <div class="head sticky corner" role="columnheader">
-              <label class="switch">
-                <input v-model="controls.stats" role="switch" type="checkbox" :aria-describedby="`stats-date-${index}`">
-                stats
-              </label>
+            <div aria-colindex="1" class="head sticky corner" role="columnheader">
+              <ToggleSwitch v-model="controls.stats" :aria-describedby="`stats-date-${index}`">stats</ToggleSwitch>
               <span :id="`stats-date-${index}`" class="stats-date" title="npm data; downloads cover the last 7 days">
                 {{ npmFetchedAt ? `(as of ${npmFetchedAt})` : "(npm data unavailable)" }}
               </span>
+              <button
+                v-if="controls.order[group.kind]"
+                type="button"
+                class="reset-order"
+                @click="resetOrder($event, group.kind)"
+              >
+                reset order
+              </button>
             </div>
             <!-- Two lines per column: name and downloads, then version, release age and links. -->
-            <div v-for="lib in group.columns" :key="lib.id" class="head" role="columnheader">
+            <div
+              v-for="lib in group.columns"
+              :key="lib.id"
+              class="head"
+              role="columnheader"
+              :aria-colindex="positions[group.kind][lib.id]! + 2"
+              :data-column-item="lib.id"
+              :style="{ '--avc-column': positions[group.kind][lib.id] }"
+            >
               <div class="line">
-                <span class="name">{{ lib.name }}</span>
+                <span class="title">
+                  <!-- Reorders the columns: drag it, or focus it and press the left / right arrow keys. -->
+                  <button
+                    type="button"
+                    aria-describedby="reorder-help"
+                    class="grip"
+                    :aria-label="`Move ${lib.name}`"
+                    @pointercancel="onPointerCancel"
+                    @pointerdown="onPointerDown($event, group.kind, lib.id)"
+                    @pointermove="onPointerMove"
+                    @pointerup="onPointerUp"
+                    @keydown.left.prevent="moveTo(group.kind, lib.id, positions[group.kind][lib.id]! - 1)"
+                    @keydown.right.prevent="moveTo(group.kind, lib.id, positions[group.kind][lib.id]! + 1)"
+                  >
+                    <IconGripVertical aria-hidden="true" />
+                  </button>
+                  <span class="name">{{ lib.name }}</span>
+                </span>
                 <span
                   v-if="controls.stats"
                   class="muted"
@@ -147,7 +332,7 @@ function scopeAttrs(lib: Library) {
               </div>
 
               <div class="line meta">
-                <span>
+                <span class="version">
                   <!-- The reason is spelled out for screen readers; sighted users get it as a tooltip. -->
                   <span v-if="errors[lib.id]" class="error" :title="errors[lib.id]">
                     failed to load<span class="visually-hidden">: {{ errors[lib.id] }}</span>
@@ -159,36 +344,20 @@ function scopeAttrs(lib: Library) {
                     :title="`latest release ${lib.release.date}${lib.release.stale ? ', over a year ago' : ''}`"
                   > · {{ lib.release.ago }}</span>
                 </span>
-                <!-- Links leave the page: the icons say where to, the tooltip says it opens a new tab. -->
-                <span v-if="controls.stats" class="links">
-                  <a
-                    v-if="lib.package"
-                    :href="`https://npmx.dev/package/${lib.package}`"
-                    rel="noopener noreferrer"
-                    target="_blank"
-                    :title="`${lib.package} on npmx.dev (opens in a new tab)`"
-                    :aria-label="`${lib.package} on npmx.dev (opens in a new tab)`"
-                  >
-                    <IconPackage aria-hidden="true" />
-                  </a>
-                  <a
-                    v-if="lib.github"
-                    :href="lib.github.url"
-                    rel="noopener noreferrer"
-                    target="_blank"
-                    :title="`${lib.github.slug} on GitHub (opens in a new tab)`"
-                    :aria-label="`${lib.github.slug} on GitHub (opens in a new tab)`"
-                  >
-                    <IconGithub aria-hidden="true" />
-                  </a>
-                </span>
+                <LibraryLinks v-if="controls.stats" :lib />
               </div>
             </div>
           </div>
 
-          <div v-for="demo in DEMOS" :key="demo" class="table-row" role="row">
+          <div
+            v-for="(demo, row) in DEMOS"
+            :key="demo"
+            class="table-row"
+            :class="{ current: demo === phoneDemo }"
+            role="row"
+          >
             <!-- Row header: the component's name, then the options that only affect this row. -->
-            <div class="label sticky demo" role="rowheader">
+            <div aria-colindex="1" class="label sticky demo" role="rowheader" :style="{ '--avc-row': row + 2 }">
               <span class="row-name">{{ DEMO_LABELS[demo] }}</span>
               <div class="row-options">
                 <input
@@ -199,15 +368,9 @@ function scopeAttrs(lib: Library) {
                   placeholder="label"
                   type="text"
                 >
-                <label class="switch">
-                  <input
-                    v-model="controls.disabled[demo]"
-                    role="switch"
-                    type="checkbox"
-                    :aria-label="`${DEMO_LABELS[demo]} disabled`"
-                  >
+                <ToggleSwitch v-model="controls.disabled[demo]" :aria-label="`${DEMO_LABELS[demo]} disabled`">
                   disabled
-                </label>
+                </ToggleSwitch>
               </div>
             </div>
             <template v-for="lib in group.columns" :key="lib.id">
@@ -215,7 +378,13 @@ function scopeAttrs(lib: Library) {
                 v-if="lib.withoutDemos"
                 class="cell empty"
                 role="cell"
-                :style="{ minBlockSize: `${ROW_HEIGHTS[demo]}px` }"
+                :aria-colindex="positions[group.kind][lib.id]! + 2"
+                :data-column-item="lib.id"
+                :style="{
+                  'minBlockSize': `${ROW_HEIGHTS[demo]}px`,
+                  '--avc-row': row + 2,
+                  '--avc-column': positions[group.kind][lib.id],
+                }"
               >
                 {{ demo === DEMOS[0] ? `— ${lib.withoutDemos}` : "—" }}
               </div>
@@ -224,7 +393,13 @@ function scopeAttrs(lib: Library) {
                 :ref="(el) => setCell(lib, demo, el)"
                 class="cell"
                 role="cell"
-                :style="{ minBlockSize: `${ROW_HEIGHTS[demo]}px` }"
+                :aria-colindex="positions[group.kind][lib.id]! + 2"
+                :data-column-item="lib.id"
+                :style="{
+                  'minBlockSize': `${ROW_HEIGHTS[demo]}px`,
+                  '--avc-row': row + 2,
+                  '--avc-column': positions[group.kind][lib.id],
+                }"
                 v-bind="scopeAttrs(lib)"
               >
                 <!-- Which of the library's components this is, by its own name (it often isn't the row's). -->
@@ -247,8 +422,34 @@ function scopeAttrs(lib: Library) {
             </template>
           </div>
         </div>
+        <!-- While a column is dragged: an empty ghost of it, which follows the pointer (see useColumnDrag). -->
+        <div
+          v-if="ghost?.kind === group.kind"
+          aria-hidden="true"
+          class="column-ghost"
+          :style="
+            { insetInlineStart: `${ghost.left}px`, inlineSize: `${ghost.width}px`, blockSize: `${ghost.height}px` }
+          "
+        >
+          <span class="column-ghost-name">{{ nameOf(ghost.id) }}</span>
+        </div>
       </section>
     </main>
+
+    <!-- Phones only: the settings section, teleported in. closedby="any": a click outside closes it too. -->
+    <dialog id="options-dialog" ref="optionsDialog" aria-label="Options" class="options-dialog" closedby="any">
+      <div class="options-dialog-head">
+        <span class="options-dialog-title">options</span>
+        <button type="button" class="options-toggle" @click="optionsDialog?.close()">
+          <IconX aria-hidden="true" />
+          close
+        </button>
+      </div>
+      <div id="options-dialog-body" class="options-dialog-body" />
+    </dialog>
+
+    <p id="reorder-help" class="visually-hidden">Drag, or press the left and right arrow keys, to move the column.</p>
+    <p aria-live="polite" class="visually-hidden">{{ announcement }}</p>
 
     <div class="overlays">
       <div
@@ -293,26 +494,6 @@ function scopeAttrs(lib: Library) {
   white-space: nowrap;
 }
 
-/* ---- top bar ---- */
-
-.topbar {
-  position: sticky;
-  inset-block-start: 0;
-  z-index: 10;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  box-sizing: border-box;
-  block-size: var(--avc-topbar-size);
-  padding: 0 var(--avc-space-6);
-  border-block-end: 1px solid var(--avc-color-border);
-  background: var(--avc-color-bg);
-}
-
-.brand {
-  font-weight: var(--avc-weight-bold);
-}
-
 /* ---- page ---- */
 
 .page {
@@ -328,6 +509,7 @@ function scopeAttrs(lib: Library) {
 /* ---- kind tabs ---- */
 
 .tabs {
+  position: relative;
   display: flex;
   flex-wrap: wrap;
   gap: 0 var(--avc-space-6);
@@ -349,7 +531,6 @@ function scopeAttrs(lib: Library) {
   }
 
   &:has(:checked) {
-    border-color: var(--avc-color-text);
     color: var(--avc-color-text);
     font-weight: var(--avc-weight-bold);
   }
@@ -366,10 +547,36 @@ function scopeAttrs(lib: Library) {
   }
 }
 
+/* Covers the checked tab's transparent bottom border, which keeps the tab's height. */
+.tab-indicator {
+  position: absolute;
+  inset: 0 auto auto 0;
+  height: 2px;
+  margin-block-start: -2px;
+  background: var(--avc-color-text);
+  pointer-events: none;
+
+  @media (prefers-reduced-motion: no-preference) {
+    transition:
+      translate 0.25s cubic-bezier(0.4, 0, 0.2, 1),
+      width 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+}
+
 .kind-description {
-  margin: var(--avc-space-3) 0 0;
+  display: grid;
+  margin-block-start: var(--avc-space-3);
   color: var(--avc-color-text-muted);
   font-size: var(--avc-text-sm);
+
+  & p {
+    grid-area: 1 / 1;
+    margin: 0;
+  }
+
+  & .hidden {
+    visibility: hidden;
+  }
 }
 
 /* ---- demo options ---- */
@@ -417,69 +624,6 @@ function scopeAttrs(lib: Library) {
   position: relative;
 }
 
-/* A native checkbox drawn as a monochrome switch; the whole label is the target. */
-.switch {
-  display: inline-flex;
-  align-items: center;
-  gap: var(--avc-space-2);
-  min-block-size: var(--avc-target-min);
-  color: var(--avc-color-text-muted);
-  font-size: var(--avc-text-sm);
-  cursor: pointer;
-  user-select: none;
-
-  &:has(:checked) {
-    color: var(--avc-color-text);
-  }
-
-  & input {
-    --track-inline: 2rem;
-    --track-block: 1.125rem;
-    --thumb: 0.75rem;
-    /* Thumb inset from the track's inner edge (inside the 1px border). */
-    --inset: calc((var(--track-block) - 2px - var(--thumb)) / 2);
-
-    appearance: none;
-    position: relative;
-    flex: none;
-    inline-size: var(--track-inline);
-    block-size: var(--track-block);
-    margin: 0;
-    border: 1px solid var(--avc-color-border-control);
-    border-radius: var(--avc-radius-full);
-    background: var(--avc-color-subtle);
-    cursor: pointer;
-    transition: background-color 0.15s, border-color 0.15s;
-
-    &::after {
-      content: '';
-      position: absolute;
-      inset-block-start: var(--inset);
-      inset-inline-start: var(--inset);
-      inline-size: var(--thumb);
-      block-size: var(--thumb);
-      border-radius: 50%;
-      background: var(--avc-color-text-muted);
-      transition: translate 0.15s, background-color 0.15s;
-    }
-
-    &:checked {
-      border-color: var(--avc-color-text);
-      background: var(--avc-color-text);
-
-      &::after {
-        translate: calc(var(--track-inline) - 2px - var(--thumb) - var(--inset) * 2) 0;
-        background: var(--avc-color-bg);
-      }
-    }
-
-    &:focus-visible {
-      outline: var(--avc-focus-ring);
-      outline-offset: 2px;
-    }
-  }
-}
-
 /* ---- table ---- */
 
 .table {
@@ -501,6 +645,27 @@ function scopeAttrs(lib: Library) {
   display: grid;
   grid-template-columns: 12rem repeat(var(--libs), minmax(15rem, 1fr));
   min-inline-size: max-content;
+  /* Tab and reading order follow the grid, not the DOM (columns are placed by their order). */
+  reading-flow: grid-rows;
+}
+
+/* Every cell placed explicitly: a column by its position in the tab's order (--avc-column, see
+   Shell's script), a row by its index (--avc-row; headers are row 1). Auto-placement would start a
+   new row whenever a column came before the previous one. */
+.head,
+.cell,
+.table-row > .label {
+  grid-row: var(--avc-row);
+}
+
+.head:not(.corner),
+.cell {
+  grid-column: calc(var(--avc-column) + 2);
+}
+
+.corner,
+.table-row > .label {
+  grid-column: 1;
 }
 
 .sticky {
@@ -527,11 +692,102 @@ function scopeAttrs(lib: Library) {
     border-inline-start: 1px solid var(--avc-color-border-soft);
   }
 
-  /* Top-left corner: sticks both ways, above everything else. */
+  /* Top-left corner: sticks both ways, above everything else (a dragged header included). */
   &.corner {
-    z-index: 4;
+    z-index: 5;
     background: var(--avc-color-subtle);
   }
+}
+
+.reset-order {
+  align-self: flex-start;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--avc-color-text-muted);
+  font: inherit;
+  font-size: var(--avc-text-sm);
+  text-decoration: underline;
+  cursor: pointer;
+
+  &:hover {
+    color: var(--avc-color-text);
+  }
+
+  &:focus-visible {
+    outline: var(--avc-focus-ring);
+    outline-offset: 2px;
+  }
+}
+
+/* The name and, before it, the grip that reorders the column. */
+.title {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--avc-space-0-5);
+  margin-inline-start: calc(-1 * var(--avc-space-1));
+}
+
+.grip {
+  display: grid;
+  flex: none;
+  place-items: center;
+  inline-size: var(--avc-target-min);
+  block-size: var(--avc-target-min);
+  padding: 0;
+  border: 0;
+  border-radius: var(--avc-radius-sm);
+  background: none;
+  color: var(--avc-color-text-muted);
+  cursor: grab;
+  /* A drag on a touch screen moves the column, not the page; and it selects no text on the way.
+     (Set here, not by a :has() on the page: that would restyle every library's DOM as a drag starts.) */
+  touch-action: none;
+  user-select: none;
+
+  &:hover {
+    background: var(--avc-color-subtle);
+    color: var(--avc-color-text);
+  }
+
+  &:active {
+    cursor: grabbing;
+  }
+
+  &:focus-visible {
+    outline: var(--avc-focus-ring);
+    outline-offset: 0;
+  }
+
+  & svg {
+    inline-size: 1rem;
+    block-size: 1rem;
+  }
+}
+
+/* The dragged column's ghost: drawn over the table, it follows the pointer by `translate` alone. */
+.column-ghost {
+  position: absolute;
+  inset-block-start: 0;
+  z-index: 4;
+  box-sizing: border-box;
+  padding: var(--avc-space-3) var(--avc-space-4);
+  border: 2px solid var(--avc-color-text);
+  border-radius: var(--avc-radius-md);
+  background: color-mix(in oklch, var(--avc-color-surface) 35%, transparent);
+  box-shadow: 0 12px 32px oklch(0% 0 0 / 0.2);
+  pointer-events: none;
+  will-change: translate;
+}
+
+.column-ghost-name {
+  display: inline-block;
+  padding: var(--avc-space-1) var(--avc-space-2);
+  border-radius: var(--avc-radius-sm);
+  background: var(--avc-color-text);
+  color: var(--avc-color-bg);
+  font-family: var(--avc-font-sans);
+  font-weight: var(--avc-weight-semibold);
 }
 
 /* Under the stats switch: when its numbers were fetched. */
@@ -581,36 +837,6 @@ function scopeAttrs(lib: Library) {
 
 .stale {
   color: var(--avc-color-warning);
-}
-
-.links {
-  display: flex;
-  gap: var(--avc-space-1);
-
-  /* Icon-only links still get a full-size target. */
-  & a {
-    display: grid;
-    place-items: center;
-    inline-size: var(--avc-target-min);
-    block-size: var(--avc-target-min);
-    border-radius: var(--avc-radius-sm);
-    color: var(--avc-color-text-muted);
-
-    &:hover {
-      background: var(--avc-color-subtle);
-      color: var(--avc-color-text);
-    }
-
-    &:focus-visible {
-      outline: var(--avc-focus-ring);
-      outline-offset: 0;
-    }
-  }
-
-  & svg {
-    inline-size: 1rem;
-    block-size: 1rem;
-  }
 }
 
 /* Rows exist for assistive tech only: their cells are the grid's items. */
@@ -755,5 +981,252 @@ a.component-ref {
   inset-inline-start: 0;
   inline-size: 0;
   block-size: 0;
+}
+
+/* ---- phone layout ----
+   Too narrow for the table: the tabs, a component picker, then each library's name with its demo
+   of that component. Every setting folds behind the top bar's options button. Only CSS moves the
+   table: the cells stay where the libraries mounted into them, other rows are hidden, not removed. */
+
+.demo-picker,
+.options-toggle,
+.facet.phone-only {
+  display: none;
+}
+
+@media (width < 40rem) {
+  .options-toggle {
+    display: inline-flex;
+    flex-shrink: 0;
+    align-items: center;
+    gap: var(--avc-space-1);
+    min-block-size: var(--avc-target-min);
+    padding: 0 var(--avc-space-2);
+    border: 1px solid var(--avc-color-border-control);
+    border-radius: var(--avc-radius-sm);
+    background: var(--avc-color-surface);
+    color: var(--avc-color-text);
+    font: inherit;
+    font-size: var(--avc-text-sm);
+    cursor: pointer;
+
+    &:focus-visible {
+      outline: var(--avc-focus-ring);
+      outline-offset: 2px;
+    }
+
+    & svg {
+      inline-size: 1rem;
+      block-size: 1rem;
+    }
+  }
+
+  .page {
+    padding-inline: var(--avc-space-4);
+  }
+
+  .kind-description {
+    display: none;
+  }
+
+  /* The settings, in the options dialog: a sheet over the top of the page. Its head lines up with
+     the top bar, the close button where the options button was. */
+  .facets {
+    margin: 0;
+  }
+
+  .options-dialog {
+    box-sizing: border-box;
+    inline-size: 100%;
+    max-inline-size: none;
+    margin: 0;
+    inset: 0 0 auto;
+    padding: 0;
+    border: 0;
+    border-block-end: 1px solid var(--avc-color-border);
+    background: var(--avc-color-subtle);
+    color: var(--avc-color-text);
+
+    &::backdrop {
+      background: rgb(0 0 0 / 0.4);
+    }
+
+    /* Slides down decelerating (ease-out) and back up accelerating (ease-in), a little faster. */
+    @media (prefers-reduced-motion: no-preference) {
+      &,
+      &::backdrop {
+        transition-behavior: allow-discrete;
+        transition-property: display, overlay, translate, opacity;
+        transition-duration: 0.2s;
+        transition-timing-function: cubic-bezier(0.4, 0, 1, 1);
+      }
+
+      &:not([open]) {
+        translate: 0 -100%;
+      }
+
+      &:not([open])::backdrop {
+        opacity: 0;
+      }
+
+      &[open],
+      &[open]::backdrop {
+        transition-duration: 0.25s;
+        transition-timing-function: cubic-bezier(0, 0, 0.2, 1);
+      }
+
+      @starting-style {
+        &[open] {
+          translate: 0 -100%;
+        }
+
+        &[open]::backdrop {
+          opacity: 0;
+        }
+      }
+    }
+  }
+
+  .options-dialog-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    box-sizing: border-box;
+    block-size: var(--avc-topbar-size);
+    padding-inline: var(--avc-space-4);
+    border-block-end: 1px solid var(--avc-color-border);
+    background: var(--avc-color-bg);
+  }
+
+  .options-dialog-title {
+    font-weight: var(--avc-weight-bold);
+  }
+
+  .options-dialog-body {
+    padding: var(--avc-space-4);
+  }
+
+  .facet.phone-only {
+    display: grid;
+  }
+
+  .facets .row-options {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    gap: var(--avc-space-3);
+    min-inline-size: 0;
+
+    & .text-input {
+      flex: 1;
+      min-inline-size: 0;
+    }
+  }
+
+  /* One line, scrolled sideways rather than wrapped. A scroll container may shrink below its
+     content in the page's flex column, hence flex-shrink here and on the picker. */
+  .tabs {
+    flex-shrink: 0;
+    flex-wrap: nowrap;
+    gap: 0 var(--avc-space-4);
+    overflow-x: auto;
+    scrollbar-width: none;
+  }
+
+  .tab {
+    flex-shrink: 0;
+    margin-block-end: 0;
+    white-space: nowrap;
+  }
+
+  .demo-picker {
+    display: flex;
+    flex-shrink: 0;
+    margin: var(--avc-space-3) 0;
+    padding: 0;
+    overflow: hidden;
+    border: 1px solid var(--avc-color-border-control);
+    border-radius: var(--avc-radius-sm);
+
+    & label {
+      position: relative;
+      display: flex;
+      flex: 1;
+      align-items: center;
+      justify-content: center;
+      min-block-size: var(--avc-target-min);
+      color: var(--avc-color-text-muted);
+      font-size: var(--avc-text-sm);
+      cursor: pointer;
+    }
+
+    & label + label {
+      border-inline-start: 1px solid var(--avc-color-border-control);
+    }
+
+    & label:has(:checked) {
+      background: var(--avc-color-text);
+      color: var(--avc-color-bg);
+    }
+
+    & label:has(:focus-visible) {
+      outline: var(--avc-focus-ring);
+      outline-offset: -2px;
+    }
+  }
+
+  /* One column: per library its header (row 2i + 1) and its cell of the picked row (row 2i + 2).
+     The stats switch and the row options are in the settings instead. */
+  .grid {
+    grid-template-columns: minmax(0, 1fr);
+    min-inline-size: 0;
+  }
+
+  .table-row:not(:first-child, .current),
+  .head.corner,
+  .table-row > .label {
+    display: none;
+  }
+
+  /* The name, then its docs and GitHub links on the right; the version line only when it
+     reports that the library failed to load. */
+  .head {
+    position: static;
+    display: grid;
+    grid-row: calc(var(--avc-column) * 2 + 1);
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: center;
+    padding-block: var(--avc-space-2);
+    border-inline-start: 0;
+
+    & .line:first-child > .muted,
+    & .grip,
+    & .version:not(:has(.error)),
+    & :deep(.npm) {
+      display: none;
+    }
+
+    & .line.meta {
+      display: contents;
+    }
+
+    & .links {
+      grid-area: 1 / 2;
+    }
+
+    & .version {
+      grid-column: 1 / -1;
+    }
+  }
+
+  .cell {
+    grid-row: calc(var(--avc-column) * 2 + 2);
+    border-inline-start: 0;
+  }
+
+  .head:not(.corner),
+  .cell {
+    grid-column: 1;
+  }
 }
 </style>

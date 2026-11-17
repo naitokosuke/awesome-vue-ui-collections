@@ -61,8 +61,9 @@ const open = ref(false);
         <AnimatedModalBody :teleport-to="overlay" :lock-scroll="false" class="w-[min(420px,calc(100vw-32px))]">
           <AnimatedModalContent class="md:p-8">
             <h3 class="text-xl font-semibold">Inspira UI</h3>
-            <p class="text-muted-foreground mt-2 text-sm">This dialog is teleported into the Inspira UI overlay host.</p
-            >
+            <p class="text-muted-foreground mt-2 text-sm">
+              This dialog is teleported into the Inspira UI overlay host.
+            </p>
           </AnimatedModalContent>
           <AnimatedModalFooter>
             <InteractiveHoverButton class="text-sm" text="Close" @click="closeModal" />
