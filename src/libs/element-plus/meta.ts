@@ -3,6 +3,7 @@ import type { LibraryMeta } from "../types.ts";
 export const meta: LibraryMeta = {
   id: "element-plus",
   name: "Element Plus",
+  docs: "https://element-plus.org/",
   package: "element-plus",
   kind: "styled",
   order: 2,

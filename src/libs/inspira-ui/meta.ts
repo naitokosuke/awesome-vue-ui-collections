@@ -3,6 +3,7 @@ import type { LibraryMeta } from "../types.ts";
 export const meta: LibraryMeta = {
   id: "inspira-ui",
   name: "Inspira UI",
+  docs: "https://inspira-ui.com/",
   // Components are copied into the project (./ui) from registry.inspira-ui.com with the shadcn-vue CLI.
   // There is no `inspira-ui` npm package; `@inspira-ui/plugins` (by the Inspira UI author) is the
   // runtime every component imports `cn` from, so its npm stats stand in for the library's.

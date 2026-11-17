@@ -1,6 +1,6 @@
 import { Temporal } from "temporal-polyfill-lite";
 import { describe, expect, test } from "vite-plus/test";
-import { ago, formatDownloads, isStale } from "./board";
+import { ago, formatDownloads, isStale, orderColumns } from "./board";
 
 const today = Temporal.PlainDate.from("2026-10-23");
 const date = (iso: string) => Temporal.PlainDate.from(iso);
@@ -36,5 +36,18 @@ describe("formatDownloads", () => {
     [1_234_567, "1.2M"],
   ])("%d → %s", (count, expected) => {
     expect(formatDownloads(count)).toBe(expected);
+  });
+});
+
+describe("orderColumns", () => {
+  const columns = ["a", "b", "c", "d"].map((id) => ({ id }));
+  const ids = (order?: string[]) => orderColumns(columns, order).map((column) => column.id);
+
+  test("keeps the default order without a saved one", () => {
+    expect(ids()).toEqual(["a", "b", "c", "d"]);
+  });
+
+  test("puts the saved ids first, then the rest in default order, skipping unknown ones", () => {
+    expect(ids(["c", "gone", "a"])).toEqual(["c", "a", "b", "d"]);
   });
 });

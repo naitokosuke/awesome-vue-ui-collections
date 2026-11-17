@@ -3,6 +3,7 @@ import type { LibraryMeta } from "../types.ts";
 export const meta: LibraryMeta = {
   id: "vize-ui",
   name: "Vize UI",
+  docs: "https://vizejs.dev/guide/ui/",
   package: "@vizejs/ui",
   kind: "headless",
   order: 1,

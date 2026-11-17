@@ -3,6 +3,7 @@ import type { LibraryMeta } from "../types.ts";
 export const meta: LibraryMeta = {
   id: "vant",
   name: "Vant",
+  docs: "https://vant-ui.github.io/vant/",
   package: "vant",
   kind: "styled",
   order: 7,

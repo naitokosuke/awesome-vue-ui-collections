@@ -10,12 +10,19 @@ import SpecularButton from "./ui/SpecularButton.vue";
 const { controls } = useMountContext();
 const size = computed(() => (({ small: "sm", medium: "md", large: "lg" }) as const)[controls.size]);
 // Vue Bits is designed on dark backgrounds; in light mode the colors are inverted to stay readable.
-const button = computed(() =>
-  controls.dark ? {} : { textColor: "#18181b", lineColor: "#18181b", baseColor: "#a1a1aa" },
-);
-const wheel = computed(() =>
-  controls.dark ? { textColor: "#71717a", activeColor: "#fafafa" } : { textColor: "#a1a1aa", activeColor: "#18181b" },
-);
+// The primary color, when picked, goes to each component's accent: the button's highlight line,
+// the input's border and icon, and the wheel's selected item.
+const button = computed(() => ({
+  ...(controls.dark ? {} : { textColor: "#18181b", lineColor: "#18181b", baseColor: "#a1a1aa" }),
+  ...(controls.color && { lineColor: controls.color }),
+}));
+const input = computed(() => (controls.color ? { borderColor: controls.color, iconColor: controls.color } : {}));
+const wheel = computed(() => ({
+  ...(controls.dark
+    ? { textColor: "#71717a", activeColor: "#fafafa" }
+    : { textColor: "#a1a1aa", activeColor: "#18181b" }),
+  ...(controls.color && { activeColor: controls.color }),
+}));
 
 const fruits = ["Apple", "Banana", "Cherry"];
 const name = ref("");
@@ -41,6 +48,7 @@ const name = ref("");
         :font-size="14"
         shadow-size="sm"
         :show-button="false"
+        v-bind="input"
         @change="name = $event"
       />
     </template>

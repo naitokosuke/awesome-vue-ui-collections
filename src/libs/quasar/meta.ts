@@ -3,6 +3,7 @@ import type { LibraryMeta } from "../types.ts";
 export const meta: LibraryMeta = {
   id: "quasar",
   name: "Quasar",
+  docs: "https://quasar.dev/",
   package: "quasar",
   kind: "styled",
   order: 4,

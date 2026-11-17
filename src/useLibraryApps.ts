@@ -7,6 +7,7 @@ import {
   onMounted,
   reactive,
   readonly,
+  shallowReactive,
   toRefs,
   watch,
 } from "vue";
@@ -32,6 +33,26 @@ const libraryControls: MountContext["controls"] = readonly(
   }),
 );
 
+/** Where one library is in its lifecycle. */
+type LibraryState =
+  /** Its tab hasn't been shown yet. */
+  | { status: "idle" }
+  /** Its module is loading, or loaded and waiting for its tab to be shown again. */
+  | { status: "loading" }
+  /** Its module failed to load (e.g. a chunk gone after a deploy). */
+  | { status: "load-failed"; error: string }
+  /** Its `mount()` is running in `scope`; `error` is the first one it reported meanwhile. */
+  | { status: "mounting"; scope: EffectScope; error?: string }
+  /** Its app runs in `scope`; `error` is the first one it reported. */
+  | { status: "mounted"; scope: EffectScope; error?: string }
+  /** Its `mount()` threw; whatever it got through was undone. */
+  | { status: "mount-failed"; error: string };
+
+/** A failed load is tried again the next time its tab is shown; a failed mount isn't. */
+function canStart(state: LibraryState) {
+  return state.status === "idle" || state.status === "load-failed";
+}
+
 /**
  * Loads and mounts each library's app into the cells and overlay host the shell renders for
  * it, the first time its tab is shown, and unmounts them all with the calling component.
@@ -42,39 +63,57 @@ const libraryControls: MountContext["controls"] = readonly(
  * A replaced cell is reported as that library's error rather than leaving its demos detached.
  */
 export function useLibraryApps(activeKind: () => Kind) {
+  /** By library id. Shallow: each state is replaced on every transition, never changed in place. */
+  const states = shallowReactive<Record<string, LibraryState>>(
+    Object.fromEntries(libraries.filter((lib) => lib.load).map((lib) => [lib.id, { status: "idle" }])),
+  );
+
   /** Why a library failed to load or mount, or its first error after mounting, by id. */
-  const errors = reactive<Record<string, string>>({});
+  const errors = computed<Record<string, string>>(() =>
+    Object.fromEntries(
+      Object.entries(states).flatMap(([id, state]) =>
+        "error" in state && state.error ? [[id, state.error] as const] : [],
+      ),
+    ),
+  );
 
   const cells: Record<string, Partial<Record<DemoKey, HTMLElement>>> = {};
   const overlays: Record<string, HTMLElement> = {};
-  const started = new Set<string>();
-  const mounted = new Set<string>();
-  /** One per mounted library; stopping it unmounts the library. */
-  const scopes: EffectScope[] = [];
   /** The calling component's scope, so watchers made later still stop with it. */
   const ownScope = getCurrentScope();
   let disposed = false;
 
+  const isMounted = (lib: Library) => states[lib.id].status === "mounted";
+
   function setCell(lib: Library, demo: DemoKey, el: unknown) {
     if (!(el instanceof HTMLElement)) return;
     const libCells = (cells[lib.id] ??= {});
-    if (mounted.has(lib.id) && libCells[demo] !== el) {
-      fail(lib, new Error(`The shell replaced the ${demo} cell after the library mounted into it`));
+    if (isMounted(lib) && libCells[demo] !== el) {
+      reportError(lib, new Error(`The shell replaced the ${demo} cell after the library mounted into it`));
     }
     libCells[demo] = el;
   }
 
   function setOverlay(lib: Library, el: unknown) {
     if (!(el instanceof HTMLElement)) return;
-    if (mounted.has(lib.id) && overlays[lib.id] !== el) {
-      fail(lib, new Error("The shell replaced the overlay host after the library mounted into it"));
+    if (isMounted(lib) && overlays[lib.id] !== el) {
+      reportError(lib, new Error("The shell replaced the overlay host after the library mounted into it"));
     }
     overlays[lib.id] = el;
   }
 
-  function fail(lib: Library, error: unknown) {
-    errors[lib.id] ??= String(error);
+  function describe(lib: Library, error: unknown) {
     console.error(`[${lib.id}]`, error);
+    return String(error);
+  }
+
+  /** Keeps the first error a library reports while (or after) mounting. */
+  function reportError(lib: Library, error: unknown) {
+    const message = describe(lib, error);
+    const state = states[lib.id];
+    if ((state.status === "mounting" || state.status === "mounted") && !state.error) {
+      states[lib.id] = { ...state, error: message };
+    }
   }
 
   /** The elements the shell rendered for `lib`; every demo row needs a cell. */
@@ -107,15 +146,12 @@ export function useLibraryApps(activeKind: () => Kind) {
   }
 
   async function start(lib: Library, load: () => Promise<LibraryModule>) {
-    started.add(lib.id);
-    delete errors[lib.id];
+    states[lib.id] = { status: "loading" };
     let mod: LibraryModule;
     try {
       mod = await load();
     } catch (error) {
-      // E.g. a chunk gone after a deploy: tried again the next time its tab is shown.
-      started.delete(lib.id);
-      fail(lib, error);
+      states[lib.id] = { status: "load-failed", error: describe(lib, error) };
       return;
     }
     // Its tab may have been switched away from while the module was loading.
@@ -124,16 +160,19 @@ export function useLibraryApps(activeKind: () => Kind) {
     if (disposed) return;
     // Detached: the library's watchers belong to it, not to whatever scope is active.
     const scope = effectScope(true);
+    states[lib.id] = { status: "mounting", scope };
     try {
-      scope.run(() => mod.mount({ ...targetOf(lib), controls: libraryControls, reportError: (e) => fail(lib, e) }));
+      scope.run(() =>
+        mod.mount({ ...targetOf(lib), controls: libraryControls, reportError: (error) => reportError(lib, error) }),
+      );
     } catch (error) {
       // Undo whatever it got through before failing.
       scope.stop();
-      fail(lib, error);
+      states[lib.id] = { status: "mount-failed", error: describe(lib, error) };
       return;
     }
-    scopes.push(scope);
-    mounted.add(lib.id);
+    const mounting = states[lib.id];
+    if (mounting.status === "mounting") states[lib.id] = { ...mounting, status: "mounted" };
   }
 
   onMounted(() => {
@@ -142,7 +181,7 @@ export function useLibraryApps(activeKind: () => Kind) {
       activeKind,
       (kind) => {
         for (const lib of libraries) {
-          if (lib.kind === kind && lib.load && !started.has(lib.id)) start(lib, lib.load);
+          if (lib.kind === kind && lib.load && canStart(states[lib.id])) start(lib, lib.load);
         }
       },
       { immediate: true, flush: "post" },
@@ -151,8 +190,8 @@ export function useLibraryApps(activeKind: () => Kind) {
 
   onBeforeUnmount(() => {
     disposed = true;
-    scopes.forEach((scope) => scope.stop());
+    for (const state of Object.values(states)) if (state.status === "mounted") state.scope.stop();
   });
 
-  return { errors: readonly(errors), setCell, setOverlay };
+  return { errors, setCell, setOverlay };
 }

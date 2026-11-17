@@ -3,6 +3,7 @@ import type { LibraryMeta } from "../types.ts";
 export const meta: LibraryMeta = {
   id: "vue-bits",
   name: "Vue Bits",
+  docs: "https://vue-bits.dev/",
   // Not on npm: components are copied from its registry (vue-bits.dev/r) with the shadcn or jsrepo
   // CLI. The `vue-bits` npm package is an unrelated Vue 2 library, so there are no npm stats.
   repository: "DavidHDev/vue-bits",

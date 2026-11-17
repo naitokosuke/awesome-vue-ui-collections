@@ -3,6 +3,7 @@ import type { LibraryMeta } from "../types.ts";
 export const meta: LibraryMeta = {
   id: "bootstrap-vue-next",
   name: "BootstrapVue Next",
+  docs: "https://bootstrap-vue-next.github.io/bootstrap-vue-next/",
   package: "bootstrap-vue-next",
   kind: "styled",
   order: 10,
