@@ -7,6 +7,7 @@ import IconSlidersHorizontal from "~icons/lucide/sliders-horizontal";
 import IconX from "~icons/lucide/x";
 import { DEMO_LABELS, groups, KIND_LABELS, npmFetchedAt, orderColumns } from "./board";
 import { libraries } from "./libs";
+import { readableOn } from "./libs/color";
 import { type Color, COLORS, DEMOS, type DemoKey, type Kind, type Library, SIZES } from "./libs/types";
 import LibraryLinks from "./LibraryLinks.vue";
 import LibraryLogo from "./LibraryLogo.vue";
@@ -223,8 +224,9 @@ function scopeAttrs(lib: Library) {
                 <template #option="{ option }">
                   <template v-if="option === 'default'">default</template>
                   <template v-else>
-                    <span class="swatch" :style="{ background: option }" :title="`${COLOR_NAMES[option]} ${option}`" />
-                    <span class="visually-hidden">{{ COLOR_NAMES[option] }} {{ option }}</span>
+                    <span class="swatch" :style="{ background: option }" :title="COLOR_NAMES[option]" />
+                    <span class="visually-hidden">{{ COLOR_NAMES[option] }}</span>
+                    <span class="swatch-code" :style="{ color: readableOn(option) }">{{ option }}</span>
                   </template>
                 </template>
               </RadioGroup>
@@ -620,6 +622,10 @@ function scopeAttrs(lib: Library) {
 .swatch {
   position: absolute;
   inset: 0;
+}
+
+.swatch-code {
+  position: relative;
 }
 
 /* ---- table ---- */
