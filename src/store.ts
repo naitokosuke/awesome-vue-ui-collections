@@ -7,7 +7,8 @@ const STORAGE_KEY = "awesome-vue-ui-collections:controls";
 export const controls = reactive<Controls>({
   size: "medium",
   disabled: Object.fromEntries(DEMOS.map((demo) => [demo, false])) as Record<DemoKey, boolean>,
-  dark: false,
+  // Until the viewer picks one, the OS's theme (no matchMedia outside a browser: light).
+  dark: typeof matchMedia === "function" && matchMedia("(prefers-color-scheme: dark)").matches,
   stats: true,
   label: "Click me",
   kind: "styled",

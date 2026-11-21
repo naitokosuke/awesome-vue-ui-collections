@@ -901,6 +901,8 @@ function scopeAttrs(lib: Library) {
   background-position: var(--avc-space-2) var(--avc-space-2);
   /* Library demos use a neutral sans; the shell's monospace must not leak into them. */
   font-family: var(--avc-font-sans);
+  /* Nor its color scheme (tokens.css): each library switches to dark by its own attributes. */
+  color-scheme: normal;
 
   & + .cell {
     border-inline-start: 1px solid var(--avc-color-border-soft);
@@ -989,6 +991,7 @@ a.component-ref {
 
 .overlay {
   font-family: var(--avc-font-sans);
+  color-scheme: normal;
 }
 
 /* Overlay hosts take no space in the layout: libraries may size their scope like a page body
