@@ -77,6 +77,16 @@ export function useLibraryApps(activeKind: () => Kind) {
     ),
   );
 
+  /** Libraries whose demos are still on their way (not mounted, not failed), by id: their cells say so. */
+  const busy = computed<Record<string, boolean>>(() =>
+    Object.fromEntries(
+      Object.entries(states).map(([id, { status }]) => [
+        id,
+        status === "idle" || status === "loading" || status === "mounting",
+      ]),
+    ),
+  );
+
   const cells: Record<string, Partial<Record<DemoKey, HTMLElement>>> = {};
   const overlays: Record<string, HTMLElement> = {};
   /** The calling component's scope, so watchers made later still stop with it. */
@@ -193,5 +203,5 @@ export function useLibraryApps(activeKind: () => Kind) {
     for (const state of Object.values(states)) if (state.status === "mounted") state.scope.stop();
   });
 
-  return { errors, setCell, setOverlay };
+  return { busy, errors, setCell, setOverlay };
 }

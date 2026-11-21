@@ -70,7 +70,7 @@ watch(phone, (isPhone) => {
   if (!isPhone) optionsDialog.value?.close();
 });
 
-const { errors, setCell, setOverlay } = useLibraryApps(() => controls.kind);
+const { busy, errors, setCell, setOverlay } = useLibraryApps(() => controls.kind);
 
 /** Libraries with an app of their own (not stats-only), each of which gets an overlay host. */
 const mountedLibraries = libraries.filter((lib) => lib.load);
@@ -393,6 +393,7 @@ function scopeAttrs(lib: Library) {
                 :ref="(el) => setCell(lib, demo, el)"
                 class="cell"
                 role="cell"
+                :aria-busy="busy[lib.id] || undefined"
                 :aria-colindex="positions[group.kind][lib.id]! + 2"
                 :data-column-item="lib.id"
                 :style="{
@@ -912,6 +913,23 @@ function scopeAttrs(lib: Library) {
     background: var(--avc-color-surface);
     color: var(--avc-color-text-muted);
     font: var(--avc-text-sm) / var(--avc-leading-normal) var(--avc-font-mono);
+  }
+}
+
+/* Until the library's demo arrives (its module is loading, or its app mounting). Only after a
+   moment, so a library that loads at once never flashes it. Pinned like the chip below. */
+.cell[aria-busy="true"]::after {
+  content: "loading…";
+  margin: auto;
+  color: var(--avc-color-text-muted);
+  font: var(--avc-weight-regular) var(--avc-text-sm) / var(--avc-leading-tight) var(--avc-font-mono);
+  letter-spacing: 0;
+  animation: avc-loading-appear 0.3s step-end;
+}
+
+@keyframes avc-loading-appear {
+  from {
+    visibility: hidden;
   }
 }
 
