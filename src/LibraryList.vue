@@ -1,8 +1,10 @@
 <script setup lang="ts">
+import { useEventListener } from "@vueuse/core";
 import { ref } from "vue";
 import { groups, KIND_LABELS, npmFetchedAt } from "./board";
 import LibraryLinks from "./LibraryLinks.vue";
 import LibraryLogo from "./LibraryLogo.vue";
+import { takeLinkedLibrary } from "./linkedLibrary";
 import { controls } from "./store";
 import TopBar from "./TopBar.vue";
 
@@ -13,8 +15,15 @@ import TopBar from "./TopBar.vue";
 const base = import.meta.env.BASE_URL;
 const total = groups.reduce((sum, group) => sum + group.columns.length, 0);
 
-/** The library whose link was followed: its logo and name move to its column on the compare page (a view transition, see index.html). */
+/**
+ * The library whose logo and name travel between its row and its column on the compare page (a
+ * view transition, see index.html): the one whose link is followed, or the one that page hands back.
+ */
 const linkedId = ref<string>();
+
+useEventListener(window, "pagereveal", () => {
+  linkedId.value = takeLinkedLibrary();
+});
 </script>
 
 <template>
@@ -45,7 +54,7 @@ const linkedId = ref<string>();
           </thead>
           <tbody>
             <tr v-for="lib in group.columns" :key="lib.id">
-              <th class="name" :class="{ 'vt-from': lib.id === linkedId }" scope="row">
+              <th class="name" :class="{ linked: lib.id === linkedId }" scope="row">
                 <LibraryLogo class="row-logo" :lib />
                 <a :href="`${base}?lib=${lib.id}`" :title="`Compare ${lib.name}`" @click="linkedId = lib.id">{{
                   lib.name
@@ -185,11 +194,11 @@ thead th {
   margin-inline-end: var(--avc-space-2);
 }
 
-.vt-from .row-logo {
+.linked .row-logo {
   view-transition-name: lib-logo;
 }
 
-.vt-from a {
+.linked a {
   view-transition-name: lib-name;
 }
 

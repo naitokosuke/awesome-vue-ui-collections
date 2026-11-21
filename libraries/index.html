@@ -12,20 +12,37 @@
         margin: 0;
       }
 
-      /* Following a library's link: its logo and name travel from its row to its column. */
+      /* Between the pages: the new one fades in over the old one, which stays whole beneath it
+         (fading both lets the canvas through). */
       @media (prefers-reduced-motion: no-preference) {
         @view-transition {
           navigation: auto;
         }
       }
 
-      /* Only they move: the new page is there at once, and nothing of the old one is drawn over it
-         (two unrelated layouts cross-fading read as noise). */
-      ::view-transition-old(*) {
+      ::view-transition-old(root) {
+        animation: none;
+      }
+
+      ::view-transition-new(root) {
+        animation: avc-page-in 0.2s ease-out;
+      }
+
+      @keyframes avc-page-in {
+        from {
+          opacity: 0;
+        }
+      }
+
+      /* One library's logo and name travel between its row and its column (.linked on each page):
+         the new ones only, resized on the way. */
+      ::view-transition-old(lib-logo),
+      ::view-transition-old(lib-name) {
         display: none;
       }
 
-      ::view-transition-new(*) {
+      ::view-transition-new(lib-logo),
+      ::view-transition-new(lib-name) {
         animation: none;
       }
 
@@ -36,12 +53,9 @@
       }
     </style>
     <script>
-      // No other navigation animates: there must be a row to leave (.vt-from) and a column to reach (.vt-to).
-      addEventListener("pageswap", (event) => {
-        if (!document.querySelector(".vt-from")) event.viewTransition?.skipTransition();
-      });
+      // Never fade to a page whose app isn't rendered yet.
       addEventListener("pagereveal", (event) => {
-        if (!document.querySelector(".vt-to")) event.viewTransition?.skipTransition();
+        if (!document.querySelector(".shell")) event.viewTransition?.skipTransition();
       });
     </script>
   </head>

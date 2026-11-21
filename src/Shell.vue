@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { useMediaQuery } from "@vueuse/core";
+import { useEventListener, useMediaQuery } from "@vueuse/core";
 import { computed, nextTick, onMounted, ref, useTemplateRef, watch } from "vue";
 import IconArrowUpRight from "~icons/lucide/arrow-up-right";
 import IconGripVertical from "~icons/lucide/grip-vertical";
@@ -11,6 +11,7 @@ import { readableOn } from "./libs/color";
 import { type Color, COLORS, DEMOS, type DemoKey, type Kind, type Library, SIZES } from "./libs/types";
 import LibraryLinks from "./LibraryLinks.vue";
 import LibraryLogo from "./LibraryLogo.vue";
+import { passLinkedLibrary } from "./linkedLibrary";
 import RadioGroup from "./RadioGroup.vue";
 import { controls } from "./store";
 import ToggleSwitch from "./ToggleSwitch.vue";
@@ -72,8 +73,32 @@ watch(phone, (isPhone) => {
   if (!isPhone) optionsDialog.value?.close();
 });
 
-/** The library the page was opened for (`?lib=`): its logo and name arrive from its row on the libraries page (a view transition, see index.html). */
+/**
+ * The library the page was opened for (`?lib=`): its logo and name travel between its row on the
+ * libraries page and its column here (a view transition, see index.html).
+ */
 const linkedId = ref<string>();
+
+// Leaving: they go back to the row only from where they can be seen. The transition draws them
+// unclipped, so from under the label column or outside the table they would appear out of nowhere.
+useEventListener(window, "pageswap", () => {
+  const head = document.querySelector(".head.linked");
+  const table = head?.closest(".table")?.getBoundingClientRect();
+  const label = head?.closest(".grid")?.querySelector(".corner")?.getBoundingClientRect();
+  const logo = head?.querySelector(".head-logo")?.getBoundingClientRect();
+  const name = head?.querySelector(".name")?.getBoundingClientRect();
+  const isInView =
+    table &&
+    label &&
+    logo &&
+    name &&
+    logo.left >= label.right &&
+    name.right <= table.right &&
+    logo.top >= table.top &&
+    logo.bottom <= table.bottom;
+  if (!isInView) linkedId.value = undefined;
+  passLinkedLibrary(linkedId.value);
+});
 
 onMounted(async () => {
   const linked = libraries.find((lib) => lib.id === new URLSearchParams(location.search).get("lib"));
@@ -297,7 +322,7 @@ function scopeAttrs(lib: Library) {
               v-for="lib in group.columns"
               :key="lib.id"
               class="head"
-              :class="{ 'vt-to': lib.id === linkedId }"
+              :class="{ linked: lib.id === linkedId }"
               role="columnheader"
               :aria-colindex="positions[group.kind][lib.id]! + 2"
               :data-column-item="lib.id"
@@ -762,11 +787,11 @@ function scopeAttrs(lib: Library) {
   margin-inline-start: calc(-1 * var(--avc-space-1));
 }
 
-.vt-to .head-logo {
+.linked .head-logo {
   view-transition-name: lib-logo;
 }
 
-.vt-to .name {
+.linked .name {
   view-transition-name: lib-name;
 }
 
