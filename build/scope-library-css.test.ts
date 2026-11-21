@@ -30,8 +30,8 @@ describe("scopeLibraryCss", () => {
   });
 
   test("lets a lone class or attribute also match on the scope element (theme roots)", () => {
-    expect(scoped(".van-theme-dark")).toBe(`:is(${SCOPE} .van-theme-dark, ${SCOPE}.van-theme-dark)`);
-    expect(scoped("[data-theme]")).toBe(`:is(${SCOPE} [data-theme], ${SCOPE}[data-theme])`);
+    expect(scoped(".van-theme-dark")).toBe(`${SCOPE} .van-theme-dark, ${SCOPE}.van-theme-dark`);
+    expect(scoped("[data-theme]")).toBe(`${SCOPE} [data-theme], ${SCOPE}[data-theme]`);
   });
 
   test("replaces bare :root, html and body with the scope", () => {
@@ -87,13 +87,13 @@ describe("scopeLibraryCss", () => {
   });
 
   test("scopes each selector of a list, and rules inside at-rules", () => {
-    expect(scoped(".a, .b .c")).toBe(`:is(${SCOPE} .a, ${SCOPE}.a), ${SCOPE} .b .c`);
+    expect(scoped(".a, .b .c")).toBe(`${SCOPE} .a, ${SCOPE}.a, ${SCOPE} .b .c`);
     expect(transform("@media (min-width: 1px) { :root { color: red } }")!.code).toContain(`  ${SCOPE} {`);
   });
 
   test("leaves nested rules alone: their parent is already scoped", () => {
     const { code } = transform(".a { &:hover { color: red } }")!;
-    expect(code).toContain(`:is(${SCOPE} .a, ${SCOPE}.a) {`);
+    expect(code).toContain(`${SCOPE} .a, ${SCOPE}.a {`);
     expect(code).toContain("&:hover {");
   });
 });

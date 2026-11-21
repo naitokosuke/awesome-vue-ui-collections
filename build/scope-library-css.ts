@@ -42,7 +42,7 @@ export function scopeLibraryCss(rules: ScopeRule[]): Plugin {
         errorRecovery: true,
         // A `Selector` visitor (not `Rule`): returning whole rules makes Lightning CSS
         // re-deserialize every declaration, which fails on some library CSS.
-        visitor: { Selector: (selector) => scopeSelector(selector, scope) },
+        visitor: { Selector: (selector) => scopeSelectors(selector, scope) },
       });
       return { code: result.code.toString(), map: null };
     },
@@ -114,6 +114,20 @@ function hostAsRoot(selector: Selector): Selector {
   return [{ type: "pseudo-class", kind: "root" }, ...first.selectors, ...selector.slice(1)];
 }
 
+/**
+ * Two selectors, not one `:is(a, b)`: browsers index a rule by its last compound's class, which an
+ * `:is()` of several selectors hides, and unindexed rules are matched against every element.
+ */
+function scopeSelectors(input: Selector, scope: SelectorComponent): Selector | Selector[] {
+  const isThemeRoot = input.every((component) => component.type === "class" || component.type === "attribute");
+  return isThemeRoot
+    ? [
+        [scope, DESCENDANT, ...input],
+        [scope, ...input],
+      ]
+    : scopeSelector(input, scope);
+}
+
 /** Returns one selector per input; alternatives are combined with `:is()`. */
 function scopeSelector(input: Selector, scope: SelectorComponent): Selector {
   // Nested rules (`&`) are already inside a scoped parent.
@@ -139,13 +153,7 @@ function scopeSelector(input: Selector, scope: SelectorComponent): Selector {
     return [{ ...first, selectors }, ...selector.slice(1)];
   }
 
-  if (!isGlobalElement(first)) {
-    const themeRoot =
-      compoundEnd(selector) === selector.length &&
-      selector.every((component) => component.type === "class" || component.type === "attribute");
-    const descendant = [scope, DESCENDANT, ...selector];
-    return themeRoot ? [either(descendant, [scope, ...selector])] : descendant;
-  }
+  if (!isGlobalElement(first)) return [scope, DESCENDANT, ...selector];
 
   // `html.dark body > .x`: collect the qualifiers of the leading html/body/:root and a following body.
   let end = compoundEnd(selector);
