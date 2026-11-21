@@ -190,6 +190,7 @@ function scopeAttrs(lib: Library) {
     </TopBar>
 
     <main class="page">
+      <h1 class="visually-hidden">Compare</h1>
       <!-- Which libraries to show: a tab row of its own, separate from the demo options below. -->
       <div ref="tabs" aria-label="Library kind" class="tabs" role="radiogroup">
         <label v-for="group in groups" :key="group.kind" class="tab">

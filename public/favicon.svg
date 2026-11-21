@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32">
+  <!-- Three columns, side by side. -->
+  <style>
+    rect { fill: #18181b }
+    path { stroke: #fafafa }
+    @media (prefers-color-scheme: dark) {
+      rect { fill: #fafafa }
+      path { stroke: #18181b }
+    }
+  </style>
+  <rect width="32" height="32" rx="7" />
+  <path d="M10 8v16M16 8v16M22 8v16" fill="none" stroke-width="3" stroke-linecap="round" />
+</svg>
