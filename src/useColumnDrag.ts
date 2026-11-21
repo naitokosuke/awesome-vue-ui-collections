@@ -9,14 +9,20 @@ const EDGE = 48;
 /** How the other columns make way (react-beautiful-dnd's "out of the way" timing). */
 const SLIDE_MS = 200;
 const SLIDE_EASING = "cubic-bezier(0.2, 0, 0, 1)";
-/** A released column lands faster the nearer its slot is, braking hard (react-beautiful-dnd's drop). */
-const DROP_MS = { min: 250, max: 450 };
-const DROP_FULL_DISTANCE = 1500;
-const DROP_EASING = "cubic-bezier(0.2, 1, 0.1, 1)";
-/** A cancelled drag goes back quicker than a drop lands. */
-const CANCEL_SPEED = 0.6;
-/** The held column's animation spans this many px each way, a millisecond per px (see `hold`). */
+/**
+ * The held column hangs from the pointer: it swings behind a move (degrees per px/s, up to
+ * `MAX_TILT`) on a loose spring, so it sways back upright when the pointer stops.
+ */
+const TILT_PER_SPEED = 0.0012;
+const MAX_TILT = 1.2;
+const TILT_SPRING = { stiffness: 180, damping: 16 };
+/** A released column is pulled onto its slot by a stiff spring, keeping the speed it was let go at. */
+const LAND_SPRING = { stiffness: 320, damping: 34 };
+const MAX_RELEASE_SPEED = 4000;
+/** The held column's animations span this far each way, a millisecond per px or per `TILT_STEP` degrees (see `hold`). */
 const REACH = 100_000;
+const TILT_REACH = 10;
+const TILT_STEP = 0.001;
 
 /** A column of the table: its header and cells, where its slot is (grid coordinates), and its offset now. */
 interface Column {
@@ -26,6 +32,15 @@ interface Column {
   width: number;
   /** How far it's slid from its slot, in px. */
   offset: number;
+}
+
+/** An element of the held column: scrubbing `move` and `tilt` places it (see `hold`). */
+interface Held {
+  el: HTMLElement;
+  /** Where the pointer took hold, as the element's transform-origin: the whole column turns about it. */
+  origin: string;
+  move: Animation;
+  tilt: Animation;
 }
 
 interface Drag {
@@ -38,8 +53,18 @@ interface Drag {
   to: number;
   startX: number;
   startScroll: number;
-  /** The animations that keep the dragged column under the pointer. */
-  held: Animation[];
+  held: Held[];
+  /** The pointer scrolls the table when it's left of `left` or right of `right` (client coordinates). */
+  edges: { left: number; right: number };
+  /** The boxes the page draws (see `Lifted`), once rendered. */
+  lift: HTMLElement | null;
+  slot: HTMLElement | null;
+  /** The last frame: when it ran, and the column's offset (px), speed (px/s), tilt (deg) and spin (deg/s) then. */
+  time: number;
+  dx: number;
+  velocity: number;
+  tilt: number;
+  spin: number;
 }
 
 /** What the page draws around a dragged column: its shadow, and the slot it would land in. */
@@ -48,19 +73,23 @@ export interface Lifted {
   left: number;
   width: number;
   height: number;
+  /** Where the pointer took hold, as the boxes' transform-origin. */
+  origin: string;
 }
 
 /**
  * Dragging a column by its grip, with any pointer (mouse, pen, touch).
  *
- * The column itself is picked up: it follows the pointer above the others, under a shadow, while a
- * slot shows where it would land and the other columns make way; on release it settles into the slot.
+ * The column itself is picked up: it follows the pointer above the others, under a shadow, swinging
+ * a little behind fast moves, while a slot shows where it would land and the other columns make
+ * way; on release a spring pulls it into the slot, from the speed it was let go at.
  *
  * The cells hold whole library apps, so they are never restyled while dragging: a class or an
  * inline style on one makes the browser restyle (and repaint) everything inside it. Instead:
- * - every move is a Web Animation of `translate`, which leaves nothing behind in the elements' style;
+ * - every move is a Web Animation of `translate` or `rotate`, which leaves nothing behind in the
+ *   elements' style and lets the compositor move what's already painted;
  * - the shadow and the slot are empty boxes the page draws (see `lifted`);
- * - positions are measured once, at the start.
+ * - positions are measured once, at the start, and a frame that changes nothing writes nothing.
  * On release the order is saved (the grid places the columns in their new slots, see Shell.vue)
  * and the column lands from under the pointer. Escape, or a cancelled pointer, puts everything back.
  *
@@ -73,7 +102,8 @@ export function useColumnDrag(options: {
   commit: (kind: Kind, ids: string[], id: string) => void;
 }) {
   const lifted = ref<Lifted | null>(null);
-  let press: { pointerId: number; startX: number; kind: Kind; id: string; table: HTMLElement } | null = null;
+  let press: { pointerId: number; startX: number; startY: number; kind: Kind; id: string; table: HTMLElement } | null =
+    null;
   let drag: Drag | null = null;
   let pointerX = 0;
   let frame = 0;
@@ -84,6 +114,7 @@ export function useColumnDrag(options: {
     press = {
       pointerId: event.pointerId,
       startX: event.clientX,
+      startY: event.clientY,
       kind,
       id,
       table: grip.closest<HTMLElement>(".table")!,
@@ -125,7 +156,7 @@ export function useColumnDrag(options: {
   });
 
   function start() {
-    const { kind, id, startX, table } = press!;
+    const { kind, id, startY, table } = press!;
     // Layout positions, read once: nothing is measured again while dragging.
     const columns = options.order(kind).map((columnId): Column => {
       const elements = [...table.querySelectorAll<HTMLElement>(`[data-column-item="${columnId}"]`)];
@@ -133,26 +164,63 @@ export function useColumnDrag(options: {
     });
     const from = columns.findIndex((column) => column.id === id);
     const { left, width, elements } = columns[from]!;
-    drag = { kind, id, table, columns, from, to: from, startX, startScroll: table.scrollLeft, held: hold(elements) };
-    lifted.value = { kind, left, width, height: table.querySelector(".grid")!.scrollHeight };
+    const box = table.getBoundingClientRect();
+    const head = elements[0]!.getBoundingClientRect();
+    drag = {
+      kind,
+      id,
+      table,
+      columns,
+      from,
+      to: from,
+      // From where the pointer is now, not where it pressed: the column doesn't jump by the threshold.
+      startX: pointerX,
+      startScroll: table.scrollLeft,
+      held: hold(elements, pointerX, startY),
+      edges: { left: table.querySelector(".corner")?.getBoundingClientRect().right ?? box.left, right: box.right },
+      lift: null,
+      slot: null,
+      time: performance.now(),
+      dx: Number.NaN,
+      velocity: 0,
+      tilt: 0,
+      spin: 0,
+    };
+    lifted.value = {
+      kind,
+      left,
+      width,
+      height: table.querySelector(".grid")!.scrollHeight,
+      origin: `${pointerX - head.left}px ${startY - (box.top + table.clientTop - table.scrollTop)}px`,
+    };
   }
 
   /** The dragged column's distance from its slot to under the pointer (grid coordinates). */
   const pointerOffset = ({ startX, table, startScroll }: Drag) => pointerX - startX + (table.scrollLeft - startScroll);
-  const liftElement = ({ table }: Drag) => table.querySelector<HTMLElement>(".column-lift");
-  const slotElement = ({ table }: Drag) => table.querySelector<HTMLElement>(".column-slot");
 
   /** Once a frame while dragging: the column follows the pointer, the others make way, the table scrolls near an edge. */
-  function tick() {
+  function tick(now: number) {
     frame = 0;
     if (!drag) return;
     autoScroll(drag);
-    const { columns, from, held } = drag;
+    const { columns, from, held, table } = drag;
     const dragged = columns[from]!;
+    drag.lift ??= table.querySelector<HTMLElement>(".column-lift");
+    drag.slot ??= table.querySelector<HTMLElement>(".column-slot");
+
     const dx = pointerOffset(drag);
-    for (const animation of held) animation.currentTime = REACH + dx;
-    const lift = liftElement(drag);
-    if (lift) lift.style.translate = `${dx}px 0`;
+    const seconds = Math.min(Math.max(now - drag.time, 0) / 1000, 1 / 30);
+    drag.time = now;
+    if (dx !== drag.dx) {
+      for (const { move } of held) move.currentTime = REACH + dx;
+      if (drag.lift) drag.lift.style.translate = `${dx}px 0`;
+    }
+    if (seconds > 0 && !Number.isNaN(drag.dx)) {
+      // Smoothed over a few frames: pointers report unevenly.
+      drag.velocity += ((dx - drag.dx) / seconds - drag.velocity) * 0.25;
+      swing(drag, seconds);
+    }
+    drag.dx = dx;
 
     // The slot under the dragged column's middle, and every other column's offset for that order.
     const middle = dragged.left + dx + dragged.width / 2;
@@ -160,8 +228,7 @@ export function useColumnDrag(options: {
     const to = index === -1 ? columns.length - 1 : index;
     if (to !== drag.to) {
       drag.to = to;
-      const slot = slotElement(drag);
-      if (slot) slot.style.translate = `${slotOffset(drag)}px 0`;
+      if (drag.slot) drag.slot.style.translate = `${slotOffset(drag)}px 0`;
       for (const [i, column] of columns.entries()) {
         if (i === from) continue;
         slideTo(column, from < i && i <= to ? -dragged.width : to <= i && i < from ? dragged.width : 0);
@@ -170,13 +237,25 @@ export function useColumnDrag(options: {
     frame = requestAnimationFrame(tick);
   }
 
+  /** The held column's tilt follows its speed on a spring; at rest, upright, it's left alone. */
+  function swing(current: Drag, seconds: number) {
+    const target = reducedMotion() ? 0 : Math.max(-MAX_TILT, Math.min(MAX_TILT, current.velocity * TILT_PER_SPEED));
+    if (target === 0 && current.tilt === 0) return;
+    current.spin += (TILT_SPRING.stiffness * (target - current.tilt) - TILT_SPRING.damping * current.spin) * seconds;
+    current.tilt += current.spin * seconds;
+    if (Math.abs(target) < TILT_STEP && Math.abs(current.tilt) < TILT_STEP * 5 && Math.abs(current.spin) < 0.05) {
+      current.tilt = 0;
+      current.spin = 0;
+    }
+    for (const { tilt } of current.held) tilt.currentTime = (TILT_REACH + current.tilt) / TILT_STEP;
+    if (current.lift) current.lift.style.rotate = `${current.tilt}deg`;
+  }
+
   /** Near the left (just right of the sticky label column) or right edge, the table scrolls. */
-  function autoScroll({ table }: Drag) {
-    const box = table.getBoundingClientRect();
-    const left = table.querySelector(".corner")?.getBoundingClientRect().right ?? box.left;
+  function autoScroll({ table, edges }: Drag) {
     const speed = (depth: number) => Math.ceil((Math.min(depth, EDGE) / EDGE) * 16);
-    if (pointerX < left + EDGE) table.scrollLeft -= speed(left + EDGE - pointerX);
-    else if (pointerX > box.right - EDGE) table.scrollLeft += speed(pointerX - (box.right - EDGE));
+    if (pointerX < edges.left + EDGE) table.scrollLeft -= speed(edges.left + EDGE - pointerX);
+    else if (pointerX > edges.right - EDGE) table.scrollLeft += speed(pointerX - (edges.right - EDGE));
   }
 
   /** Saves the order (dropping the slides as the grid takes them over), then lands the column in its slot. */
@@ -196,10 +275,9 @@ export function useColumnDrag(options: {
   /** Slides every column back to its slot, the dragged one from under the pointer. */
   async function cancel() {
     const current = end();
-    const slot = slotElement(current);
-    if (slot) slot.style.translate = "";
+    if (current.slot) current.slot.style.translate = "";
     for (const column of current.columns) slideTo(column, 0);
-    await land(current, 0, CANCEL_SPEED);
+    await land(current, 0);
     for (const column of current.columns) stopSliding(column);
   }
 
@@ -215,27 +293,36 @@ export function useColumnDrag(options: {
   /**
    * The dragged column comes down from under the pointer onto its slot, and its shadow goes with it.
    * `shift` is how far the layout has already moved the column toward the slot (a saved order has).
+   * The whole landing is worked out here and handed over as keyframes: no frame of it runs script.
    */
-  async function land(current: Drag, shift: number, speed = 1) {
+  async function land(current: Drag, shift: number) {
     const dx = pointerOffset(current);
-    for (const animation of current.held) animation.cancel();
+    for (const { move, tilt } of current.held) {
+      move.cancel();
+      tilt.cancel();
+    }
     if (!reducedMotion()) {
-      const distance = Math.abs(dx - shift);
-      const timing = {
-        duration: (DROP_MS.min + (DROP_MS.max - DROP_MS.min) * Math.min(distance / DROP_FULL_DISTANCE, 1)) * speed,
-        easing: DROP_EASING,
-      };
-      const lift = liftElement(current);
+      const path = settle(dx - shift, current.velocity, current.tilt, current.spin);
+      const timing = { duration: ((path.length - 1) * 1000) / 60 };
+      const { lift } = current;
       if (lift) {
         lift.style.translate = `${shift}px 0`;
-        lift.animate([{ translate: `${dx}px 0` }, { translate: `${shift}px 0`, opacity: 0 }], timing);
+        lift.style.rotate = "";
+        lift.animate(
+          path.map(([x, tilt]) => ({ translate: `${x + shift}px 0`, rotate: `${tilt}deg` })),
+          timing,
+        );
+        // The shadow closes up as the column comes down onto the table.
+        lift.animate({ opacity: [1, 0] }, { ...timing, easing: "ease-in" });
       }
-      const landings = current.columns[current.from]!.elements.map((el) =>
+      const landings = current.held.map(({ el, origin }) =>
         el.animate(
-          [
-            { translate: `${dx - shift}px 0`, zIndex: raised(el) },
-            { translate: "0 0", zIndex: raised(el) },
-          ],
+          path.map(([x, tilt]) => ({
+            translate: `${x}px 0`,
+            rotate: `${tilt}deg`,
+            transformOrigin: origin,
+            zIndex: raised(el),
+          })),
           timing,
         ),
       );
@@ -256,29 +343,63 @@ const slotOffset = ({ columns, from, to }: Drag) => columns[to]!.left - columns[
 const raised = (el: HTMLElement) => (el.classList.contains("head") ? 4 : 1);
 
 /**
- * Picks a column up: a paused animation on each of its elements, spanning `REACH` px each way at a
- * millisecond per px, so moving the column is setting `currentTime` (no style is written).
+ * Picks a column up, by the point (client coordinates) the pointer holds it at: two paused
+ * animations on each of its elements, one spanning `REACH` px each way and one `TILT_REACH` degrees
+ * about that point, so moving and tilting the column is setting their `currentTime` (no style is written).
  */
-function hold(elements: HTMLElement[]) {
+function hold(elements: HTMLElement[], x: number, y: number): Held[] {
   return elements.map((el) => {
-    const animation = el.animate(
+    const box = el.getBoundingClientRect();
+    const origin = `${x - box.left}px ${y - box.top}px`;
+    const move = el.animate(
       [
         { translate: `${-REACH}px 0`, zIndex: raised(el) },
         { translate: `${REACH}px 0`, zIndex: raised(el) },
       ],
       { duration: REACH * 2, fill: "both" },
     );
-    animation.pause();
-    animation.currentTime = REACH;
-    return animation;
+    move.pause();
+    move.currentTime = REACH;
+    const tilt = el.animate(
+      [
+        { rotate: `${-TILT_REACH}deg`, transformOrigin: origin },
+        { rotate: `${TILT_REACH}deg`, transformOrigin: origin },
+      ],
+      { duration: (TILT_REACH * 2) / TILT_STEP, fill: "both" },
+    );
+    tilt.pause();
+    tilt.currentTime = TILT_REACH / TILT_STEP;
+    return { el, origin, move, tilt };
   });
 }
 
-/** Slides a column from where it is to `offset` px off its slot, and keeps it there (fill: forwards). */
+/**
+ * A landing, frame by frame (60 a second) as `[px from the slot, degrees of tilt]`: the column,
+ * `x` px off its slot and moving at `velocity` px/s, is pulled in by the landing spring while its
+ * tilt swings out, until both are at rest.
+ */
+function settle(x: number, velocity: number, tilt: number, spin: number) {
+  let v = Math.max(-MAX_RELEASE_SPEED, Math.min(MAX_RELEASE_SPEED, velocity));
+  const path: [number, number][] = [[x, tilt]];
+  const step = 1 / 240;
+  for (let i = 1; i <= 360; i++) {
+    v += (-LAND_SPRING.stiffness * x - LAND_SPRING.damping * v) * step;
+    x += v * step;
+    spin += (-TILT_SPRING.stiffness * tilt - TILT_SPRING.damping * spin) * step;
+    tilt += spin * step;
+    if (i % 4 !== 0) continue;
+    if (Math.abs(x) < 0.5 && Math.abs(v) < 20 && Math.abs(tilt) < 0.02 && Math.abs(spin) < 1) break;
+    path.push([x, tilt]);
+  }
+  path.push([0, 0]);
+  return path;
+}
+
+/** Slides a column from where it is now (mid-slide or not) to `offset` px off its slot, and keeps it there. */
 function slideTo(column: Column, offset: number) {
   if (offset === column.offset) return;
-  const from = column.offset;
   column.offset = offset;
+  const from = Number.parseFloat(getComputedStyle(column.elements[0]!).translate) || 0;
   for (const el of column.elements) {
     for (const animation of el.getAnimations()) if (animation.id === "column-slide") animation.cancel();
     const animation = el.animate([{ translate: `${from}px 0` }, { translate: `${offset}px 0` }], {

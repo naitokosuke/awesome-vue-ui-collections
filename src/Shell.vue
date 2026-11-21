@@ -142,6 +142,7 @@ const liftedBox = computed(
       insetInlineStart: `${lifted.value.left}px`,
       inlineSize: `${lifted.value.width}px`,
       blockSize: `${lifted.value.height}px`,
+      transformOrigin: lifted.value.origin,
     },
 );
 
@@ -811,44 +812,49 @@ function scopeAttrs(lib: Library) {
 .column-lift {
   position: absolute;
   inset-block-start: 0;
-  box-sizing: border-box;
   pointer-events: none;
 }
 
-/* Under the columns (it comes before the grid), so it shows where they've made way. */
+/* A well where the columns have made way: under them (it comes before the grid), sunk into the table. */
 .column-slot {
-  border: 2px dashed var(--avc-color-border-control);
-  border-radius: var(--avc-radius-md);
   background: var(--avc-color-subtle);
+  box-shadow:
+    inset 0 0 0 1px var(--avc-color-border),
+    inset 0 2px 10px var(--avc-color-shadow);
 
   @media (prefers-reduced-motion: no-preference) {
     transition: translate 0.2s cubic-bezier(0.2, 0, 0, 1);
   }
 }
 
-/* An empty box over the column: only its ring and shadow show, and they follow the pointer by `translate`. */
+/* An empty box over the column, which follows the pointer with it (by `translate` and `rotate`):
+   only the ring and shadow of its pseudo-element show. */
 .column-lift {
   z-index: 4;
-  box-shadow:
-    0 0 0 1px var(--avc-color-border-control),
-    0 2px 6px var(--avc-color-shadow),
-    0 12px 28px var(--avc-color-shadow),
-    0 24px 56px var(--avc-color-shadow);
-  will-change: translate;
+  will-change: translate, rotate;
 
-  @media (prefers-reduced-motion: no-preference) {
-    animation: avc-lift 0.2s cubic-bezier(0.18, 0.67, 0.6, 1.22);
+  &::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    box-shadow:
+      0 0 0 1px var(--avc-color-border-control),
+      0 2px 6px var(--avc-color-shadow),
+      0 12px 28px var(--avc-color-shadow),
+      0 24px 56px var(--avc-color-shadow);
+
+    @media (prefers-reduced-motion: no-preference) {
+      animation: avc-lift 0.2s cubic-bezier(0.18, 0.67, 0.6, 1.22);
+    }
   }
 }
 
-/* Picked up: the shadow grows from nothing, a touch past its size and back. */
+/* Picked up: the shadow spreads out from under the column, a touch past its size and back.
+   (Opacity and scale: the shadow is painted once, not once a frame.) */
 @keyframes avc-lift {
   from {
-    box-shadow:
-      0 0 0 1px transparent,
-      0 0 0 transparent,
-      0 0 0 transparent,
-      0 0 0 transparent;
+    opacity: 0;
+    scale: 0.97;
   }
 }
 
