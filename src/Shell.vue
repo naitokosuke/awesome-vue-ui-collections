@@ -72,9 +72,13 @@ watch(phone, (isPhone) => {
   if (!isPhone) optionsDialog.value?.close();
 });
 
+/** The library the page was opened for (`?lib=`): its logo and name arrive from its row on the libraries page (a view transition, see index.html). */
+const linkedId = ref<string>();
+
 onMounted(async () => {
   const linked = libraries.find((lib) => lib.id === new URLSearchParams(location.search).get("lib"));
   if (!linked) return;
+  linkedId.value = linked.id;
   controls.kind = linked.kind;
   history.replaceState(null, "", location.pathname);
   await nextTick();
@@ -293,6 +297,7 @@ function scopeAttrs(lib: Library) {
               v-for="lib in group.columns"
               :key="lib.id"
               class="head"
+              :class="{ linked: lib.id === linkedId }"
               role="columnheader"
               :aria-colindex="positions[group.kind][lib.id]! + 2"
               :data-column-item="lib.id"
@@ -755,6 +760,14 @@ function scopeAttrs(lib: Library) {
   align-items: center;
   gap: var(--avc-space-0-5);
   margin-inline-start: calc(-1 * var(--avc-space-1));
+}
+
+.linked .head-logo {
+  view-transition-name: lib-logo;
+}
+
+.linked .name {
+  view-transition-name: lib-name;
 }
 
 .head-logo {

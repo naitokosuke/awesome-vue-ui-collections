@@ -74,6 +74,15 @@ export default defineConfig({
     npmStats(process.env.VITEST ? [] : metas.flatMap((meta) => meta.package ?? [])),
     installedVersions(metas.flatMap((meta) => meta.package ?? [])),
     {
+      // The pages' view transition snapshots the first frame, which must have the app in it. Added
+      // here because the build rewrites the entry's <script> and drops the attribute.
+      name: "render-blocking-entry",
+      transformIndexHtml: {
+        order: "post",
+        handler: (html) => html.replaceAll('<script type="module"', '<script type="module" blocking="render"'),
+      },
+    },
+    {
       // `metas` is read once at startup (CSS scoping, npm stats), so adding, editing or
       // removing a library's meta.ts needs a dev-server restart (which re-reads them) to take effect.
       name: "restart-on-library-meta-change",

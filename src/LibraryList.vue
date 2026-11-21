@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { ref } from "vue";
 import { groups, KIND_LABELS, npmFetchedAt } from "./board";
 import LibraryLinks from "./LibraryLinks.vue";
 import LibraryLogo from "./LibraryLogo.vue";
@@ -11,6 +12,9 @@ import TopBar from "./TopBar.vue";
  */
 const base = import.meta.env.BASE_URL;
 const total = groups.reduce((sum, group) => sum + group.columns.length, 0);
+
+/** The library whose link was followed: its logo and name move to its column on the compare page (a view transition, see index.html). */
+const linkedId = ref<string>();
 </script>
 
 <template>
@@ -41,9 +45,11 @@ const total = groups.reduce((sum, group) => sum + group.columns.length, 0);
           </thead>
           <tbody>
             <tr v-for="lib in group.columns" :key="lib.id">
-              <th class="name" scope="row">
+              <th class="name" :class="{ linked: lib.id === linkedId }" scope="row">
                 <LibraryLogo class="row-logo" :lib />
-                <a :href="`${base}?lib=${lib.id}`" :title="`Compare ${lib.name}`">{{ lib.name }}</a>
+                <a :href="`${base}?lib=${lib.id}`" :title="`Compare ${lib.name}`" @click="linkedId = lib.id">{{
+                  lib.name
+                }}</a>
               </th>
               <td class="version">{{ lib.version ?? "—" }}</td>
               <td class="released">
@@ -177,6 +183,14 @@ thead th {
 
 .row-logo {
   margin-inline-end: var(--avc-space-2);
+}
+
+.linked .row-logo {
+  view-transition-name: lib-logo;
+}
+
+.linked a {
+  view-transition-name: lib-name;
 }
 
 .version,

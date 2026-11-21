@@ -130,9 +130,11 @@ function print(selector: Selector): string {
 }
 
 describe("production build", () => {
-  test("ships both pages, each with its own entry script", () => {
+  test("ships both pages, each with its own render-blocking entry script", () => {
     for (const page of ["index.html", "libraries/index.html"]) {
-      expect(readFileSync(join(outDir, page), "utf8"), page).toMatch(/<script type="module"[^>]* src="\/assets\//);
+      expect(readFileSync(join(outDir, page), "utf8"), page).toMatch(
+        /<head>.*<script type="module" blocking="render"[^>]* src="\/assets\/.*<\/head>/s,
+      );
     }
   });
 
