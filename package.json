@@ -51,7 +51,8 @@
     "unplugin-icons": "^24.0.0",
     "vite": "catalog:",
     "vite-plus": "catalog:",
-    "vize": "0.763.0"
+    "vize": "0.763.0",
+    "void": "^1.11.0"
   },
   "packageManager": "pnpm@12.9.0"
 }
