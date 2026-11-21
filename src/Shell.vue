@@ -70,6 +70,20 @@ watch(phone, (isPhone) => {
   if (!isPhone) optionsDialog.value?.close();
 });
 
+/**
+ * `?lib=<id>`, as the libraries page links here: opens that library's tab and scrolls to its column.
+ * The parameter is then dropped, so a reload goes back to the saved tab.
+ */
+onMounted(async () => {
+  const linked = libraries.find((lib) => lib.id === new URLSearchParams(location.search).get("lib"));
+  if (!linked) return;
+  controls.kind = linked.kind;
+  history.replaceState(null, "", location.pathname);
+  // Once its tab's table is shown.
+  await nextTick();
+  document.querySelector(`.head[data-column-item="${linked.id}"]`)?.scrollIntoView({ inline: "start" });
+});
+
 const { busy, errors, setCell, setOverlay } = useLibraryApps(() => controls.kind);
 
 /** Libraries with an app of their own (not stats-only), each of which gets an overlay host. */
@@ -643,8 +657,10 @@ function scopeAttrs(lib: Library) {
 /* No grid gap: rows are divided by lines, columns only by faint ones, so each column reads as one
    card (header) standing on one canvas strip per component. */
 .grid {
+  --label-column: 12rem;
+
   display: grid;
-  grid-template-columns: 12rem repeat(var(--libs), minmax(15rem, 1fr));
+  grid-template-columns: var(--label-column) repeat(var(--libs), minmax(15rem, 1fr));
   min-inline-size: max-content;
   /* Tab and reading order follow the grid, not the DOM (columns are placed by their order). */
   reading-flow: grid-rows;
@@ -688,6 +704,8 @@ function scopeAttrs(lib: Library) {
   border-block-end: 1px solid var(--avc-color-border);
   background: var(--avc-color-surface);
   font-variant-numeric: tabular-nums;
+  /* Scrolled to (a `?lib=` link): clear of the sticky label column. */
+  scroll-margin-inline-start: var(--label-column);
 
   & + .head {
     border-inline-start: 1px solid var(--avc-color-border-soft);

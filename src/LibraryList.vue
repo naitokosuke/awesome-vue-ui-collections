@@ -8,6 +8,7 @@ import TopBar from "./TopBar.vue";
  * Every library on the compare page, one table per kind with its npm stats and links. It reads
  * only their metadata (board.ts): no library is loaded here.
  */
+const base = import.meta.env.BASE_URL;
 const total = groups.reduce((sum, group) => sum + group.columns.length, 0);
 </script>
 
@@ -42,7 +43,8 @@ const total = groups.reduce((sum, group) => sum + group.columns.length, 0);
               <th class="name" scope="row">
                 <!-- On a light tile in both themes: many logos are dark on a transparent background. -->
                 <span class="logo"><img v-if="lib.logo" alt="" :src="lib.logo"></span>
-                {{ lib.name }}
+                <!-- To its column on the compare page. -->
+                <a :href="`${base}?lib=${lib.id}`" :title="`Compare ${lib.name}`">{{ lib.name }}</a>
               </th>
               <td class="version">{{ lib.version ?? "—" }}</td>
               <td class="released">
@@ -157,6 +159,21 @@ thead th {
   font-family: var(--avc-font-sans);
   font-size: var(--avc-text-md);
   font-weight: var(--avc-weight-semibold);
+}
+
+.name a {
+  color: inherit;
+  text-decoration: none;
+
+  &:hover {
+    text-decoration: underline;
+    text-underline-offset: 2px;
+  }
+
+  &:focus-visible {
+    outline: var(--avc-focus-ring);
+    outline-offset: 2px;
+  }
 }
 
 .logo {

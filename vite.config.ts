@@ -188,7 +188,7 @@ export default defineConfig({
     {
       // Every href is built from meta.ts, from a GitHub slug matched by build/npm-stats.ts or from the
       // base URL; none is user input.
-      files: ["src/Shell.vue", "src/LibraryLinks.vue", "src/TopBar.vue"],
+      files: ["src/Shell.vue", "src/LibraryLinks.vue", "src/LibraryList.vue", "src/TopBar.vue"],
       linter: { rules: { "vue/no-unsafe-url": "off" } },
     },
   ],

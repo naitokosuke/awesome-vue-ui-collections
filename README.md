@@ -14,6 +14,7 @@ The page can switch dark mode (the OS's setting until one is picked), size, prim
 Columns can be reordered per tab, by dragging a column's grip or with its arrow keys, and the order is kept
 Column headers show npm stats (version, release age, weekly downloads) fetched at build time
 A second page, `/libraries/`, lists every library by kind with those stats and links to its docs, npm and GitHub, without loading any of them
+A library's name there links to its column on the comparison (`/?lib=<id>` opens its tab and scrolls to it)
 
 ## How libraries share one page
 

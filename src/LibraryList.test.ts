@@ -41,6 +41,12 @@ test("links each library's docs, and GitHub where it's known", () => {
   }
 });
 
+test("links each library's name to its column on the compare page", () => {
+  const host = mount();
+  const hrefs = [...host.querySelectorAll("tbody th a")].map((a) => a.getAttribute("href"));
+  expect(hrefs).toEqual(groups.flatMap((group) => group.columns).map((lib) => `/?lib=${lib.id}`));
+});
+
 test("shows every library's logo (src/libs/<id>/logo.svg, .png or .ico)", () => {
   const host = mount();
   const libs = groups.flatMap((group) => group.columns);
