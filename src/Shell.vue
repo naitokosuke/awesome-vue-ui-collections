@@ -130,11 +130,20 @@ function moveTo(kind: Kind, id: string, to: number) {
   saveOrder(kind, ids, id);
 }
 
-/** Dragging a grip: a ghost follows the pointer, the columns make way, the order is saved on release (see useColumnDrag). */
-const { ghost, onPointerDown, onPointerMove, onPointerUp, onPointerCancel } = useColumnDrag({
+/** Dragging a grip: the column follows the pointer, the others make way, the order is saved on release (see useColumnDrag). */
+const { lifted, onPointerDown, onPointerMove, onPointerUp, onPointerCancel } = useColumnDrag({
   order: columnIds,
   commit: saveOrder,
 });
+
+const liftedBox = computed(
+  () =>
+    lifted.value && {
+      insetInlineStart: `${lifted.value.left}px`,
+      inlineSize: `${lifted.value.width}px`,
+      blockSize: `${lifted.value.height}px`,
+    },
+);
 
 /** The reset button goes away with the saved order, so focus moves on to the first column's grip. */
 async function resetOrder(event: MouseEvent, kind: Kind) {
@@ -265,6 +274,8 @@ function scopeAttrs(lib: Library) {
 
       <!-- One table per kind; all stay mounted (v-show), so a library mounted once keeps its cells. -->
       <section v-for="(group, index) in groups" v-show="controls.kind === group.kind" :key="group.kind" class="table">
+        <!-- While a column is dragged: the slot it would land in, under the columns (see useColumnDrag). -->
+        <div v-if="lifted?.kind === group.kind" aria-hidden="true" class="column-slot" :style="liftedBox" />
         <!-- A table to assistive tech: each row wrapper is `display: contents`, so the grid lays out its cells. -->
         <div
           class="grid"
@@ -419,17 +430,8 @@ function scopeAttrs(lib: Library) {
             </template>
           </div>
         </div>
-        <!-- While a column is dragged: an empty ghost of it, which follows the pointer (see useColumnDrag). -->
-        <div
-          v-if="ghost?.kind === group.kind"
-          aria-hidden="true"
-          class="column-ghost"
-          :style="
-            { insetInlineStart: `${ghost.left}px`, inlineSize: `${ghost.width}px`, blockSize: `${ghost.height}px` }
-          "
-        >
-          <span class="column-ghost-name">{{ nameOf(ghost.id) }}</span>
-        </div>
+        <!-- And the shadow it's lifted under, over the columns; it follows the pointer with the column. -->
+        <div v-if="lifted?.kind === group.kind" aria-hidden="true" class="column-lift" :style="liftedBox" />
       </section>
     </main>
 
@@ -804,29 +806,50 @@ function scopeAttrs(lib: Library) {
   }
 }
 
-/* The dragged column's ghost: drawn over the table, it follows the pointer by `translate` alone. */
-.column-ghost {
+/* Around a dragged column, both sized to it: the slot it would land in, and the shadow it's lifted under. */
+.column-slot,
+.column-lift {
   position: absolute;
   inset-block-start: 0;
-  z-index: 4;
   box-sizing: border-box;
-  padding: var(--avc-space-3) var(--avc-space-4);
-  border: 2px solid var(--avc-color-text);
-  border-radius: var(--avc-radius-md);
-  background: color-mix(in oklch, var(--avc-color-surface) 35%, transparent);
-  box-shadow: 0 12px 32px oklch(0% 0 0 / 0.2);
   pointer-events: none;
-  will-change: translate;
 }
 
-.column-ghost-name {
-  display: inline-block;
-  padding: var(--avc-space-1) var(--avc-space-2);
-  border-radius: var(--avc-radius-sm);
-  background: var(--avc-color-text);
-  color: var(--avc-color-bg);
-  font-family: var(--avc-font-sans);
-  font-weight: var(--avc-weight-semibold);
+/* Under the columns (it comes before the grid), so it shows where they've made way. */
+.column-slot {
+  border: 2px dashed var(--avc-color-border-control);
+  border-radius: var(--avc-radius-md);
+  background: var(--avc-color-subtle);
+
+  @media (prefers-reduced-motion: no-preference) {
+    transition: translate 0.2s cubic-bezier(0.2, 0, 0, 1);
+  }
+}
+
+/* An empty box over the column: only its ring and shadow show, and they follow the pointer by `translate`. */
+.column-lift {
+  z-index: 4;
+  box-shadow:
+    0 0 0 1px var(--avc-color-border-control),
+    0 2px 6px var(--avc-color-shadow),
+    0 12px 28px var(--avc-color-shadow),
+    0 24px 56px var(--avc-color-shadow);
+  will-change: translate;
+
+  @media (prefers-reduced-motion: no-preference) {
+    animation: avc-lift 0.2s cubic-bezier(0.18, 0.67, 0.6, 1.22);
+  }
+}
+
+/* Picked up: the shadow grows from nothing, a touch past its size and back. */
+@keyframes avc-lift {
+  from {
+    box-shadow:
+      0 0 0 1px transparent,
+      0 0 0 transparent,
+      0 0 0 transparent,
+      0 0 0 transparent;
+  }
 }
 
 /* Under the stats switch: when its numbers were fetched. */

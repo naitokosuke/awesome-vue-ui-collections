@@ -676,7 +676,7 @@ describe("Shell with every library loaded", () => {
     expect(visibleBodyStrays()).toEqual([]);
   });
 
-  test("dragging a grip: a ghost follows, the columns make way, release saves the order, Escape undoes", async () => {
+  test("dragging a grip: the column follows, the others make way, release saves the order, Escape undoes", async () => {
     await showKind("styled");
     const table = visibleTable();
     // Scrolled back (an earlier test scrolls it): near the table's edges a drag scrolls it on its own.
@@ -698,12 +698,14 @@ describe("Shell with every library loaded", () => {
     const settled = async () => {
       await new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve)));
       // A slide cut short by the next one rejects; a library's own endless animations never finish,
-      // nor does one driven by scrolling (the label column's shadow).
+      // nor does one driven by scrolling (the label column's shadow), nor the held column's (paused).
       const finite = table
         .getAnimations({ subtree: true })
         .filter(
           (animation) =>
-            animation.timeline === document.timeline && animation.effect?.getComputedTiming().endTime !== Infinity,
+            animation.timeline === document.timeline &&
+            animation.playState !== "paused" &&
+            animation.effect?.getComputedTiming().endTime !== Infinity,
         );
       await Promise.all(finite.map((animation) => animation.finished.catch(() => {})));
       await nextTick();
@@ -713,14 +715,15 @@ describe("Shell with every library loaded", () => {
       pointer("pointermove", start + 10);
       pointer("pointermove", start + width);
       await settled();
-      expect(table.querySelector(".column-ghost")?.textContent?.trim(), "the ghost").toBe(first!.name);
+      expect(table.querySelector(".column-lift"), "the column is lifted").not.toBeNull();
+      expect(table.querySelector<HTMLElement>(".column-slot")?.style.translate, "its slot moved on").toBeTruthy();
       expect(names().slice(0, 2), "the columns made way").toEqual([second!.name, first!.name]);
       expect(controls.order.styled, "not saved yet").toBeUndefined();
 
       window.dispatchEvent(new KeyboardEvent("keydown", { key: "Escape" }));
       await settled();
       expect(names().slice(0, 2)).toEqual([first!.name, second!.name]);
-      expect(table.querySelector(".column-ghost")).toBeNull();
+      expect(table.querySelector(".column-lift")).toBeNull();
 
       pointer("pointerdown", start);
       pointer("pointermove", start + 10);
@@ -730,7 +733,7 @@ describe("Shell with every library loaded", () => {
       await settled();
       expect(names().slice(0, 3)).toEqual([second!.name, third!.name, first!.name]);
       expect(controls.order.styled?.slice(0, 3)).toEqual([second!.id, third!.id, first!.id]);
-      expect(table.querySelector(".column-ghost")).toBeNull();
+      expect(table.querySelector(".column-lift")).toBeNull();
       // Nothing is left on the columns: no running slide, no inline translate.
       const items = [...table.querySelectorAll<HTMLElement>("[data-column-item]")];
       expect(items.filter((el) => el.getAnimations().length > 0 || el.style.translate)).toEqual([]);
