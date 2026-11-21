@@ -195,8 +195,19 @@ export function useColumnDrag(options: {
     };
   }
 
-  /** The dragged column's distance from its slot to under the pointer (grid coordinates). */
-  const pointerOffset = ({ startX, table, startScroll }: Drag) => pointerX - startX + (table.scrollLeft - startScroll);
+  /**
+   * The dragged column's distance from its slot to under the pointer (grid coordinates), as far as
+   * the table lets it go: it stops against the sticky label column (which it would slide under) and
+   * at the end of the last column. A column picked up half under the labels just goes no further in.
+   */
+  function pointerOffset({ startX, table, startScroll, columns, from }: Drag) {
+    const dragged = columns[from]!;
+    const last = columns.at(-1)!;
+    const labels = columns[0]!.left + table.scrollLeft;
+    const min = Math.min(0, labels - dragged.left);
+    const max = last.left + last.width - dragged.width - dragged.left;
+    return Math.max(min, Math.min(max, pointerX - startX + (table.scrollLeft - startScroll)));
+  }
 
   /** Once a frame while dragging: the column follows the pointer, the others make way, the table scrolls near an edge. */
   function tick(now: number) {
