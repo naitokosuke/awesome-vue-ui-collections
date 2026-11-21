@@ -1,20 +1,21 @@
 <script setup lang="ts">
 import { useMediaQuery } from "@vueuse/core";
-import { computed, nextTick, onBeforeUnmount, onMounted, ref, useTemplateRef, watch } from "vue";
+import { computed, nextTick, onMounted, ref, useTemplateRef, watch } from "vue";
 import IconArrowUpRight from "~icons/lucide/arrow-up-right";
 import IconGripVertical from "~icons/lucide/grip-vertical";
 import IconSlidersHorizontal from "~icons/lucide/sliders-horizontal";
 import IconX from "~icons/lucide/x";
 import { DEMO_LABELS, groups, KIND_LABELS, npmFetchedAt, orderColumns } from "./board";
 import { libraries } from "./libs";
-import { readableOn } from "./libs/color";
 import { type Color, COLORS, DEMOS, type DemoKey, type Kind, type Library, SIZES } from "./libs/types";
 import LibraryLinks from "./LibraryLinks.vue";
+import LibraryLogo from "./LibraryLogo.vue";
 import RadioGroup from "./RadioGroup.vue";
 import { controls } from "./store";
 import ToggleSwitch from "./ToggleSwitch.vue";
 import TopBar from "./TopBar.vue";
 import { useColumnDrag } from "./useColumnDrag";
+import { useSelectionRect } from "./useSelectionRect";
 import { useLibraryApps } from "./useLibraryApps";
 
 const SIZE_LABELS = { small: "sm", medium: "md", large: "lg" } as const;
@@ -85,28 +86,11 @@ const { isLoading, errors, setCell, setOverlay } = useLibraryApps(() => controls
 const mountedLibraries = libraries.filter((lib) => lib.load);
 
 /**
- * The kind tabs' underline: one element under the checked tab, which slides to the next one.
- * Measured rather than drawn by each tab, so it can move between them; re-measured whenever a tab
- * resizes (web fonts, the bold checked label, wrapping). Null until measured, so it first renders
- * in place instead of sliding in from the corner.
+ * The kind tabs' underline: one element under the checked tab, which slides to the next one
+ * (see useSelectionRect).
  */
 const tabs = useTemplateRef<HTMLElement>("tabs");
-const indicator = ref<{ x: number; y: number; width: number } | null>(null);
-
-function measureIndicator() {
-  const tab = tabs.value?.querySelector<HTMLElement>(".tab:has(:checked)");
-  if (!tab) return;
-  indicator.value = { x: tab.offsetLeft, y: tab.offsetTop + tab.offsetHeight, width: tab.offsetWidth };
-}
-
-watch(() => controls.kind, measureIndicator, { flush: "post" });
-let tabsObserver: ResizeObserver | undefined;
-onMounted(() => {
-  measureIndicator();
-  tabsObserver = new ResizeObserver(measureIndicator);
-  for (const el of [tabs.value!, ...tabs.value!.children]) tabsObserver.observe(el);
-});
-onBeforeUnmount(() => tabsObserver?.disconnect());
+const indicator = useSelectionRect(tabs, ".tab:has(:checked)", () => controls.kind);
 
 /**
  * Each tab's saved column order, as every column's position in it. The grid places a column's
@@ -197,7 +181,7 @@ function scopeAttrs(lib: Library) {
           v-if="indicator"
           aria-hidden="true"
           class="tab-indicator"
-          :style="{ translate: `${indicator.x}px ${indicator.y}px`, width: `${indicator.width}px` }"
+          :style="{ translate: `${indicator.x}px ${indicator.y + indicator.height}px`, width: `${indicator.width}px` }"
         />
       </div>
       <!-- Every kind's description in one cell, the others hidden: as tall as the longest at any width. -->
@@ -229,15 +213,18 @@ function scopeAttrs(lib: Library) {
           <div class="facet">
             <span aria-hidden="true" class="facet-label">color</span>
             <div class="options">
-              <RadioGroup v-model="colorChoice" :options="COLOR_OPTIONS" legend="Primary color" name="color">
+              <RadioGroup
+                v-model="colorChoice"
+                appearance="swatches"
+                :options="COLOR_OPTIONS"
+                legend="Primary color"
+                name="color"
+              >
                 <template #option="{ option }">
                   <template v-if="option === 'default'">default</template>
-                  <!-- The color fills the chip, labeled with its code. -->
                   <template v-else>
-                    <span class="swatch" :style="{ background: option }" :title="COLOR_NAMES[option]" />
-                    <!-- Announced name first ("blue #2563eb"): the code alone says little to a screen reader user. -->
-                    <span class="visually-hidden">{{ COLOR_NAMES[option] }}</span>
-                    <span class="swatch-code" :style="{ color: readableOn(option) }">{{ option }}</span>
+                    <span class="swatch" :style="{ background: option }" :title="`${COLOR_NAMES[option]} ${option}`" />
+                    <span class="visually-hidden">{{ COLOR_NAMES[option] }} {{ option }}</span>
                   </template>
                 </template>
               </RadioGroup>
@@ -270,13 +257,9 @@ function scopeAttrs(lib: Library) {
       </Teleport>
 
       <!-- Phones only: which component the stacked list shows. -->
-      <fieldset class="demo-picker">
-        <legend class="visually-hidden">Component</legend>
-        <label v-for="demo in DEMOS" :key="demo">
-          <input v-model="phoneDemo" class="visually-hidden" name="phone-demo" type="radio" :value="demo">
-          {{ DEMO_LABELS[demo] }}
-        </label>
-      </fieldset>
+      <RadioGroup v-model="phoneDemo" class="demo-picker" :options="DEMOS" legend="Component" name="phone-demo">
+        <template #option="{ option }">{{ DEMO_LABELS[option] }}</template>
+      </RadioGroup>
 
       <!-- One table per kind; all stay mounted (v-show), so a library mounted once keeps its cells. -->
       <section v-for="(group, index) in groups" v-show="controls.kind === group.kind" :key="group.kind" class="table">
@@ -330,6 +313,7 @@ function scopeAttrs(lib: Library) {
                   >
                     <IconGripVertical aria-hidden="true" />
                   </button>
+                  <LibraryLogo class="head-logo" :lib />
                   <span class="name">{{ lib.name }}</span>
                 </span>
                 <span
@@ -556,6 +540,16 @@ function scopeAttrs(lib: Library) {
     opacity: 0;
     pointer-events: none;
   }
+
+  & .muted {
+    min-inline-size: 1.5em;
+    padding: 0 var(--avc-space-1);
+    border-radius: var(--avc-radius-full);
+    background: var(--avc-color-subtle);
+    font-size: var(--avc-text-sm);
+    font-weight: var(--avc-weight-regular);
+    text-align: center;
+  }
 }
 
 /* Covers the checked tab's transparent bottom border, which keeps the tab's height. */
@@ -592,21 +586,20 @@ function scopeAttrs(lib: Library) {
 
 /* ---- demo options ---- */
 
-/* Label column + options column; each .facet row inherits both tracks via subgrid. */
 .facets {
-  display: grid;
-  grid-template-columns: max-content 1fr;
-  gap: var(--avc-space-3) var(--avc-space-4);
+  display: flex;
+  flex-wrap: wrap;
   align-items: center;
-  margin-block: var(--avc-space-5) var(--avc-space-3);
+  gap: var(--avc-space-3) var(--avc-space-6);
+  margin-block: var(--avc-space-4);
   font-size: var(--avc-text-sm);
 }
 
 .facet {
-  display: grid;
-  grid-column: 1 / -1;
-  grid-template-columns: subgrid;
+  display: flex;
   align-items: center;
+  gap: var(--avc-space-3);
+  min-inline-size: 0;
 }
 
 .facet-label {
@@ -624,15 +617,9 @@ function scopeAttrs(lib: Library) {
   overflow-x: auto;
 }
 
-/* A color option: fills its RadioGroup chip edge to edge (the chip clips it to its shape). */
 .swatch {
   position: absolute;
   inset: 0;
-}
-
-/* Its color (black or white, whichever has more contrast on the swatch) is set inline. */
-.swatch-code {
-  position: relative;
 }
 
 /* ---- table ---- */
@@ -686,6 +673,28 @@ function scopeAttrs(lib: Library) {
   inset-inline-start: 0;
   z-index: 2;
   border-inline-end: 1px solid var(--avc-color-border);
+
+  @supports (animation-timeline: scroll()) {
+    &::after {
+      content: "";
+      position: absolute;
+      inset-block: 0;
+      inset-inline-start: calc(100% + 1px);
+      inline-size: var(--avc-space-3);
+      background: linear-gradient(to right, var(--avc-color-shadow), transparent);
+      opacity: 0;
+      pointer-events: none;
+      animation: avc-edge-shadow linear both;
+      animation-timeline: scroll(nearest inline);
+      animation-range: 0rem var(--avc-space-6);
+    }
+  }
+}
+
+@keyframes avc-edge-shadow {
+  to {
+    opacity: 1;
+  }
 }
 
 .head {
@@ -742,6 +751,13 @@ function scopeAttrs(lib: Library) {
   margin-inline-start: calc(-1 * var(--avc-space-1));
 }
 
+.head-logo {
+  inline-size: 1.5rem;
+  block-size: 1.5rem;
+  margin-inline-end: var(--avc-space-1);
+  padding: 0.1875rem;
+}
+
 .grip {
   display: grid;
   flex: none;
@@ -758,6 +774,9 @@ function scopeAttrs(lib: Library) {
      (Set here, not by a :has() on the page: that would restyle every library's DOM as a drag starts.) */
   touch-action: none;
   user-select: none;
+  transition:
+    background-color 0.15s,
+    color 0.15s;
 
   &:hover {
     background: var(--avc-color-subtle);
@@ -1019,7 +1038,8 @@ a.component-ref {
    of that component. Every setting folds behind the top bar's options button. Only CSS moves the
    table: the cells stay where the libraries mounted into them, other rows are hidden, not removed. */
 
-.demo-picker,
+/* (`fieldset.`: over RadioGroup's own `display`.) */
+fieldset.demo-picker,
 .options-toggle,
 .facet.phone-only {
   display: none;
@@ -1062,10 +1082,6 @@ a.component-ref {
 
   /* The settings, in the options dialog: a sheet over the top of the page. Its head lines up with
      the top bar, the close button where the options button was. */
-  .facets {
-    margin: 0;
-  }
-
   .options-dialog {
     box-sizing: border-box;
     inline-size: 100%;
@@ -1170,40 +1186,29 @@ a.component-ref {
     white-space: nowrap;
   }
 
-  .demo-picker {
+  fieldset.demo-picker {
     display: flex;
     flex-shrink: 0;
     margin: var(--avc-space-3) 0;
-    padding: 0;
-    overflow: hidden;
-    border: 1px solid var(--avc-color-border-control);
-    border-radius: var(--avc-radius-sm);
 
-    & label {
-      position: relative;
-      display: flex;
-      flex: 1;
-      align-items: center;
-      justify-content: center;
-      min-block-size: var(--avc-target-min);
-      color: var(--avc-color-text-muted);
-      font-size: var(--avc-text-sm);
-      cursor: pointer;
+    & :deep(label) {
+      min-inline-size: 0;
+      min-block-size: 2rem;
+      padding: 0;
     }
+  }
 
-    & label + label {
-      border-inline-start: 1px solid var(--avc-color-border-control);
-    }
+  .facets {
+    display: grid;
+    grid-template-columns: max-content 1fr;
+    gap: var(--avc-space-3) var(--avc-space-4);
+    margin: 0;
+  }
 
-    & label:has(:checked) {
-      background: var(--avc-color-text);
-      color: var(--avc-color-bg);
-    }
-
-    & label:has(:focus-visible) {
-      outline: var(--avc-focus-ring);
-      outline-offset: -2px;
-    }
+  .facet {
+    display: grid;
+    grid-column: 1 / -1;
+    grid-template-columns: subgrid;
   }
 
   /* One column: per library its header (row 2i + 1) and its cell of the picked row (row 2i + 2).

@@ -697,10 +697,14 @@ describe("Shell with every library loaded", () => {
     /** Frames run (the drag follows the pointer once a frame) and every slide or landing ends. */
     const settled = async () => {
       await new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve)));
-      // A slide cut short by the next one rejects; a library's own endless animations never finish.
+      // A slide cut short by the next one rejects; a library's own endless animations never finish,
+      // nor does one driven by scrolling (the label column's shadow).
       const finite = table
         .getAnimations({ subtree: true })
-        .filter((animation) => animation.effect?.getComputedTiming().endTime !== Infinity);
+        .filter(
+          (animation) =>
+            animation.timeline === document.timeline && animation.effect?.getComputedTiming().endTime !== Infinity,
+        );
       await Promise.all(finite.map((animation) => animation.finished.catch(() => {})));
       await nextTick();
     };

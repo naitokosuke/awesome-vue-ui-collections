@@ -17,7 +17,13 @@ const PAGES = [
 
 <template>
   <header class="topbar">
-    <span class="brand">awesome-vue-ui-collections</span>
+    <span class="brand">
+      <svg aria-hidden="true" class="mark" viewBox="0 0 32 32">
+        <rect fill="currentColor" height="32" rx="7" width="32" />
+        <path d="M10 8v16M16 8v16M22 8v16" fill="none" stroke-linecap="round" stroke-width="3" />
+      </svg>
+      <span class="brand-name">awesome-vue-ui-collections</span>
+    </span>
     <nav aria-label="Pages" class="nav">
       <a v-for="{ id, href } in PAGES" :key="id" :href :aria-current="id === page ? 'page' : undefined">{{ id }}</a>
     </nav>
@@ -48,7 +54,21 @@ const PAGES = [
 }
 
 .brand {
+  display: flex;
+  align-items: center;
+  gap: var(--avc-space-2);
+  min-inline-size: 0;
   font-weight: var(--avc-weight-bold);
+}
+
+.mark {
+  flex: none;
+  inline-size: 1.25rem;
+  block-size: 1.25rem;
+
+  & path {
+    stroke: var(--avc-color-bg);
+  }
 }
 
 /* Like the kind tabs: the current page is underlined, on the top bar's bottom line. */
@@ -94,11 +114,8 @@ const PAGES = [
     padding-inline: var(--avc-space-4);
   }
 
-  .brand {
-    min-inline-size: 0;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
+  .brand-name {
+    display: none;
   }
 
   .nav {

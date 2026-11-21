@@ -59,6 +59,9 @@ a {
   block-size: var(--avc-target-min);
   border-radius: var(--avc-radius-sm);
   color: var(--avc-color-text-muted);
+  transition:
+    background-color 0.15s,
+    color 0.15s;
 
   &:hover {
     background: var(--avc-color-subtle);
