@@ -18,6 +18,7 @@ import TopBar from "./TopBar.vue";
 import { useColumnDrag } from "./useColumnDrag";
 import { useSelectionRect } from "./useSelectionRect";
 import { useLibraryApps } from "./useLibraryApps";
+import { useLibraryTravel } from "./useLibraryTravel";
 
 const SIZE_LABELS = { small: "sm", medium: "md", large: "lg" } as const;
 
@@ -80,6 +81,28 @@ onMounted(async () => {
   await nextTick();
   document.querySelector(`.head[data-column-item="${linked.id}"]`)?.scrollIntoView({ inline: "start" });
 });
+
+// Only from the part of the table that shows: not from under the label column, nor from a hidden tab.
+useLibraryTravel(
+  () =>
+    [...document.querySelectorAll<HTMLElement>(".head[data-column-item]")].map((head) => ({
+      id: head.dataset.columnItem!,
+      logo: head.querySelector<HTMLElement>(".head-logo"),
+      name: head.querySelector<HTMLElement>(".name"),
+    })),
+  (el) => {
+    const rect = el.getBoundingClientRect();
+    const table = el.closest(".table")!.getBoundingClientRect();
+    const label = el.closest(".grid")!.querySelector(".corner")!.getBoundingClientRect();
+    return (
+      rect.width > 0 &&
+      rect.left >= label.right &&
+      rect.right <= table.right &&
+      rect.top >= table.top &&
+      rect.bottom <= table.bottom
+    );
+  },
+);
 
 const { isLoading, errors, setCell, setOverlay } = useLibraryApps(() => controls.kind);
 

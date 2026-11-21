@@ -4,6 +4,7 @@ import LibraryLinks from "./LibraryLinks.vue";
 import LibraryLogo from "./LibraryLogo.vue";
 import { controls } from "./store";
 import TopBar from "./TopBar.vue";
+import { useLibraryTravel } from "./useLibraryTravel";
 
 /**
  * Every library on the compare page, one table per kind with its npm stats and links. It reads
@@ -11,6 +12,17 @@ import TopBar from "./TopBar.vue";
  */
 const base = import.meta.env.BASE_URL;
 const total = groups.reduce((sum, group) => sum + group.columns.length, 0);
+
+// Not from under the top bar: a row scrolled past it stays where it is.
+useLibraryTravel(
+  () =>
+    [...document.querySelectorAll<HTMLElement>("tr[data-row]")].map((row) => ({
+      id: row.dataset.row!,
+      logo: row.querySelector<HTMLElement>(".row-logo"),
+      name: row.querySelector<HTMLElement>(".name a"),
+    })),
+  (el) => el.getBoundingClientRect().top >= document.querySelector(".topbar")!.getBoundingClientRect().bottom,
+);
 </script>
 
 <template>
@@ -40,7 +52,7 @@ const total = groups.reduce((sum, group) => sum + group.columns.length, 0);
             </tr>
           </thead>
           <tbody>
-            <tr v-for="lib in group.columns" :key="lib.id">
+            <tr v-for="lib in group.columns" :key="lib.id" :data-row="lib.id">
               <th class="name" scope="row">
                 <LibraryLogo class="row-logo" :lib />
                 <a :href="`${base}?lib=${lib.id}`" :title="`Compare ${lib.name}`">{{ lib.name }}</a>
