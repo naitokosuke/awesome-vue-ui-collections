@@ -1,12 +1,10 @@
 <script setup lang="ts">
-import { useEventListener } from "@vueuse/core";
-import { ref } from "vue";
 import { groups, KIND_LABELS, npmFetchedAt } from "./board";
 import LibraryLinks from "./LibraryLinks.vue";
 import LibraryLogo from "./LibraryLogo.vue";
-import { takeLinkedLibrary } from "./linkedLibrary";
 import { controls } from "./store";
 import TopBar from "./TopBar.vue";
+import { useLibraryTravel } from "./useLibraryTravel";
 
 /**
  * Every library on the compare page, one table per kind with its npm stats and links. It reads
@@ -15,15 +13,16 @@ import TopBar from "./TopBar.vue";
 const base = import.meta.env.BASE_URL;
 const total = groups.reduce((sum, group) => sum + group.columns.length, 0);
 
-/**
- * The library whose logo and name travel between its row and its column on the compare page (a
- * view transition, see index.html): the one whose link is followed, or the one that page hands back.
- */
-const linkedId = ref<string>();
-
-useEventListener(window, "pagereveal", () => {
-  linkedId.value = takeLinkedLibrary();
-});
+// Not from under the top bar: a row scrolled past it stays where it is.
+useLibraryTravel(
+  () =>
+    [...document.querySelectorAll<HTMLElement>("tr[data-row]")].map((row) => ({
+      id: row.dataset.row!,
+      logo: row.querySelector<HTMLElement>(".row-logo"),
+      name: row.querySelector<HTMLElement>(".name a"),
+    })),
+  (el) => el.getBoundingClientRect().top >= document.querySelector(".topbar")!.getBoundingClientRect().bottom,
+);
 </script>
 
 <template>
@@ -53,12 +52,10 @@ useEventListener(window, "pagereveal", () => {
             </tr>
           </thead>
           <tbody>
-            <tr v-for="lib in group.columns" :key="lib.id">
-              <th class="name" :class="{ linked: lib.id === linkedId }" scope="row">
+            <tr v-for="lib in group.columns" :key="lib.id" :data-row="lib.id">
+              <th class="name" scope="row">
                 <LibraryLogo class="row-logo" :lib />
-                <a :href="`${base}?lib=${lib.id}`" :title="`Compare ${lib.name}`" @click="linkedId = lib.id">{{
-                  lib.name
-                }}</a>
+                <a :href="`${base}?lib=${lib.id}`" :title="`Compare ${lib.name}`">{{ lib.name }}</a>
               </th>
               <td class="version">{{ lib.version ?? "—" }}</td>
               <td class="released">
@@ -192,14 +189,6 @@ thead th {
 
 .row-logo {
   margin-inline-end: var(--avc-space-2);
-}
-
-.linked .row-logo {
-  view-transition-name: lib-logo;
-}
-
-.linked a {
-  view-transition-name: lib-name;
 }
 
 .version,

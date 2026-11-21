@@ -12,18 +12,41 @@
         margin: 0;
       }
 
-      /* Between the pages: the new one fades in over the old one, which stays whole beneath it
-         (fading both lets the canvas through). */
+      /* Between the pages: each library's logo and name travel between its row and its column (see
+         useLibraryTravel), the new ones only, resized on the way. */
       @media (prefers-reduced-motion: no-preference) {
         @view-transition {
           navigation: auto;
         }
       }
 
-      ::view-transition-old(root) {
+      ::view-transition-group(*) {
+        animation-duration: 0.35s;
+        animation-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+      }
+
+      ::view-transition-old(*) {
+        display: none;
+      }
+
+      ::view-transition-new(*) {
         animation: none;
       }
 
+      /* One with nowhere to go, or coming from nowhere, fades with its page. */
+      ::view-transition-old(*):only-child {
+        display: block;
+        animation: avc-page-out 0.2s ease-out both;
+      }
+
+      /* The new page fades in over the old one, which stays whole beneath it (fading both lets the
+         canvas through). */
+      ::view-transition-old(root) {
+        display: block;
+        animation: none;
+      }
+
+      ::view-transition-new(*):only-child,
       ::view-transition-new(root) {
         animation: avc-page-in 0.2s ease-out;
       }
@@ -34,22 +57,10 @@
         }
       }
 
-      /* One library's logo and name travel between its row and its column (.linked on each page):
-         the new ones only, resized on the way. */
-      ::view-transition-old(lib-logo),
-      ::view-transition-old(lib-name) {
-        display: none;
-      }
-
-      ::view-transition-new(lib-logo),
-      ::view-transition-new(lib-name) {
-        animation: none;
-      }
-
-      ::view-transition-group(lib-logo),
-      ::view-transition-group(lib-name) {
-        animation-duration: 0.3s;
-        animation-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+      @keyframes avc-page-out {
+        to {
+          opacity: 0;
+        }
       }
     </style>
     <script>
