@@ -297,7 +297,7 @@ function scopeAttrs(lib: Library) {
               v-for="lib in group.columns"
               :key="lib.id"
               class="head"
-              :class="{ linked: lib.id === linkedId }"
+              :class="{ 'vt-to': lib.id === linkedId }"
               role="columnheader"
               :aria-colindex="positions[group.kind][lib.id]! + 2"
               :data-column-item="lib.id"
@@ -762,11 +762,11 @@ function scopeAttrs(lib: Library) {
   margin-inline-start: calc(-1 * var(--avc-space-1));
 }
 
-.linked .head-logo {
+.vt-to .head-logo {
   view-transition-name: lib-logo;
 }
 
-.linked .name {
+.vt-to .name {
   view-transition-name: lib-name;
 }
 

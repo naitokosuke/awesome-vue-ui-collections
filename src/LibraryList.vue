@@ -45,7 +45,7 @@ const linkedId = ref<string>();
           </thead>
           <tbody>
             <tr v-for="lib in group.columns" :key="lib.id">
-              <th class="name" :class="{ linked: lib.id === linkedId }" scope="row">
+              <th class="name" :class="{ 'vt-from': lib.id === linkedId }" scope="row">
                 <LibraryLogo class="row-logo" :lib />
                 <a :href="`${base}?lib=${lib.id}`" :title="`Compare ${lib.name}`" @click="linkedId = lib.id">{{
                   lib.name
@@ -185,11 +185,11 @@ thead th {
   margin-inline-end: var(--avc-space-2);
 }
 
-.linked .row-logo {
+.vt-from .row-logo {
   view-transition-name: lib-logo;
 }
 
-.linked a {
+.vt-from a {
   view-transition-name: lib-name;
 }
 

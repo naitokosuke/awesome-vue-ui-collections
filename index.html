@@ -15,12 +15,21 @@
         margin: 0;
       }
 
-      /* Between the pages: the followed library's logo and name travel from its row to its column,
-         everything else cross-fades. */
+      /* Following a library's link: its logo and name travel from its row to its column. */
       @media (prefers-reduced-motion: no-preference) {
         @view-transition {
           navigation: auto;
         }
+      }
+
+      /* Only they move: the new page is there at once, and nothing of the old one is drawn over it
+         (two unrelated layouts cross-fading read as noise). */
+      ::view-transition-old(*) {
+        display: none;
+      }
+
+      ::view-transition-new(*) {
+        animation: none;
       }
 
       ::view-transition-group(lib-logo),
@@ -30,9 +39,12 @@
       }
     </style>
     <script>
-      // Never cross-fade to a page whose app isn't rendered yet.
+      // No other navigation animates: there must be a row to leave (.vt-from) and a column to reach (.vt-to).
+      addEventListener("pageswap", (event) => {
+        if (!document.querySelector(".vt-from")) event.viewTransition?.skipTransition();
+      });
       addEventListener("pagereveal", (event) => {
-        if (!document.querySelector(".shell")) event.viewTransition?.skipTransition();
+        if (!document.querySelector(".vt-to")) event.viewTransition?.skipTransition();
       });
     </script>
   </head>
