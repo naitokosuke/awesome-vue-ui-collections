@@ -70,21 +70,16 @@ watch(phone, (isPhone) => {
   if (!isPhone) optionsDialog.value?.close();
 });
 
-/**
- * `?lib=<id>`, as the libraries page links here: opens that library's tab and scrolls to its column.
- * The parameter is then dropped, so a reload goes back to the saved tab.
- */
 onMounted(async () => {
   const linked = libraries.find((lib) => lib.id === new URLSearchParams(location.search).get("lib"));
   if (!linked) return;
   controls.kind = linked.kind;
   history.replaceState(null, "", location.pathname);
-  // Once its tab's table is shown.
   await nextTick();
   document.querySelector(`.head[data-column-item="${linked.id}"]`)?.scrollIntoView({ inline: "start" });
 });
 
-const { busy, errors, setCell, setOverlay } = useLibraryApps(() => controls.kind);
+const { isLoading, errors, setCell, setOverlay } = useLibraryApps(() => controls.kind);
 
 /** Libraries with an app of their own (not stats-only), each of which gets an overlay host. */
 const mountedLibraries = libraries.filter((lib) => lib.load);
@@ -169,12 +164,12 @@ async function resetOrder(event: MouseEvent, kind: Kind) {
 const nameOf = (id: string) => libraries.find((lib) => lib.id === id)!.name;
 
 function scopeAttrs(lib: Library) {
-  return { "data-lib": lib.id, ...(controls.dark ? lib.darkAttrs : lib.lightAttrs) };
+  return { "data-lib": lib.id, ...(controls.isDark ? lib.darkAttrs : lib.lightAttrs) };
 }
 </script>
 
 <template>
-  <div class="shell" :class="{ 'is-dark': controls.dark }">
+  <div class="shell" :class="{ 'is-dark': controls.isDark }">
     <TopBar page="compare" theme-in-settings>
       <!-- Phones only: opens the settings, which take the theme switch along. -->
       <button
@@ -220,7 +215,7 @@ function scopeAttrs(lib: Library) {
              switch, the table's stats switch and the row's options. -->
           <div class="facet phone-only">
             <span aria-hidden="true" class="facet-label">theme</span>
-            <ToggleSwitch v-model="controls.dark">dark</ToggleSwitch>
+            <ToggleSwitch v-model="controls.isDark">dark</ToggleSwitch>
           </div>
           <div class="facet">
             <span aria-hidden="true" class="facet-label">size</span>
@@ -408,7 +403,7 @@ function scopeAttrs(lib: Library) {
                 :ref="(el) => setCell(lib, demo, el)"
                 class="cell"
                 role="cell"
-                :aria-busy="busy[lib.id] || undefined"
+                :aria-busy="isLoading(lib) || undefined"
                 :aria-colindex="positions[group.kind][lib.id]! + 2"
                 :data-column-item="lib.id"
                 :style="{
@@ -705,7 +700,6 @@ function scopeAttrs(lib: Library) {
   border-block-end: 1px solid var(--avc-color-border);
   background: var(--avc-color-surface);
   font-variant-numeric: tabular-nums;
-  /* Scrolled to (a `?lib=` link): clear of the sticky label column. */
   scroll-margin-inline-start: var(--label-column);
 
   & + .head {
@@ -920,7 +914,6 @@ function scopeAttrs(lib: Library) {
   background-position: var(--avc-space-2) var(--avc-space-2);
   /* Library demos use a neutral sans; the shell's monospace must not leak into them. */
   font-family: var(--avc-font-sans);
-  /* Nor its color scheme (tokens.css): each library switches to dark by its own attributes. */
   color-scheme: normal;
 
   & + .cell {
@@ -937,8 +930,6 @@ function scopeAttrs(lib: Library) {
   }
 }
 
-/* Until the library's demo arrives (its module is loading, or its app mounting). Only after a
-   moment, so a library that loads at once never flashes it. Pinned like the chip below. */
 .cell[aria-busy="true"]::after {
   content: "loading…";
   margin: auto;

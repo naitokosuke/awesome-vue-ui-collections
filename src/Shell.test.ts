@@ -471,7 +471,14 @@ beforeAll(async () => {
   // The table layout, wide enough for a column beside the sticky label column (so a press lands on
   // the demo); phones get a layout of their own, with a test of its own.
   await page.viewport(1280, 900);
-  Object.assign(controls, { kind: "styled", dark: false, color: null, size: "medium", stats: true, label: "Click me" });
+  Object.assign(controls, {
+    kind: "styled",
+    isDark: false,
+    color: null,
+    size: "medium",
+    stats: true,
+    label: "Click me",
+  });
 
   probe = document.createElement("div");
   probe.innerHTML = PROBE_HTML;
@@ -615,7 +622,7 @@ describe("Shell with every library loaded", () => {
   });
 
   test("dark mode, a primary color and another size keep everything outside the scopes as is", async () => {
-    Object.assign(controls, { dark: true, color: COLORS.blue, size: "large" });
+    Object.assign(controls, { isDark: true, color: COLORS.blue, size: "large" });
     await settle();
     try {
       for (const kind of KINDS) await showKind(kind);
@@ -623,7 +630,7 @@ describe("Shell with every library loaded", () => {
       expect(documentSnapshot().attributes).toEqual(before.document.attributes);
       expect(withoutRegistered(documentSnapshot().style)).toEqual(before.document.style);
     } finally {
-      Object.assign(controls, { kind: "styled", dark: false, color: null, size: "medium" });
+      Object.assign(controls, { kind: "styled", isDark: false, color: null, size: "medium" });
       await settle();
     }
   });

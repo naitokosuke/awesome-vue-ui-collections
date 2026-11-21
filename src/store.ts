@@ -7,8 +7,7 @@ const STORAGE_KEY = "awesome-vue-ui-collections:controls";
 export const controls = reactive<Controls>({
   size: "medium",
   disabled: Object.fromEntries(DEMOS.map((demo) => [demo, false])) as Record<DemoKey, boolean>,
-  // Until the viewer picks one, the OS's theme (no matchMedia outside a browser: light).
-  dark: typeof matchMedia === "function" && matchMedia("(prefers-color-scheme: dark)").matches,
+  isDark: typeof matchMedia === "function" && matchMedia("(prefers-color-scheme: dark)").matches,
   stats: true,
   label: "Click me",
   kind: "styled",
@@ -35,7 +34,7 @@ function restore(): Partial<Controls> {
 /** Saved controls, field by field; anything missing, outdated or invalid is left out (keeps its default). */
 export function parseControls(saved: unknown): Partial<Controls> {
   if (typeof saved !== "object" || saved === null) return {};
-  const { size, disabled, dark, stats, label, kind, color, order } = saved as Record<string, unknown>;
+  const { size, disabled, isDark, stats, label, kind, color, order } = saved as Record<string, unknown>;
   const restored: Partial<Controls> = {};
   if (oneOf(SIZES, size)) restored.size = size;
   // `disabled` used to be one boolean for every row.
@@ -46,7 +45,7 @@ export function parseControls(saved: unknown): Partial<Controls> {
       boolean
     >;
   }
-  if (typeof dark === "boolean") restored.dark = dark;
+  if (typeof isDark === "boolean") restored.isDark = isDark;
   if (typeof stats === "boolean") restored.stats = stats;
   if (typeof label === "string") restored.label = label;
   if (oneOf(KINDS, kind)) restored.kind = kind;

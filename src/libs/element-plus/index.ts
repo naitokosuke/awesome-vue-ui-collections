@@ -31,5 +31,5 @@ export function mount(context: MountContext) {
       for (const el of document.querySelectorAll('body > [id^="el-popper-container-"]')) el.remove();
     },
   });
-  bindScopeVars(context, () => (controls.color ? palette(controls.color, controls.dark) : null));
+  bindScopeVars(context, () => (controls.color ? palette(controls.color, controls.isDark) : null));
 }

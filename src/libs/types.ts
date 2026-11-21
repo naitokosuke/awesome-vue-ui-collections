@@ -41,7 +41,7 @@ export interface Controls {
   size: Size;
   /** Per demo row, so each component can be compared enabled and disabled on its own. */
   disabled: Record<DemoKey, boolean>;
-  dark: boolean;
+  isDark: boolean;
   /** Show the package / repository / release / downloads rows. */
   stats: boolean;
   label: string;

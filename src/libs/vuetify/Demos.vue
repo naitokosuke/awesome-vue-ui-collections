@@ -20,7 +20,7 @@ const open = ref(false);
 
 <template>
   <!-- Provides the theme to the components (each sets its own theme class), without painting a background. -->
-  <v-theme-provider :theme="controls.dark ? 'dark' : 'light'">
+  <v-theme-provider :theme="controls.isDark ? 'dark' : 'light'">
     <DemoCells>
       <template #button="{ disabled }">
         <v-btn color="primary" :size :disabled>{{ controls.label }}</v-btn>

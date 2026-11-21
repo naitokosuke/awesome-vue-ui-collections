@@ -13,7 +13,7 @@ const total = groups.reduce((sum, group) => sum + group.columns.length, 0);
 </script>
 
 <template>
-  <div class="shell list" :class="{ 'is-dark': controls.dark }">
+  <div class="shell list" :class="{ 'is-dark': controls.isDark }">
     <TopBar page="libraries" />
 
     <main class="page">
@@ -43,7 +43,6 @@ const total = groups.reduce((sum, group) => sum + group.columns.length, 0);
               <th class="name" scope="row">
                 <!-- On a light tile in both themes: many logos are dark on a transparent background. -->
                 <span class="logo"><img v-if="lib.logo" alt="" :src="lib.logo"></span>
-                <!-- To its column on the compare page. -->
                 <a :href="`${base}?lib=${lib.id}`" :title="`Compare ${lib.name}`">{{ lib.name }}</a>
               </th>
               <td class="version">{{ lib.version ?? "—" }}</td>

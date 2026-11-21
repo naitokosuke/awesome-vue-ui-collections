@@ -9,7 +9,7 @@ describe("parseControls", () => {
     const saved = {
       size: "large",
       disabled: { ...noneDisabled, select: true },
-      dark: true,
+      isDark: true,
       stats: false,
       label: "Save",
       kind: "headless",
@@ -20,7 +20,7 @@ describe("parseControls", () => {
 
   test("drops invalid fields, so they keep their defaults", () => {
     expect(
-      parseControls({ size: "huge", dark: "yes", stats: 1, label: 42, kind: "fancy-ish", color: "#123456" }),
+      parseControls({ size: "huge", isDark: "yes", stats: 1, label: 42, kind: "fancy-ish", color: "#123456" }),
     ).toEqual({});
   });
 

@@ -24,7 +24,8 @@ const PAGES = [
     <!-- The page's own controls, before the theme switch. -->
     <slot />
     <!-- Theme is a page setting, not part of what is compared, so it lives up here. -->
-    <ToggleSwitch v-model="controls.dark" class="theme" :class="{ 'in-settings': themeInSettings }">dark</ToggleSwitch>
+    <ToggleSwitch v-model="controls.isDark" class="theme" :class="{ 'in-settings': themeInSettings }"
+    >dark</ToggleSwitch>
   </header>
 </template>
 

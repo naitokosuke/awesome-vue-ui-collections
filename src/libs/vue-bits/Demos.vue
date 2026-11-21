@@ -13,12 +13,12 @@ const size = computed(() => (({ small: "sm", medium: "md", large: "lg" }) as con
 // The primary color, when picked, goes to each component's accent: the button's highlight line,
 // the input's border and icon, and the wheel's selected item.
 const button = computed(() => ({
-  ...(controls.dark ? {} : { textColor: "#18181b", lineColor: "#18181b", baseColor: "#a1a1aa" }),
+  ...(controls.isDark ? {} : { textColor: "#18181b", lineColor: "#18181b", baseColor: "#a1a1aa" }),
   ...(controls.color && { lineColor: controls.color }),
 }));
 const input = computed(() => (controls.color ? { borderColor: controls.color, iconColor: controls.color } : {}));
 const wheel = computed(() => ({
-  ...(controls.dark
+  ...(controls.isDark
     ? { textColor: "#71717a", activeColor: "#fafafa" }
     : { textColor: "#a1a1aa", activeColor: "#18181b" }),
   ...(controls.color && { activeColor: controls.color }),
@@ -41,7 +41,7 @@ const name = ref("");
         aria-label="Name"
         placeholder="Name"
         type="text"
-        :theme="controls.dark ? 'dark' : 'light'"
+        :theme="controls.isDark ? 'dark' : 'light'"
         width="100%"
         :height="44"
         :bend="10"

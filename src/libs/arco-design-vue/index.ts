@@ -24,5 +24,5 @@ export function mount(context: MountContext) {
   mountLibrary(context, Demos, (app) => {
     app.use(ArcoVue);
   });
-  bindScopeVars(context, () => (controls.color ? palette(controls.color, controls.dark) : null));
+  bindScopeVars(context, () => (controls.color ? palette(controls.color, controls.isDark) : null));
 }

@@ -28,7 +28,7 @@ const libraryControls: MountContext["controls"] = readonly(
   reactive({
     ...toRefs(controls),
     color: computed(() =>
-      controls.color && controls.dark ? (DARK_COLORS[controls.color] ?? controls.color) : controls.color,
+      controls.color && controls.isDark ? (DARK_COLORS[controls.color] ?? controls.color) : controls.color,
     ),
   }),
 );
@@ -77,15 +77,10 @@ export function useLibraryApps(activeKind: () => Kind) {
     ),
   );
 
-  /** Libraries whose demos are still on their way (not mounted, not failed), by id: their cells say so. */
-  const busy = computed<Record<string, boolean>>(() =>
-    Object.fromEntries(
-      Object.entries(states).map(([id, { status }]) => [
-        id,
-        status === "idle" || status === "loading" || status === "mounting",
-      ]),
-    ),
-  );
+  function isLoading(lib: Library) {
+    const { status } = states[lib.id];
+    return status === "idle" || status === "loading" || status === "mounting";
+  }
 
   const cells: Record<string, Partial<Record<DemoKey, HTMLElement>>> = {};
   const overlays: Record<string, HTMLElement> = {};
@@ -203,5 +198,5 @@ export function useLibraryApps(activeKind: () => Kind) {
     for (const state of Object.values(states)) if (state.status === "mounted") state.scope.stop();
   });
 
-  return { busy, errors, setCell, setOverlay };
+  return { isLoading, errors, setCell, setOverlay };
 }

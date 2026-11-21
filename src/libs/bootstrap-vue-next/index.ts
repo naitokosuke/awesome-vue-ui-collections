@@ -34,7 +34,7 @@ function primaryVars(hex: string, dark: boolean) {
 
 export function mount(context: MountContext) {
   const { controls } = context;
-  bindScopeVars(context, () => (controls.color ? primaryVars(controls.color, controls.dark) : null));
+  bindScopeVars(context, () => (controls.color ? primaryVars(controls.color, controls.isDark) : null));
   mountLibrary(context, Demos, (app) => {
     app.use(
       createBootstrap({

@@ -76,7 +76,7 @@ export function mount(context: MountContext) {
   // chosen primary go inline on the scope elements (cells + overlay host), where Varlet's
   // `:root` vars are declared, so derived vars like `--color-primary` pick them up.
   bindScopeVars(context, () => {
-    const vars = { ...(controls.dark ? darkVars : {}), ...(controls.color ? primaryVars(controls.color) : {}) };
+    const vars = { ...(controls.isDark ? darkVars : {}), ...(controls.color ? primaryVars(controls.color) : {}) };
     return Object.keys(vars).length ? vars : null;
   });
 

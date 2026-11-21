@@ -26,7 +26,6 @@
 
 .shell {
   /* ---- color ---- */
-  /* Scrollbars and native controls follow the theme too (not the demo cells: see Shell.vue). */
   color-scheme: light;
   --avc-color-bg: oklch(98.5% 0 0);
   --avc-color-surface: oklch(100% 0 0);

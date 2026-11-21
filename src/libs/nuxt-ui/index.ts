@@ -79,5 +79,5 @@ export function mount(context: MountContext) {
     });
   });
   // `--ui-primary` resolves on the scope element, so it must be set here too, not just the scale.
-  bindScopeVars(context, () => (controls.color ? primaryVars(controls.color, controls.dark) : null));
+  bindScopeVars(context, () => (controls.color ? primaryVars(controls.color, controls.isDark) : null));
 }

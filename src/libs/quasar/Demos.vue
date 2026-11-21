@@ -25,7 +25,7 @@ const open = ref(false);
     </template>
 
     <template #input="{ disabled }">
-      <q-input v-model="name" class="field" label="Name" outlined :dense :dark="controls.dark" :disable="disabled" />
+      <q-input v-model="name" class="field" label="Name" outlined :dense :dark="controls.isDark" :disable="disabled" />
     </template>
 
     <!-- the menu is portaled to <body>; index.ts moves it into the overlay host -->
@@ -38,20 +38,20 @@ const open = ref(false);
         behavior="menu"
         outlined
         :dense
-        :dark="controls.dark"
+        :dark="controls.isDark"
         :disable="disabled"
       />
     </template>
 
     <template #switch="{ disabled }">
-      <q-toggle v-model="enabled" label="Notifications" :size :dark="controls.dark" :disable="disabled" />
+      <q-toggle v-model="enabled" label="Notifications" :size :dark="controls.isDark" :disable="disabled" />
     </template>
 
     <template #dialog="{ disabled }">
       <q-btn label="Open dialog" :size :disable="disabled" @click="open = true" />
       <!-- `seamless`: a modal QDialog locks scrolling via classes/styles on <html>/<body> -->
       <q-dialog v-model="open" seamless>
-        <q-card :dark="controls.dark" style="width: 400px">
+        <q-card :dark="controls.isDark" style="width: 400px">
           <q-card-section class="text-h6">Quasar</q-card-section>
           <q-card-section class="q-pt-none">
             This dialog is teleported into the Quasar overlay host.

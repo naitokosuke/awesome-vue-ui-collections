@@ -6,7 +6,7 @@ import { useMountContext } from "../mount";
 
 const { controls } = useMountContext();
 const size = computed(() => (({ small: "sm", medium: undefined, large: "lg" }) as const)[controls.size]);
-const theme = computed(() => (controls.dark ? "dark" : "light"));
+const theme = computed(() => (controls.isDark ? "dark" : "light"));
 
 const fruits = [
   { value: null, text: "Fruit", disabled: true },

@@ -10,13 +10,13 @@ const { controls, overlay } = useMountContext();
 // Naive's dark theme pairs a light primary with dark text, so lighten the color there.
 const themeOverrides = computed<GlobalThemeOverrides | null>(() => {
   if (!controls.color) return null;
-  const primary = controls.dark ? tint(controls.color, 0.35) : controls.color;
+  const primary = controls.isDark ? tint(controls.color, 0.35) : controls.color;
   return {
     common: {
       primaryColor: primary,
       primaryColorHover: tint(primary, 0.15),
       primaryColorPressed: shade(primary, 0.15),
-      primaryColorSuppl: controls.dark ? shade(primary, 0.35) : tint(primary, 0.15),
+      primaryColorSuppl: controls.isDark ? shade(primary, 0.35) : tint(primary, 0.15),
     },
   };
 });
@@ -35,7 +35,7 @@ const open = ref(false);
   -->
   <n-config-provider
     abstract
-    :theme="controls.dark ? darkTheme : null"
+    :theme="controls.isDark ? darkTheme : null"
     :theme-overrides="themeOverrides"
     preflight-style-disabled
   >
