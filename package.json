@@ -42,7 +42,7 @@
   "devDependencies": {
     "@iconify-json/lucide": "^1.2.154",
     "@types/node": "^26.6.6",
-    "@vitest/browser-playwright": "5.1.0",
+    "@vitest/browser-playwright": "5.1.1",
     "@vizejs/vite-plugin": "0.763.0",
     "lightningcss": "^1.33.0",
     "playwright": "^1.65.0",
