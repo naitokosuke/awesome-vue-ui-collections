@@ -47,7 +47,7 @@
     "lightningcss": "^1.33.0",
     "playwright": "^1.65.0",
     "shadcn-vue": "^2.9.0",
-    "typescript": "7.1.0-beta",
+    "typescript": "7.1.0-dev.20261119.1",
     "unplugin-icons": "^24.0.0",
     "vite": "catalog:",
     "vite-plus": "catalog:",
